@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>الحاسبة الاحترافية</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="top-header">
+            <div class="nav-icon" id="btnRate">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-icon)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9.5L12 3l9 6.5v10.5a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2z"></path>
+                    <text x="12" y="18" text-anchor="middle" font-size="12" fill="var(--gray-icon)" stroke="none" font-weight="bold">$</text>
+                </svg>
+            </div>
+            <div class="nav-icon" id="btnGrid">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-icon)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="2"></rect>
+                    <rect x="14" y="3" width="7" height="7" rx="2"></rect>
+                    <rect x="3" y="14" width="7" height="7" rx="2"></rect>
+                    <line x1="14" y1="16" x2="21" y2="16"></line>
+                    <line x1="14" y1="19" x2="21" y2="19"></line>
+                </svg>
+            </div>
+            <div class="nav-icon" id="btnHome">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <rect x="0" y="0" width="24" height="24" rx="8" fill="#ff7f30"></rect>
+                    <line x1="7" y1="10" x2="17" y2="10" stroke="white" stroke-width="2.5" stroke-linecap="round"></line>
+                    <line x1="7" y1="14" x2="17" y2="14" stroke="white" stroke-width="2.5" stroke-linecap="round"></line>
+                </svg>
+            </div>
+        </div>
+
+        <div class="tools-bar" id="toolsMenu">
+            <div class="tool-box" id="toolAge">
+                <span class="tool-icon-img">🎂</span>
+                <span class="tool-name">العمر</span>
+            </div>
+            <div class="tool-box" id="toolDiff">
+                <span class="tool-icon-img">📅</span>
+                <span class="tool-name">فرق التواريخ</span>
+            </div>
+            <div class="tool-box" id="toolScale">
+                <span class="tool-icon-img">⚖️</span>
+                <span class="tool-name">الميزان</span>
+            </div>
+            <div class="tool-box" id="toolSpeed">
+                <span class="tool-icon-img">🚗</span>
+                <span class="tool-name">السرعة</span>
+            </div>
+            <div class="tool-box" id="toolHistory">
+                <span class="tool-icon-img">🕒</span>
+                <span class="tool-name">السجل</span>
+            </div>
+        </div>
+
+        <div class="display-area">
+            <div class="result-line" id="resultContainer">
+                <div class="main-res" id="mainResult">0</div>
+                <div class="sub-res" id="subResult"></div>
+            </div>
+
+            <div class="inputs-wrapper" id="inputsContainer">
+                <div class="curr-box active" id="box1">
+                    <div class="currency-toggle-btn" id="currencyToggleBtn">ليرة</div>
+                    <div class="curr-label" id="label1" style="display:none">القيمة</div>
+                    <input type="text" class="curr-val-input" id="val1" inputmode="none" placeholder="0">
+                </div>
+                <div class="curr-box" id="box2" style="display:none">
+                    <div class="curr-label" id="label2">---</div>
+                    <input type="text" class="curr-val-input" id="val2" inputmode="none" placeholder="0">
+                </div>
+                <div class="curr-box" id="box3" style="display:none">
+                    <div class="curr-label" id="label3">سنة</div>
+                    <input type="text" class="curr-val-input" id="val3" inputmode="none" placeholder="0000">
+                </div>
+            </div>
+        </div>
+
+        <div class="middle-toolbar">
+            <div></div> 
+            <div class="backspace-btn" id="btnBackspace">⌫</div>
+        </div>
+
+        <div class="keypad">
+            <button class="k-btn txt-blue" data-action="clear">C</button>
+            <button class="k-btn txt-blue" data-action="parens">()</button>
+            <button class="k-btn txt-blue" data-val="%">%</button>
+            <button class="k-btn txt-blue" data-val="/">÷</button>
+
+            <button class="k-btn" data-val="7">7</button>
+            <button class="k-btn" data-val="8">8</button>
+            <button class="k-btn" data-val="9">9</button>
+            <button class="k-btn txt-blue" data-val="*">×</button>
+
+            <button class="k-btn" data-val="4">4</button>
+            <button class="k-btn" data-val="5">5</button>
+            <button class="k-btn" data-val="6">6</button>
+            <button class="k-btn txt-blue" data-val="-">-</button>
+
+            <button class="k-btn" data-val="1">1</button>
+            <button class="k-btn" data-val="2">2</button>
+            <button class="k-btn" data-val="3">3</button>
+            <button class="k-btn txt-blue" data-val="+">+</button>
+
+            <button class="k-btn" data-val="0">0</button>
+            <button class="k-btn" data-val="00">00</button>
+            <button class="k-btn" data-val=".">,</button>
+            <button class="k-btn bg-blue" id="btnEqual" data-action="calc">=</button>
+        </div>
+
+    </div>
+
+    <div id="historyModal" class="modal">
+        <div class="modal-card">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <span style="font-weight:bold; font-size:1.2rem">السجل</span>
+                <span id="btnCloseHist" style="cursor:pointer; font-size:1.5rem">✕</span>
+            </div>
+            <div style="text-align:left; margin-bottom:10px;">
+                <span style="color:red; font-size:0.9rem; cursor:pointer" id="btnClearHistory">مسح السجل</span>
+            </div>
+            <ul id="historyList" class="history-list"></ul>
+        </div>
+    </div>
+
+    <div id="rateModal" class="modal">
+        <div class="modal-card">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <span style="font-weight:bold; font-size:1.2rem">سعر الصرف</span>
+                <span id="btnCloseRate" style="cursor:pointer; font-size:1.5rem">✕</span>
+            </div>
+            <div class="rate-group">
+                <input type="number" id="exchangeRate" value="89000" placeholder="ادخل السعر">
+            </div>
+            <button class="k-btn" style="width:100%; border-radius:12px; background:var(--orange-color); color:white; border:none;" id="btnSaveRate">حفظ</button>
+        </div>
+    </div>
+<Script src="script.js"></script>
+</body>
+</html>
