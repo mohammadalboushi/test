@@ -1,144 +1,1335 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>الحاسبة الاحترافية</title>
-<link rel="stylesheet" href="style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>كاشير ميدو - الإصدار المطور</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;900&display=swap" rel="stylesheet">
+<style>
+	*{margin:0;padding:0;box-sizing:border-box; -webkit-tap-highlight-color: transparent; outline: none;}
+html,body{height:100%;overflow:hidden}
+body{
+font-family:"Cairo",sans-serif;
+background:#f4f6f8;
+color: #333;
+display:flex; flex-direction:column; padding: 0 4px;
+}
+
+#settings-btn {
+flex-shrink: 0; width: 45px; height: 45px;
+background: linear-gradient(145deg, #ffffff, #e6e6e6);
+color: #333; border: none;
+border-radius: 12px; font-size: 20px; cursor: pointer;
+display: flex; align-items: center; justify-content: center;
+box-shadow:
+  4px 4px 8px rgba(0,0,0,0.10),
+  -2px -2px 6px rgba(255,255,255,0.85);
+transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+#settings-btn:active {
+transform: scale(0.93);
+box-shadow:
+  2px 2px 4px rgba(0,0,0,0.08),
+  -1px -1px 3px rgba(255,255,255,0.7),
+  inset 1px 1px 4px rgba(0,0,0,0.06);
+}
+
+#total-box{
+background:#fff; padding:8px 12px;
+border-radius:12px; border-right: 5px solid #bf360c;
+display:flex; flex-direction: column; gap: 2px;
+font-weight:900; font-size:14px; flex-shrink:0; margin:5px 0;
+box-shadow:0 3px 10px rgba(0,0,0,0.05);
+}
+.total-row { display: flex; justify-content: space-between; align-items: center; }
+#total-lbp { color: #bf360c; font-size: 1.2em; }
+#total-usd { color: #2e7d32; font-family: sans-serif; }
+#rate-display { color: #777; font-size: 0.8em; font-weight: normal; }
+#customer-display {
+background: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 4px;
+font-size: 0.9em; margin-top: 4px; display: none; text-align: center;
+}
+
+#input-box{
+background:#fff; border-radius:10px; border:1px solid #e0e0e0;
+font-size:18px; font-weight:900; color:#333;
+text-align:right; height:45px; line-height:45px; padding: 0 10px;
+display: flex; align-items: center; justify-content: flex-end;
+transition: background 0.2s;
+}
+
+.keypad-top {
+display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px;
+width: 100%; margin: 0 auto 5px; flex-shrink: 0;
+}
+.keypad {
+display:grid; grid-template-columns:repeat(4,1fr); gap:5px;
+width: 100%; margin:0 auto 5px; flex-shrink:0;
+}
+
+.key {
+background: linear-gradient(145deg, #ffffff, #ececec);
+color: #333;
+border: none;
+border-radius: 10px;
+font-size: 14px; font-weight: 700;
+cursor: pointer;
+display: flex; align-items: center; justify-content: center;
+min-height: 40px;
+user-select: none;
+box-shadow:
+  3px 3px 6px rgba(0,0,0,0.10),
+  -2px -2px 5px rgba(255,255,255,0.90);
+transition: transform 0.12s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.12s ease;
+}
+
+.key:active {
+transform: scale(0.92) translateY(1px);
+box-shadow:
+  1px 1px 3px rgba(0,0,0,0.08),
+  -1px -1px 2px rgba(255,255,255,0.7),
+  inset 2px 2px 5px rgba(0,0,0,0.06);
+}
+
+.key.zero, .key.dbl {
+background: linear-gradient(145deg, #f5f5f5, #e8e8e8);
+}
+
+.key.back {
+background: linear-gradient(145deg, #d44d1e, #bf360c);
+color: #fff;
+border: none;
+box-shadow:
+  3px 3px 6px rgba(191,54,12,0.35),
+  -2px -2px 5px rgba(255,120,80,0.25);
+}
+.key.back:active {
+box-shadow:
+  1px 1px 3px rgba(191,54,12,0.25),
+  inset 2px 2px 5px rgba(0,0,0,0.15);
+}
+
+.main{
+flex:1; display:flex; gap:5px; padding:5px 0;
+overflow:hidden; background: #fff;
+border-top-left-radius: 15px; border-top-right-radius: 15px;
+box-shadow: 0 -5px 20px rgba(0,0,0,0.03); position: relative;
+}
+.sort-indicator {
+position: absolute; top:0; left:0; right:0; bottom:0;
+border: 4px dashed #f57f17; pointer-events: none; z-index: 50; display: none;
+background: rgba(255,255,255,0.1); justify-content: center; align-items: center;
+}
+.col {
+flex: 1; display: flex; flex-direction: column; gap: 3px;
+overflow-y: auto; scrollbar-width: none; padding: 2px;
+}
+
+.btn {
+padding: 2px 4px;
+background: linear-gradient(145deg, #ffffff, #f0f0f0);
+color: #444;
+border: none;
+border-left: 4px solid #bf360c;
+border-radius: 10px;
+font-size: 11px; font-weight: 700;
+cursor: pointer; min-height: 38px;
+display: flex; align-items: center; justify-content: center; text-align: center;
+box-shadow:
+  3px 3px 6px rgba(0,0,0,0.08),
+  -2px -2px 5px rgba(255,255,255,0.85);
+user-select: none; -webkit-user-select: none;
+transition: transform 0.13s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.13s ease;
+}
+
+.btn:active {
+transform: scale(0.88);
+background: #e0e0e0;
+box-shadow: inset 3px 3px 8px rgba(0,0,0,0.2);
+}
+
+.btn.sorting-selected {
+background: linear-gradient(145deg, #fffde7, #fff9c4) !important;
+border-color: #fbc02d !important;
+transform: scale(0.95);
+box-shadow: 2px 2px 5px rgba(251,192,45,0.3) !important;
+}
+
+.custom-modal {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px);
+z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-content {
+background: #fff; padding: 20px; border-radius: 20px;
+box-shadow: 0 10px 40px rgba(0,0,0,0.3); max-width: 360px; width: 100%;
+text-align: center; font-family: "Cairo", sans-serif;
+animation: popUp 0.2s ease-out; max-height: 95vh; overflow-y: auto;
+}
+@keyframes popUp { from{transform:scale(0.9);opacity:0} to{transform:scale(1);opacity:1} }
+
+.menu-btn {
+display: flex; align-items: center; gap: 12px; width: 100%;
+padding: 10px 15px; margin-bottom: 6px;
+background: linear-gradient(145deg, #f9f9f9, #efefef);
+border: none;
+border-radius: 12px;
+font-size: 13px; font-weight: 700; color: #333;
+cursor: pointer;
+min-height: 45px;
+box-shadow:
+  3px 3px 7px rgba(0,0,0,0.08),
+  -2px -2px 5px rgba(255,255,255,0.9);
+transition: transform 0.13s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.13s ease;
+}
+.menu-btn:active {
+transform: scale(0.96);
+box-shadow:
+  1px 1px 3px rgba(0,0,0,0.06),
+  inset 1px 1px 4px rgba(0,0,0,0.06);
+}
+.menu-btn .icon { font-size: 18px; width: 25px; text-align: center; }
+
+.btn-add {
+background: linear-gradient(145deg, #edf7ee, #d8eeda);
+color: #1b5e20;
+box-shadow: 3px 3px 7px rgba(0,0,0,0.07), -2px -2px 5px rgba(255,255,255,0.9);
+}
+.btn-close {
+background: linear-gradient(145deg, #fff0f0, #fde0e0);
+color: #c62828;
+justify-content: center; margin-top: 10px;
+box-shadow: 3px 3px 7px rgba(0,0,0,0.07), -2px -2px 5px rgba(255,255,255,0.9);
+}
+.btn-select {
+background: linear-gradient(145deg, #fff8f0, #ffecd8);
+color: #e65100;
+justify-content: center;
+box-shadow: 3px 3px 7px rgba(0,0,0,0.07), -2px -2px 5px rgba(255,255,255,0.9);
+}
+.modal-title { font-size: 16px; font-weight: 900; margin-bottom: 10px; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; }
+.pay-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; margin-bottom: 10px; text-align: center; }
+
+.selection-bar {
+display: none; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;
+}
+.chk-select {
+width: 20px; height: 20px; margin-left: 10px; accent-color: #bf360c; display: none;
+}
+.showing-checks .chk-select { display: block; }
+
+#receipt {
+position:fixed; top:60px; right:-270px; width:250px;
+background:#fff; padding:15px; z-index:100;
+border-radius:15px; box-shadow: -5px 5px 20px rgba(0,0,0,0.1);
+transition: right 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+max-height: calc(100vh - 80px);
+display: flex; flex-direction: column;
+}
+#receipt.show { right: 10px; }
+
+.bill-row, .customer-row {
+border-bottom: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 5px;
+background: #fff; transition: background 0.2s; user-select: none; cursor: pointer; position: relative;
+-webkit-user-select: none; display: flex; align-items: center; justify-content: space-between;
+}
+.bill-row:active, .customer-row:active { background: #e3f2fd; }
+.bill-note {
+font-size: 11px; color: #fff; background: #1976d2; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px;
+}
+
+.btn-clear-history {
+width: 100%; padding: 12px;
+background: linear-gradient(145deg, #fff0f0, #fde0e0);
+color: #c62828;
+border: none;
+border-radius: 10px; font-weight: bold; margin-top: 15px; cursor: pointer;
+box-shadow:
+  3px 3px 6px rgba(0,0,0,0.08),
+  -2px -2px 5px rgba(255,255,255,0.85);
+transition: transform 0.13s ease, box-shadow 0.13s ease;
+}
+.btn-clear-history:active {
+transform: scale(0.96);
+box-shadow: inset 2px 2px 5px rgba(0,0,0,0.08);
+}
+
+.mini-bill-item {
+font-size: 11px; color: #555; padding: 2px 0; border-bottom: 1px dashed #eee; display: flex; justify-content: space-between;
+}
+
+#toast-notification {
+position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px;
+border-radius: 25px; font-size: 14px; font-weight: bold; z-index: 2000;
+display: none; opacity: 0; transition: opacity 0.3s;
+box-shadow: 0 4px 10px rgba(0,0,0,0.2); pointer-events: none;
+}
+#toast-notification.show { display: block; opacity: 1; }
+</style>
 </head>
 <body>
 
-    <div class="app-container">
-        <div class="top-header">
-            <div class="nav-icon" id="btnRate">
-                <svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-icon)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 9.5L12 3l9 6.5v10.5a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2z"></path>
-                    <text x="12" y="18" text-anchor="middle" font-size="12" fill="var(--gray-icon)" stroke="none" font-weight="bold">$</text>
-                </svg>
-            </div>
-            <div class="nav-icon" id="btnGrid">
-                <svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-icon)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="7" height="7" rx="2"></rect>
-                    <rect x="14" y="3" width="7" height="7" rx="2"></rect>
-                    <rect x="3" y="14" width="7" height="7" rx="2"></rect>
-                    <line x1="14" y1="16" x2="21" y2="16"></line>
-                    <line x1="14" y1="19" x2="21" y2="19"></line>
-                </svg>
-            </div>
-            <div class="nav-icon" id="btnHome">
-                <svg viewBox="0 0 24 24" fill="none">
-                    <rect x="0" y="0" width="24" height="24" rx="8" fill="#ff7f30"></rect>
-                    <line x1="7" y1="10" x2="17" y2="10" stroke="white" stroke-width="2.5" stroke-linecap="round"></line>
-                    <line x1="7" y1="14" x2="17" y2="14" stroke="white" stroke-width="2.5" stroke-linecap="round"></line>
-                </svg>
-            </div>
+<div id="toast-notification"></div>
+
+<div id="total-box">
+  <div class="total-row">
+    <div id="total-lbp">المجموع: 0</div>
+    <div id="total-usd">$0.00</div>
+  </div>
+  <div id="customer-display">الزبون: <span id="current-customer-name" style="font-weight:bold"></span></div>
+  <div class="total-row" style="margin-top:4px;">
+    <div id="rate-display">سعر الصرف: 89,000</div>
+    <div id="total-items" style="color:#1976d2; font-size:0.8em">عدد الأصناف: 0</div>
+  </div>
+</div>
+
+<div style="display: flex; align-items: center; margin-bottom: 8px; position: relative;">
+    <div id="settings-btn" onclick="openSettings()">⋮</div>
+    <input type="text" id="main-search-input" placeholder="🔍 بحث..." oninput="searchMainItems(this.value)" style="width: 80px; margin-right: 5px; padding: 5px 8px; border-radius: 10px; border: 1px solid #e0e0e0; font-family: inherit; font-size: 11px; outline: none;">
+    <div id="main-search-results" style="display:none; position:absolute; top:45px; right:50px; background:#fff; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:2000; max-height:200px; overflow-y:auto; width:150px;"></div>
+    <div id="input-box" onclick="activatePrice()" style="margin-right: 5px; flex: 1;">0</div>
+</div>
+
+<div class="keypad-top">
+    <div class="key" style="background:#e8f5e9; color:#2e7d32;" onclick="openPay()">💵 دفع</div>
+    <div class="key" style="background:#e3f2fd; color:#1565c0;" onclick="openCustomerSelectModal()">👥 الزبائن</div>
+    <div class="key" style="background:#2e7d32; color:#fff;" onclick="saveBill()">✅ حفظ</div> 
+    <div class="key" style="background:#fff3e0; color:#0d47a1;" onclick="toggleReceipt()">👁️ مشتريات</div>
+</div>
+
+<div class="keypad">
+  <div class="key" style="color:#c62828" onclick="clearInput()">C</div>
+  <div class="key" onclick="press('9')">9</div>
+  <div class="key" onclick="press('8')">8</div>
+  <div class="key" onclick="press('7')">7</div>
+
+  <div class="key" style="color:#bf360c" onclick="activatePrice()">🏷️ سعر</div>
+  <div class="key" onclick="press('6')">6</div>
+  <div class="key" onclick="press('5')">5</div>
+  <div class="key" onclick="press('4')">4</div>
+
+  <div class="key dbl" style="color:#1976d2" onclick="openSavedBills()">📂 فواتير</div>
+  <div class="key" onclick="press('3')">3</div>
+  <div class="key" onclick="press('2')">2</div>
+  <div class="key" onclick="press('1')">1</div>
+
+  <div class="key back" onclick="reset()">🗑️ تصفير</div>
+  <div class="key dbl" onclick="press('000')">000</div>
+  <div class="key dbl" onclick="press('00')">00</div>
+  <div class="key zero" onclick="press('0')">0</div>
+</div>
+
+<div class="main">
+  <div class="sort-indicator" id="sort-indicator"></div>
+  <div class="col" id="col1"></div>
+  <div class="col" id="col2"></div>
+  <div class="col" id="col3"></div>
+  <div class="col" id="col4"></div>
+</div>
+
+<div id="receipt"></div>
+
+<div id="settings-modal" class="custom-modal">
+    <div class="modal-content" style="padding:15px;">
+        <div class="modal-title">⚙️ الإعدادات</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
+            <button class="menu-btn btn-add" style="margin:0;" onclick="openAddItemModal()">➕ إضافة صنف</button>
+            <button class="menu-btn" style="background:#fffde7; border-color:#fff59d; color:#f57f17; margin:0;" onclick="toggleSortMode()">🔃 ترتيب</button>
+            <button class="menu-btn" style="margin:0;" onclick="changeExchangeRate()">💲 الصرف</button>
+            <button class="menu-btn" style="margin:0;" onclick="showDailyReport()"><span class="icon">📊</span> تقرير اليوم</button>
         </div>
-
-        <div class="tools-bar" id="toolsMenu">
-            <div class="tool-box" id="toolAge">
-                <span class="tool-icon-img">🎂</span>
-                <span class="tool-name">العمر</span>
-            </div>
-            <div class="tool-box" id="toolDiff">
-                <span class="tool-icon-img">📅</span>
-                <span class="tool-name">فرق التواريخ</span>
-            </div>
-            <div class="tool-box" id="toolScale">
-                <span class="tool-icon-img">⚖️</span>
-                <span class="tool-name">الميزان</span>
-            </div>
-            <div class="tool-box" id="toolSpeed">
-                <span class="tool-icon-img">🚗</span>
-                <span class="tool-name">السرعة</span>
-            </div>
-            <div class="tool-box" id="toolHistory">
-                <span class="tool-icon-img">🕒</span>
-                <span class="tool-name">السجل</span>
-            </div>
+        <button id="pass-btn" class="menu-btn" style="background:#e3f2fd; color:#0d47a1; border-color:#bbdefb;" onclick="managePassword()"><span class="icon">🔒</span> حماية الإعدادات</button>
+        <hr style="margin:8px 0; border:0; border-top:1px solid #eee;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+            <button class="menu-btn" style="margin:0;" onclick="exportDataAndCopy()">📋 نسخ</button>
+            <button class="menu-btn" style="margin:0;" onclick="openJsonImport()">📂 استرجاع</button>
         </div>
-
-        <div class="display-area">
-            <div class="result-line" id="resultContainer">
-                <div class="main-res" id="mainResult">0</div>
-                <div class="sub-res" id="subResult"></div>
-            </div>
-
-            <div class="inputs-wrapper" id="inputsContainer">
-                <div class="curr-box active" id="box1">
-                    <div class="currency-toggle-btn" id="currencyToggleBtn">ليرة</div>
-                    <div class="curr-label" id="label1" style="display:none">القيمة</div>
-                    <input type="text" class="curr-val-input" id="val1" inputmode="none" placeholder="0">
-                </div>
-                <div class="curr-box" id="box2" style="display:none">
-                    <div class="curr-label" id="label2">---</div>
-                    <input type="text" class="curr-val-input" id="val2" inputmode="none" placeholder="0">
-                </div>
-                <div class="curr-box" id="box3" style="display:none">
-                    <div class="curr-label" id="label3">سنة</div>
-                    <input type="text" class="curr-val-input" id="val3" inputmode="none" placeholder="0000">
-                </div>
-            </div>
-        </div>
-
-        <div class="middle-toolbar">
-            <div></div> 
-            <div class="backspace-btn" id="btnBackspace">⌫</div>
-        </div>
-
-        <div class="keypad">
-            <button class="k-btn txt-blue" data-action="clear">C</button>
-            <button class="k-btn txt-blue" data-action="parens">()</button>
-            <button class="k-btn txt-blue" data-val="%">%</button>
-            <button class="k-btn txt-blue" data-val="/">÷</button>
-
-            <button class="k-btn" data-val="7">7</button>
-            <button class="k-btn" data-val="8">8</button>
-            <button class="k-btn" data-val="9">9</button>
-            <button class="k-btn txt-blue" data-val="*">×</button>
-
-            <button class="k-btn" data-val="4">4</button>
-            <button class="k-btn" data-val="5">5</button>
-            <button class="k-btn" data-val="6">6</button>
-            <button class="k-btn txt-blue" data-val="-">-</button>
-
-            <button class="k-btn" data-val="1">1</button>
-            <button class="k-btn" data-val="2">2</button>
-            <button class="k-btn" data-val="3">3</button>
-            <button class="k-btn txt-blue" data-val="+">+</button>
-
-            <button class="k-btn" data-val="0">0</button>
-            <button class="k-btn" data-val="00">00</button>
-            <button class="k-btn" data-val=".">,</button>
-            <button class="k-btn bg-blue" id="btnEqual" data-action="calc">=</button>
-        </div>
-
+        <button class="menu-btn" style="color:#d32f2f; margin-top:8px;" onclick="clearAllData()"><span class="icon">🗑️</span> ضبط المصنع</button>
+        <button class="menu-btn btn-close" onclick="goBackModal()">إغلاق</button>
     </div>
+</div>
 
-    <div id="historyModal" class="modal">
-        <div class="modal-card">
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                <span style="font-weight:bold; font-size:1.2rem">السجل</span>
-                <span id="btnCloseHist" style="cursor:pointer; font-size:1.5rem">✕</span>
-            </div>
-            <div style="text-align:left; margin-bottom:10px;">
-                <span style="color:red; font-size:0.9rem; cursor:pointer" id="btnClearHistory">مسح السجل</span>
-            </div>
-            <ul id="historyList" class="history-list"></ul>
-        </div>
+<div id="daily-report-modal" class="custom-modal">
+    <div class="modal-content">
+        <div class="modal-title">📊 تقرير اليوم</div>
+        <div id="daily-report-content" style="margin-bottom:15px;"></div>
+        <button class="menu-btn" style="background:#ffebee; color:#c62828; border-color:#ffcdd2;" onclick="clearDailyReport()">
+            <span class="icon">🛑</span> تصفير العداد (بدء شيفت)
+        </button>
+        <button class="menu-btn btn-close" onclick="goBackModal()">إغلاق</button>
     </div>
+</div>
 
-    <div id="rateModal" class="modal">
-        <div class="modal-card">
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                <span style="font-weight:bold; font-size:1.2rem">سعر الصرف</span>
-                <span id="btnCloseRate" style="cursor:pointer; font-size:1.5rem">✕</span>
-            </div>
-            <div class="rate-group">
-                <input type="number" id="exchangeRate" value="89000" placeholder="ادخل السعر">
-            </div>
-            <button class="k-btn" style="width:100%; border-radius:12px; background:var(--orange-color); color:white; border:none;" id="btnSaveRate">حفظ</button>
+<div id="customer-select-modal" class="custom-modal">
+    <div class="modal-content" style="max-width:360px;">
+        <div class="modal-title">الزبائن</div>
+        <button class="menu-btn" style="background:#e3f2fd; color:#1565c0; border-color:#bbdefb; margin-bottom:5px;" onclick="openDebtManagement()">
+            <span class="icon">📂</span> إدارة الديون وكشف الحساب
+        </button>
+        <button class="menu-btn btn-add" onclick="openAddCustomerModal(true)">➕ إضافة زبون جديد</button>
+        <div style="margin-top:10px;">
+            <input type="text" id="cust-select-search" placeholder="🔍 بحث عن زبون..." oninput="renderCustomerList('select', this.value)" class="pay-input" style="font-size:12px; padding:8px; margin-bottom:5px;">
         </div>
+        <div id="customer-select-list" style="max-height:250px; overflow-y:auto; text-align:left;"></div>
+        <button class="menu-btn btn-close" onclick="goBackModal()">إلغاء</button>
     </div>
-<Script src="script.js"></script>
+</div>
+
+<div id="add-customer-modal" class="custom-modal">
+    <div class="modal-content">
+        <div class="modal-title">إضافة زبون جديد</div>
+        <input id="add-cust-name" class="pay-input" type="text" placeholder="الاسم">
+        <input id="add-cust-address" class="pay-input" type="text" placeholder="العنوان">
+        <input id="add-cust-phone" class="pay-input" type="text" placeholder="رقم الهاتف">
+        <button class="menu-btn btn-add" style="justify-content:center" onclick="confirmAddNewCustomer()">حفظ وإضافة</button>
+        <button class="menu-btn btn-close" onclick="goBackModal()">إلغاء</button>
+    </div>
+</div>
+
+<div id="debt-manage-modal" class="custom-modal">
+    <div class="modal-content" style="max-width:360px;">
+        <div class="modal-title">إدارة الزبائن والديون</div>
+        <button id="btn-cust-select-mode" class="menu-btn btn-select" onclick="toggleSelectionMode('customer')">✅ تحديد يدوي</button>
+        <div id="cust-selection-bar" class="selection-bar">
+            <button class="menu-btn" style="background:#e3f2fd; color:#1565c0; margin:0;" onclick="selectAllItems('customer')">الكل</button>
+            <button class="menu-btn" style="background:#ffebee; color:#c62828; margin:0;" onclick="deleteSelectedItems('customer')">🗑️ حذف المحدد</button>
+        </div>
+        <button class="menu-btn btn-add" id="btn-add-cust-manage" onclick="openAddCustomerModal(false)">➕ إضافة زبون جديد</button>
+        
+        <div style="margin-top:10px;">
+            <input type="text" id="cust-manage-search" placeholder="🔍 بحث عن زبون..." oninput="renderCustomerList('manage', this.value)" class="pay-input" style="font-size:12px; padding:8px; margin-bottom:5px;">
+        </div>
+
+        <div style="font-size:11px; color:#666; margin:5px 0;">* اضغط مطولاً للحذف الفردي أو استخدم التحديد</div>
+        <div id="debt-customer-list" style="max-height:250px; overflow-y:auto; text-align:left;"></div>
+        <button class="menu-btn btn-close" onclick="goBackModal()">رجوع</button>
+    </div>
+</div>
+
+<div id="customer-statement-modal" class="custom-modal">
+    <div class="modal-content" style="max-width:380px; text-align:right;">
+        <div class="modal-title" id="statement-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>كشف حساب</span>
+            <span id="statement-menu-btn" style="cursor:pointer; color:#777; font-size:22px; padding:0 10px;">⋮</span>
+        </div>
+        <div id="statement-summary" style="background:#f5f5f5; padding:10px; border-radius:8px; margin-bottom:10px; text-align:center;"></div>
+        <button class="menu-btn" style="background:#e8f5e9; color:#1b5e20; border-color:#c8e6c9; margin-bottom:5px;" onclick="openPaymentModal(false)"><span class="icon">➕</span> استلام دفعة من الحساب</button>
+        <button class="menu-btn" style="background:#ffebee; color:#c62828; border-color:#ffcdd2; margin-bottom:10px;" onclick="openPaymentModal(true)"><span class="icon">💸</span> تسجيل دين نقدي (كاش)</button>
+        <div style="font-weight:bold; font-size:12px; margin-bottom:5px;">سجل الحركات:</div>
+        <div id="statement-bills-list" style="max-height:250px; overflow-y:auto; border:1px solid #eee; padding:5px; border-radius:8px; background:#fafafa;"></div>
+        <button class="menu-btn" style="background:#e3f2fd; color:#1565c0; border-color:#bbdefb; margin-top:10px;" onclick="clearCustomerDebt()"><span class="icon">💰</span> تصفية الحساب بالكامل</button>
+        <button class="menu-btn btn-close" onclick="goBackModal()">رجوع للقائمة</button>
+    </div>
+</div>
+
+<div id="all-customer-bills-modal" class="custom-modal">
+    <div class="modal-content" style="background:transparent; box-shadow:none; padding:0; width:100%; max-width:400px;">
+        <div id="all-bills-container" style="max-height:85vh; overflow-y:auto; border-radius:16px; background:#fff; padding:15px; box-shadow:0 10px 40px rgba(0,0,0,0.3); text-align:right;"></div>
+        <button class="menu-btn btn-close" style="background:#fff; margin-top:10px; border-radius:12px; font-weight:bold;" onclick="goBackModal()">إغلاق</button>
+    </div>
+</div>
+
+<div id="payment-modal" class="custom-modal">
+    <div class="modal-content">
+        <div class="modal-title" id="payment-modal-title">استلام دفعة</div>
+        <input id="payment-amount" class="pay-input" type="number" placeholder="أدخل المبلغ">
+        <div style="display:flex; gap:10px;">
+            <button class="menu-btn" style="background:#e8f5e9; color:#2e7d32; justify-content:center;" onclick="confirmTransaction('USD')">دولار ($)</button>
+            <button class="menu-btn" style="background:#fff3e0; color:#bf360c; justify-content:center;" onclick="confirmTransaction('LBP')">ليرة (L.L.)</button>
+        </div>
+        <button class="menu-btn btn-close" onclick="goBackModal()">إلغاء</button>
+    </div>
+</div>
+
+<div id="add-item-modal" class="custom-modal">
+    <div class="modal-content">
+        <div class="modal-title">إضافة صنف جديد</div>
+        <input id="new-item-name" class="pay-input" type="text" placeholder="اسم الصنف">
+        <input id="new-item-price" class="pay-input" type="number" placeholder="السعر (L.L.)">
+        <div style="text-align:right; font-size:12px; margin-bottom:5px; color:#666;">اختر العمود:</div>
+        <div style="display:flex; gap:5px; margin-bottom:15px;">
+            <button class="key" onclick="selectCol('col1')" id="btn-col1" style="flex:1; font-size:14px;">1</button>
+            <button class="key" onclick="selectCol('col2')" id="btn-col2" style="flex:1; font-size:14px;">2</button>
+            <button class="key" onclick="selectCol('col3')" id="btn-col3" style="flex:1; font-size:14px;">3</button>
+            <button class="key" onclick="selectCol('col4')" id="btn-col4" style="flex:1; font-size:14px;">4</button>
+        </div>
+        <button class="menu-btn btn-add" style="justify-content:center" onclick="confirmAddItem()">حفظ</button>
+        <button class="menu-btn btn-close" onclick="goBackModal()">إلغاء</button>
+    </div>
+</div>
+
+<div id="edit-modal" class="custom-modal">
+    <div class="modal-content">
+        <div class="modal-title" id="edit-modal-title">تعديل صنف</div>
+        <input id="edit-name" class="pay-input" type="text" placeholder="الاسم">
+        <input id="edit-price" class="pay-input" type="number" placeholder="السعر">
+        <button class="menu-btn btn-add" style="justify-content:center" onclick="saveItemEdit()">حفظ التعديلات</button>
+        <button class="menu-btn" style="color:#c62828; justify-content:center" onclick="deleteItem()">🗑️ حذف الصنف</button>
+        <button class="menu-btn btn-close" onclick="goBackModal()">إلغاء</button>
+    </div>
+</div>
+
+<div id="pay-box-modal" class="custom-modal">
+    <div class="modal-content">
+        <div class="modal-title">الحساب والدفع</div>
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <div style="flex:1;">
+                <div style="font-size:11px; text-align:right; margin-bottom:2px">المدفوع دولار ($):</div>
+                <input id="pay-usd" class="pay-input" type="number" oninput="calcPay()" style="background:#e8f5e9;">
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:11px; text-align:right; margin-bottom:2px">المدفوع ليرة (L.L.):</div>
+                <input id="pay-lbp" class="pay-input" type="number" oninput="calcPay()" style="background:#fff3e0;">
+            </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <div style="flex:1;">
+                <div style="font-size:11px; text-align:right; margin-bottom:2px">المرتجع دولار ($):</div>
+                <input id="returned-usd" class="pay-input" type="number" oninput="calcPay()" placeholder="أرجع للزبون $">
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:11px; text-align:right; margin-bottom:2px">المرتجع ليرة (L.L.):</div>
+                <input id="returned-lbp" class="pay-input" type="number" oninput="calcPay()" placeholder="أرجع للزبون ليرة">
+            </div>
+        </div>
+        <hr style="margin:10px 0; border-top:1px dashed #ccc">
+        <div id="pay-status-msg" style="font-size:14px; font-weight:bold; margin-bottom:5px; min-height:20px;"></div>
+        <input id="pay-balance-display" class="pay-input" type="text" disabled style="background:#eee; font-weight:900; color:#333; margin-top:5px;">
+        <button class="menu-btn btn-close" style="background:#2e7d32; color:#fff; border:none; margin-top:10px;" onclick="closeAllModals()">إتمام وإغلاق</button>
+    </div>
+</div>
+
+<div id="bills-modal" class="custom-modal">
+    <div class="modal-content" style="max-width:360px;">
+        <div class="modal-title">سجل الفواتير</div>
+        <button id="btn-bill-select-mode" class="menu-btn btn-select" onclick="toggleSelectionMode('bill')">✅ تحديد يدوي</button>
+        <div id="bill-selection-bar" class="selection-bar">
+            <button class="menu-btn" style="background:#e3f2fd; color:#1565c0; margin:0;" onclick="selectAllItems('bill')">الكل</button>
+            <button class="menu-btn" style="background:#ffebee; color:#c62828; margin:0;" onclick="deleteSelectedItems('bill')">🗑️ حذف المحدد</button>
+        </div>
+        <div id="saved-bills-list" style="max-height:300px; overflow-y:auto; text-align:left;"></div>
+        <button class="menu-btn btn-close" onclick="goBackModal()">إغلاق</button>
+    </div>
+</div>
+
+<div id="bill-details-modal" class="custom-modal">
+    <div class="modal-content" style="background:transparent; box-shadow:none; padding:0;">
+        <div id="bill-items-container" style="max-height:85vh; overflow-y:auto; border-radius:16px; background:#fff; padding:20px; box-shadow:0 10px 40px rgba(0,0,0,0.3); text-align:right;"></div>
+        <button class="menu-btn btn-close" style="background:#fff; margin-top:15px; border-radius:12px; font-weight:bold;" onclick="goBackModal()">إغلاق</button>
+    </div>
+</div>
+
+<div id="custom-alert" class="custom-modal"><div class="modal-content"><div id="alert-msg" style="margin-bottom:20px;font-weight:bold;"></div><button id="alert-ok" class="menu-btn btn-add" style="justify-content:center">حسناً</button></div></div>
+<div id="custom-confirm" class="custom-modal"><div class="modal-content"><div id="confirm-msg" style="margin-bottom:20px;font-weight:bold;"></div><div style="display:flex;gap:10px;"><button id="confirm-no" class="menu-btn">لا</button><button id="confirm-yes" class="menu-btn btn-close" style="margin:0;background:#c62828;color:#fff;">نعم</button></div></div></div>
+<div id="custom-prompt" class="custom-modal"><div class="modal-content"><div id="prompt-msg" style="margin-bottom:10px;"></div><input id="prompt-input" class="pay-input"><div style="display:flex;gap:10px"><button id="prompt-cancel" class="menu-btn">إلغاء</button><button id="prompt-ok" class="menu-btn btn-add" style="margin:0;justify-content:center">موافق</button></div></div></div>
+<div id="json-modal" class="custom-modal"><div class="modal-content"><div style="margin-bottom:10px">انسخ النص التالي:</div><textarea id="json-area" style="width:100%;height:100px;border:1px solid #ccc;font-size:10px"></textarea><button class="menu-btn btn-add" style="justify-content:center;margin-top:10px" onclick="doCopy()">نسخ</button><button class="menu-btn btn-close" onclick="goBackModal()">إغلاق</button></div></div>
+
+<div class="modal-overlay" onclick="goBackModal()"></div>
+<script>
+	let rawCustomers = JSON.parse(localStorage.getItem('customers')) || [];
+let customers = rawCustomers.map(c => typeof c === 'string' ? {name: c, address: '', phone: ''} : c);
+
+const defaultData = { col1: [], col2: [], col3: [], col4: [] };
+let itemData = JSON.parse(localStorage.getItem('itemData')) || defaultData;
+let savedBills = JSON.parse(localStorage.getItem('savedBills')) || [];
+let rate = parseFloat(localStorage.getItem('exchangeRate')) || 89000;
+let settingsPassword = localStorage.getItem('settingsPassword');
+
+let total = 0;
+let enteredNum = '';
+let customPriceMode = false;
+let receiptData = {};
+let sortMode = false;
+let sortFirstSelection = null;
+let currentEditCol = null;
+let currentEditIndex = null;
+let selectedColForAdd = 'col1';
+
+let custNameInput = "";
+let custAddressInput = "";
+let custPhoneInput = "";
+let isAddingCustomerFromMain = false;
+
+let selectedCustomerForBill = null;
+let currentViewedBillIndex = null;
+let currentStatementCustomer = null;
+let isAddingDebtTransaction = false;
+
+let selectionMode = { bill: false, customer: false };
+let selectedItems = { bill: new Set(), customer: new Set() };
+let modalStack = [];
+
+const getEl = (id) => document.getElementById(id);
+const fmt = (n) => n.toLocaleString('en-US');
+
+function vibrate(el) { 
+    if(navigator.vibrate) navigator.vibrate(30); 
+    if(el) { 
+        el.style.transform='scale(0.92)'; 
+        setTimeout(()=>el.style.transform='scale(1)', 100); 
+    } 
+}
+
+function showToast(msg) {
+    const t = getEl('toast-notification');
+    t.innerHTML = msg;
+    t.classList.add('show');
+    setTimeout(() => { t.classList.remove('show'); }, 2000);
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const activeModal = document.querySelector('.custom-modal[style*="flex"]');
+            if (activeModal) {
+                const submitBtn = activeModal.querySelector('.btn-add') || activeModal.querySelector('.btn-close');
+                if (submitBtn) submitBtn.click();
+            }
+        }
+        return; 
+    }
+    if (e.key >= '0' && e.key <= '9') { press(e.key); } 
+    else if (e.key === 'Backspace' || e.key === 'Delete') { clearInput(); } 
+    else if (e.key === 'Escape') { goBackModal(); } 
+    else if (e.key === 'Enter' || e.key === '+') { const anyModalOpen = document.querySelector('.custom-modal[style*="flex"]'); if (!anyModalOpen) openPay(); } 
+    else if (e.key.toLowerCase() === 's') { saveBill(); } 
+    else if (e.key.toLowerCase() === 'c') { openCustomerSelectModal(); }
+});
+
+function showModal(id) {
+    if (modalStack.length > 0) {
+        getEl(modalStack[modalStack.length - 1]).style.display = 'none';
+    }
+    modalStack = modalStack.filter(m => m !== id);
+    modalStack.push(id);
+    getEl(id).style.display = 'flex';
+}
+
+function goBackModal() {
+    if (modalStack.length > 1) {
+        const currentId = modalStack.pop();
+        getEl(currentId).style.display = 'none';
+        const previousId = modalStack[modalStack.length - 1];
+        getEl(previousId).style.display = 'flex';
+    } else {
+        closeAllModals();
+    }
+}
+
+function closeAllModals() {
+    document.querySelectorAll('.custom-modal').forEach(e => e.style.display = 'none');
+    modalStack = [];
+}
+
+function searchMainItems(term) {
+    const resDiv = getEl('main-search-results');
+    if (!term) { resDiv.style.display = 'none'; return; }
+    let matches = [];
+    ['col1','col2','col3','col4'].forEach(col => {
+        itemData[col].forEach(item => {
+            if(item.name && item.name.includes(term)) matches.push(item);
+        });
+    });
+    if(matches.length === 0) { resDiv.style.display = 'none'; return; }
+    let html = '';
+    matches.forEach(m => {
+        html += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px; cursor:pointer;" onclick="add('${m.name}', ${m.price}); getEl('main-search-input').value=''; getEl('main-search-results').style.display='none';">${m.name} - ${fmt(m.price)}</div>`;
+    });
+    resDiv.innerHTML = html;
+    resDiv.style.display = 'block';
+}
+
+function openCustomerSelectModal() { 
+    selectionMode.customer = false; 
+    selectedItems.customer.clear();
+    getEl('cust-select-search').value = '';
+    renderCustomerList('select'); 
+    showModal('customer-select-modal'); 
+}
+
+function openDebtManagement() { 
+    checkSettingsPassword(() => {
+        selectionMode.customer = false;
+        selectedItems.customer.clear();
+        getEl('cust-manage-search').value = '';
+        renderCustomerList('manage'); 
+        showModal('debt-manage-modal');
+    });
+}
+
+function renderCustomerList(mode, searchTerm = '') {
+    const listId = mode === 'select' ? 'customer-select-list' : 'debt-customer-list';
+    const listEl = getEl(listId);
+    listEl.innerHTML = '';
+    
+    if(mode === 'manage') {
+        getEl('btn-cust-select-mode').style.display = selectionMode.customer ? 'none' : 'flex';
+        getEl('cust-selection-bar').style.display = selectionMode.customer ? 'grid' : 'none';
+        getEl('btn-add-cust-manage').style.display = selectionMode.customer ? 'none' : 'flex';
+        listEl.className = selectionMode.customer ? 'showing-checks' : '';
+    }
+
+    let filtered = customers;
+    if(searchTerm) {
+        filtered = customers.filter(c => c.name.includes(searchTerm));
+    }
+
+    if (filtered.length === 0) { listEl.innerHTML = '<div style="text-align:center;color:#777;padding:10px;">لا يوجد زبائن</div>'; return; }
+
+    filtered.forEach(cust => {
+        const name = cust.name;
+        const div = document.createElement('div');
+        div.className = 'customer-row';
+        
+        let html = '';
+        if (mode === 'manage') {
+            const isSel = selectedItems.customer.has(name);
+            html += `<input type="checkbox" class="chk-select" ${isSel?'checked':''} onchange="toggleItemSelection('customer', '${name}', this)">`;
+        }
+
+        if (mode === 'select') {
+            div.innerHTML = `<span>${name}</span>`;
+            div.onclick = () => selectCustomerForBill(name);
+        } else {
+            const debt = savedBills.filter(b => b.customName === name).reduce((sum, b) => sum + b.total, 0);
+            html += `<div style="flex:1"><span>${name}</span> <span style="font-size:11px;color:${debt>=0?'#c62828':'#2e7d32'};font-weight:bold">${fmt(debt)} L.L.</span></div>`;
+            div.innerHTML = html;
+            setupCustomerInteraction(div, name);
+        }
+        listEl.appendChild(div);
+    });
+}
+
+function openAddCustomerModal(fromMain) {
+    isAddingCustomerFromMain = fromMain;
+    getEl('add-cust-name').value = '';
+    getEl('add-cust-address').value = '';
+    getEl('add-cust-phone').value = '';
+    showModal('add-customer-modal');
+}
+
+function confirmAddNewCustomer() {
+    const n = getEl('add-cust-name').value.trim();
+    const a = getEl('add-cust-address').value.trim();
+    const p = getEl('add-cust-phone').value.trim();
+    if(!n) return alertModal("الاسم مطلوب");
+    if(customers.find(c => c.name === n)) return alertModal("موجود مسبقاً");
+    customers.push({name: n, address: a, phone: p});
+    localStorage.setItem('customers', JSON.stringify(customers));
+    showToast("✅ تم الحفظ");
+    goBackModal();
+    if(isAddingCustomerFromMain) renderCustomerList('select'); else renderCustomerList('manage');
+}
+
+function selectCustomerForBill(name) {
+    selectedCustomerForBill = name;
+    getEl('current-customer-name').textContent = name;
+    getEl('customer-display').style.display = 'block';
+    
+    const foundCust = customers.find(c => c.name === name);
+    if (foundCust) {
+        custNameInput = foundCust.name;
+        custAddressInput = foundCust.address || '';
+        custPhoneInput = foundCust.phone || '';
+    } else {
+        custNameInput = name;
+        custAddressInput = '';
+        custPhoneInput = '';
+    }
+    renderReceipt();
+    
+    closeAllModals(); 
+    showToast(`👤 تم تحديد: ${name}`);
+}
+
+function setupCustomerInteraction(element, name) {
+    let timer; let startX, startY; let isScrolling = false; let isLongPress = false;
+    element.addEventListener('mousedown', (e) => { 
+        if(selectionMode.customer || e.target.type === 'checkbox') return;
+        timer = setTimeout(() => { isLongPress = true; confirmDeleteCustomer(name); }, 600); 
+    });
+    element.addEventListener('mouseup', (e) => { 
+        clearTimeout(timer); 
+        if(selectionMode.customer || e.target.type === 'checkbox') return;
+        if(!isLongPress) openCustomerStatement(name); 
+        isLongPress = false; 
+    });
+    element.addEventListener('touchstart', (e) => {
+        if(selectionMode.customer || e.target.type === 'checkbox') return;
+        startX = e.touches[0].clientX; startY = e.touches[0].clientY; isScrolling = false; isLongPress = false;
+        timer = setTimeout(() => { if (!isScrolling) { isLongPress = true; if(navigator.vibrate) navigator.vibrate(40); confirmDeleteCustomer(name); } }, 600);
+    }, {passive: true});
+    element.addEventListener('touchmove', (e) => { if (Math.abs(e.touches[0].clientX - startX) > 10 || Math.abs(e.touches[0].clientY - startY) > 10) { isScrolling = true; clearTimeout(timer); } }, {passive: true});
+    element.addEventListener('touchend', (e) => { 
+        clearTimeout(timer); 
+        if(selectionMode.customer || e.target.type === 'checkbox') return;
+        if (!isScrolling && !isLongPress) openCustomerStatement(name); 
+    });
+}
+
+async function confirmDeleteCustomer(name) {
+    if (await confirmModal(`حذف الزبون "${name}" نهائياً؟`)) {
+        customers = customers.filter(c => c.name !== name);
+        localStorage.setItem('customers', JSON.stringify(customers));
+        renderCustomerList('manage');
+    }
+}
+
+function openCustomerStatement(name) {
+    currentStatementCustomer = name;
+    const bills = savedBills.filter(b => b.customName === name);
+    const totalLBP = bills.reduce((sum, b) => sum + b.total, 0);
+    const totalUSD = totalLBP / rate;
+    const color = totalLBP >= 0 ? '#c62828' : '#2e7d32';
+
+    getEl('statement-title').innerHTML = `<span>كشف حساب: ${name}</span><span style="cursor:pointer; color:#777; font-size:22px; padding:0 10px;" onclick="showAllCustomerBills('${name}')">⋮</span>`;
+    
+    getEl('statement-summary').innerHTML = `
+        <div style="display:flex; justify-content:space-around; width:100%;">
+            <div style="text-align:center;">
+                <div style="font-size:12px; color:#555;">المجموع (L.L.)</div>
+                <div style="font-weight:900; color:${color}; font-size:18px;">${fmt(totalLBP)}</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:12px; color:#555;">المجموع ($)</div>
+                <div style="font-weight:900; color:${color}; font-size:18px;">$${totalUSD.toFixed(2)}</div>
+            </div>
+        </div>
+    `;
+    const list = getEl('statement-bills-list');
+    list.innerHTML = '';
+    if (bills.length === 0) {
+        list.innerHTML = '<div style="text-align:center;color:#999;font-size:12px;padding:20px">الحساب صافي</div>';
+    } else {
+        bills.reverse().forEach(bill => {
+            const div = document.createElement('div');
+            div.style.borderBottom = '1px solid #ddd'; div.style.marginBottom = '5px'; div.style.paddingBottom = '5px';
+            const isPayment = bill.total < 0; 
+            const isCashDebt = bill.note === "دين نقدي (كاش)";
+            let itemColor = isPayment ? '#2e7d32' : (isCashDebt ? '#c62828' : '#333');
+
+            let html = `<div style="display:flex;justify-content:space-between;font-weight:bold;font-size:12px;margin-bottom:3px;"><span>${bill.time.split(',')[0]}</span><span style="color:${itemColor}">${fmt(bill.total)}</span></div>`;
+            const items = Array.isArray(bill.items) ? bill.items : Object.values(bill.items);
+            items.forEach(item => {
+                html += `<div class="mini-bill-item"><span style="color:${itemColor};font-weight:${(isPayment||isCashDebt)?'bold':'normal'}">- ${item.name}</span><span>${item.count > 1 ? item.count + 'x' : ''} ${fmt(item.price)}</span></div>`;
+            });
+            div.innerHTML = html;
+            list.appendChild(div);
+        });
+    }
+    showModal('customer-statement-modal');
+}
+
+function showAllCustomerBills(name) {
+    const bills = savedBills.filter(b => b.customName === name);
+    const container = getEl('all-bills-container');
+    container.innerHTML = `<div style="font-size:16px; font-weight:900; text-align:center; margin-bottom:15px; color:#c62828;">فواتير: ${name}</div>`;
+    if(bills.length === 0) {
+        container.innerHTML += `<div style="text-align:center; color:#777;">لا يوجد فواتير</div>`;
+    } else {
+        bills.reverse().forEach((bill) => {
+            let d = `<div style="border:1px solid #eee; border-radius:10px; padding:12px; margin-bottom:15px; background:#fafafa; box-shadow:0 2px 5px rgba(0,0,0,0.05);">`;
+            d += `<div style="font-size:11px; color:#999; margin-bottom:10px; text-align:center; border-bottom:1px dashed #ccc; padding-bottom:5px;">${bill.time}</div>`;
+            d += '<table style="width:100%; font-size:12px; text-align:right;"><tr style="color:#777; border-bottom:1px solid #ddd;"><th style="padding:4px;">الصنف</th><th style="padding:4px; text-align:center;">الكمية</th><th style="padding:4px; text-align:left;">السعر</th></tr>';
+            const itemsList = Array.isArray(bill.items) ? bill.items : Object.values(bill.items);
+            itemsList.forEach(item => {
+                d += `<tr><td style="padding:6px 4px; font-weight:bold;">${item.name}</td><td style="padding:6px 4px; text-align:center; color:#c62828; font-weight:bold;">${item.count}</td><td style="padding:6px 4px; text-align:left; font-weight:bold;">${fmt(item.price)}</td></tr>`;
+            });
+            d += `</table>`;
+            d += `<div style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc; display:flex; justify-content:space-between; font-weight:bold; font-size:14px;"><span>الإجمالي:</span><span style="color:#c62828;">${fmt(bill.total)} L.L.</span></div>`;
+            d += `</div>`;
+            container.innerHTML += d;
+        });
+    }
+    showModal('all-customer-bills-modal');
+}
+
+function openPaymentModal(isDebt) {
+    isAddingDebtTransaction = isDebt;
+    getEl('payment-amount').value = '';
+    getEl('payment-modal-title').textContent = isDebt ? "تسجيل دين نقدي (كاش)" : "استلام دفعة من الحساب";
+    showModal('payment-modal');
+    setTimeout(() => getEl('payment-amount').focus(), 100);
+}
+
+function confirmTransaction(currency) {
+    if (!currentStatementCustomer) return;
+    const val = parseFloat(getEl('payment-amount').value);
+    if (isNaN(val) || val <= 0) return alertModal("المبلغ غير صحيح");
+
+    let amountLBP = 0, noteText = "", finalTotal = 0, billNote = "";
+    if (currency === 'USD') { amountLBP = val * rate; } else { amountLBP = val; }
+
+    if (isAddingDebtTransaction) {
+        finalTotal = amountLBP; 
+        billNote = "دين نقدي (كاش)";
+        noteText = `💸 سحب كاش (${currency === 'USD' ? '$' + val : fmt(val) + ' L.L.'})`;
+    } else {
+        finalTotal = -amountLBP;
+        billNote = "دفعة حساب";
+        noteText = `✅ دفعة نقدية (${currency === 'USD' ? '$' + val : fmt(val) + ' L.L.'})`;
+    }
+    const transactionBill = {
+        time: new Date().toLocaleString('ar-LB'),
+        total: finalTotal,
+        note: billNote,
+        customName: currentStatementCustomer,
+        items: [{ name: noteText, price: finalTotal, count: 1, unitPrice: finalTotal }]
+    };
+    savedBills.push(transactionBill);
+    localStorage.setItem('savedBills', JSON.stringify(savedBills));
+    showToast(isAddingDebtTransaction ? "تم تسجيل الدين" : "تم تسجيل الدفعة");
+    goBackModal();
+    openCustomerStatement(currentStatementCustomer);
+}
+
+async function clearCustomerDebt() {
+    if (!currentStatementCustomer) return;
+    if (await confirmModal(`تصفية حساب "${currentStatementCustomer}"؟`)) {
+        savedBills = savedBills.filter(b => b.customName !== currentStatementCustomer);
+        localStorage.setItem('savedBills', JSON.stringify(savedBills));
+        showToast("✅ تم تصفية الحساب");
+        openCustomerStatement(currentStatementCustomer);
+    }
+}
+
+function openSavedBills() { 
+    checkSettingsPassword(() => { 
+        selectionMode.bill = false;
+        selectedItems.bill.clear();
+        renderBillsList(); 
+        showModal('bills-modal'); 
+    }); 
+}
+
+function renderBillsList() {
+    const list = getEl('saved-bills-list'); list.innerHTML = '';
+    
+    getEl('btn-bill-select-mode').style.display = selectionMode.bill ? 'none' : 'flex';
+    getEl('bill-selection-bar').style.display = selectionMode.bill ? 'grid' : 'none';
+    list.className = selectionMode.bill ? 'showing-checks' : '';
+
+    if (savedBills.length === 0) { list.innerHTML = '<div style="text-align:center; padding:20px; color:#777;">السجل فارغ</div>'; return; }
+    
+    [...savedBills].reverse().forEach((bill, reversedIndex) => {
+        const originalIndex = savedBills.length - 1 - reversedIndex;
+        const div = document.createElement('div'); div.className = 'bill-row';
+        
+        const isPay = bill.total < 0; 
+        const isDebt = bill.note === "دين نقدي (كاش)";
+        
+        let htmlContent = '';
+        if(selectionMode.bill) {
+             const isSel = selectedItems.bill.has(originalIndex);
+             htmlContent += `<input type="checkbox" class="chk-select" ${isSel?'checked':''} onchange="toggleItemSelection('bill', ${originalIndex}, this)">`;
+        }
+        
+        htmlContent += `<div style="flex:1"><div style="display:flex; justify-content:space-between; align-items:center; pointer-events: none;"><span style="font-weight:bold; color:#333;">#${savedBills.length - reversedIndex}</span><span style="font-size:12px; color:#666;">${bill.time.split(',')[1] || bill.time}</span></div>`;
+        if (bill.customName) { htmlContent += `<div class="bill-note" style="pointer-events: none; background:${isPay?'#2e7d32':(isDebt?'#c62828':'#1976d2')}">👤 ${bill.customName}</div>`; } 
+        else if (bill.note) { htmlContent += `<div style="font-size:11px; color:#1976d2; margin-top:2px; pointer-events: none;">📝 ${bill.note}</div>`; }
+        htmlContent += `<div style="text-align:left; font-weight:900; color:${isPay?'#2e7d32':(isDebt?'#c62828':'#bf360c')}; margin-top:5px; pointer-events: none;">${fmt(bill.total)} L.L.</div></div>`;
+        
+        div.innerHTML = htmlContent; 
+        setupBillInteraction(div, originalIndex); 
+        list.appendChild(div);
+    });
+    
+    if(!selectionMode.bill) {
+        const clearBtn = document.createElement('button'); clearBtn.className = 'btn-clear-history'; clearBtn.innerHTML = '🗑️ مسح السجل بالكامل (عام)'; clearBtn.onclick = clearAllHistory; list.appendChild(clearBtn);
+    }
+}
+
+function setupBillInteraction(element, index) {
+    let timer; let startX, startY; let isScrolling = false; let isLongPress = false;
+    element.addEventListener('mousedown', (e) => { 
+        if(selectionMode.bill || e.target.type === 'checkbox') return;
+        timer = setTimeout(() => { isLongPress = true; confirmDeleteBill(index); }, 600); 
+    });
+    element.addEventListener('mouseup', (e) => { 
+        clearTimeout(timer); 
+        if(selectionMode.bill || e.target.type === 'checkbox') return;
+        if (!isLongPress) showBillDetails(index); 
+        isLongPress = false; 
+    });
+    element.addEventListener('touchstart', (e) => { 
+        if(selectionMode.bill || e.target.type === 'checkbox') return;
+        startX = e.touches[0].clientX; startY = e.touches[0].clientY; isScrolling = false; isLongPress = false; 
+        timer = setTimeout(() => { if (!isScrolling) { isLongPress = true; if(navigator.vibrate) navigator.vibrate(40); confirmDeleteBill(index); } }, 600); 
+    }, {passive: true});
+    element.addEventListener('touchmove', (e) => { if (Math.abs(e.touches[0].clientX - startX) > 10 || Math.abs(e.touches[0].clientY - startY) > 10) { isScrolling = true; clearTimeout(timer); } }, {passive: true});
+    element.addEventListener('touchend', (e) => { 
+        clearTimeout(timer); 
+        if(selectionMode.bill || e.target.type === 'checkbox') return;
+        if (!isScrolling && !isLongPress) showBillDetails(index); 
+    });
+}
+
+function toggleSelectionMode(type) {
+    selectionMode[type] = !selectionMode[type];
+    selectedItems[type].clear();
+    if(type === 'bill') renderBillsList();
+    else renderCustomerList('manage');
+}
+
+function toggleItemSelection(type, id, checkbox) {
+    if(checkbox.checked) selectedItems[type].add(id);
+    else selectedItems[type].delete(id);
+}
+
+function selectAllItems(type) {
+    if(type === 'bill') {
+        savedBills.forEach((_, idx) => selectedItems.bill.add(idx));
+        renderBillsList();
+    } else {
+        customers.forEach(cust => selectedItems.customer.add(cust.name));
+        renderCustomerList('manage');
+    }
+}
+
+async function deleteSelectedItems(type) {
+    if(selectedItems[type].size === 0) return showToast("لم يتم تحديد شيء");
+    
+    if(await confirmModal(`هل أنت متأكد من حذف ${selectedItems[type].size} عنصر؟`)) {
+        if(type === 'bill') {
+            const ids = Array.from(selectedItems[type]).sort((a,b)=>b-a);
+            ids.forEach(idx => savedBills.splice(idx, 1));
+            localStorage.setItem('savedBills', JSON.stringify(savedBills));
+            selectedItems.bill.clear();
+            renderBillsList();
+        } else {
+            const namesToDelete = Array.from(selectedItems.customer);
+            customers = customers.filter(c => !namesToDelete.includes(c.name));
+            localStorage.setItem('customers', JSON.stringify(customers));
+            selectedItems.customer.clear();
+            renderCustomerList('manage');
+        }
+        showToast("✅ تم الحذف");
+    }
+}
+
+async function confirmDeleteBill(index) { 
+    if (await confirmModal("حذف هذه الفاتورة؟")) { 
+        savedBills.splice(index, 1); 
+        localStorage.setItem('savedBills', JSON.stringify(savedBills)); 
+        renderBillsList();
+    } 
+}
+
+async function saveBill() {
+    if(total===0) return alertModal("الفاتورة فارغة");
+    
+    let finalName = selectedCustomerForBill || custNameInput;
+    let finalAddress = custAddressInput;
+    let finalPhone = custPhoneInput;
+
+    if (selectedCustomerForBill) {
+        const foundCust = customers.find(c => c.name === selectedCustomerForBill);
+        if (foundCust) {
+            finalAddress = foundCust.address || custAddressInput;
+            finalPhone = foundCust.phone || custPhoneInput;
+        }
+    }
+
+    savedBills.push({ 
+        time: new Date().toLocaleString('ar-LB'), 
+        total: total, 
+        customName: finalName, 
+        custAddress: finalAddress,
+        custPhone: finalPhone,
+        items: JSON.parse(JSON.stringify(receiptData)) 
+    });
+    localStorage.setItem('savedBills', JSON.stringify(savedBills));
+    reset(); 
+    showToast(`✅ تم الحفظ باسم: ${finalName || 'عام'}`);
+}
+
+function showBillDetails(index) {
+    currentViewedBillIndex = index; 
+    const bill = savedBills[index]; 
+    const container = getEl('bill-items-container'); 
+    container.innerHTML = '';
+    
+    let detailsHtml = '<div style="position:relative;">';
+    detailsHtml += '<div onclick="toggleBillMenu()" style="position:absolute; top:0px; left:0px; padding:5px 10px; cursor:pointer; font-size:20px; color:#777; z-index:5;">⋮</div>';
+    detailsHtml += '<div id="bill-action-menu" style="display:none; position:absolute; top:30px; left:0px; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.15); border-radius:8px; padding:5px; z-index:10; border:1px solid #eee;"><button onclick="renameCurrentBill(); toggleBillMenu();" style="background:none; border:none; padding:8px 15px; font-family:inherit; font-size:13px; font-weight:bold; cursor:pointer; color:#333; width:100%; text-align:right;">✏️ تعديل اسم الفاتورة</button></div>';
+    detailsHtml += '<div style="text-align:center; margin-bottom:15px; border-bottom:1px dashed #eee; padding-bottom:10px;"><div style="font-size:18px; font-weight:900; color:#c62828;">🧾 فاتورة</div><div style="font-size:12px; color:#999; margin-top:5px;">' + bill.time + '</div></div>';
+
+    let hasCustData = bill.customName || bill.custAddress || bill.custPhone;
+    let custNoteHTML = bill.note && bill.note !== "دين نقدي (كاش)" && bill.note !== "دفعة حساب" ? ('<tr><td style="color:#777; padding:4px 0; width:50px;">ملاحظة:</td><td style="font-weight:bold; padding:4px 0;">' + bill.note + '</td></tr>') : '';
+
+    if (hasCustData || custNoteHTML !== '') {
+        detailsHtml += '<div style="background:#f9f9f9; border:1px solid #f0f0f0; border-radius:8px; padding:10px; margin-bottom:15px;"><div style="font-size:11px; color:#888; margin-bottom:8px; display:flex; align-items:center; gap:5px;"><span>📋</span><span>بيانات الزبون</span></div><table style="width:100%; font-size:13px; border-collapse:collapse; text-align:right;">';
+        if (bill.customName) detailsHtml += '<tr><td style="color:#777; padding:4px 0; width:50px;">الاسم:</td><td style="font-weight:bold; padding:4px 0; color:#333;">' + bill.customName + '</td></tr>';
+        if (bill.custAddress) detailsHtml += '<tr><td style="color:#777; padding:4px 0; width:50px;">العنوان:</td><td style="font-weight:bold; padding:4px 0; color:#333;">' + bill.custAddress + '</td></tr>';
+        if (bill.custPhone) detailsHtml += '<tr><td style="color:#777; padding:4px 0; width:50px;">الهاتف:</td><td style="font-weight:bold; padding:4px 0; color:#333;">' + bill.custPhone + '</td></tr>';
+        detailsHtml += custNoteHTML;
+        detailsHtml += '</table></div>';
+    }
+
+    detailsHtml += '<table style="width:100%; font-size:12px; border-collapse:collapse; margin-bottom:15px; text-align:right;"><tr style="border-bottom:2px solid #eee; color:#777;"><th style="padding:8px 4px;">الصنف</th><th style="padding:8px 4px; text-align:center;">الكمية</th><th style="padding:8px 4px; text-align:left;">الإجمالي</th></tr>';
+    
+    const itemsList = Array.isArray(bill.items) ? bill.items : Object.values(bill.items);
+    itemsList.forEach(item => { 
+        detailsHtml += '<tr style="border-bottom:1px solid #f9f9f9;"><td style="padding:10px 4px; font-weight:bold; color:#333;">' + item.name + '</td><td style="padding:10px 4px; text-align:center; color:#c62828; font-weight:bold;">' + item.count + '</td><td style="padding:10px 4px; text-align:left; font-weight:bold; color:#333;">' + fmt(item.price) + '</td></tr>'; 
+    });
+    
+    detailsHtml += '</table>'; 
+    detailsHtml += '<div style="border-top:2px dashed #eee; padding-top:15px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><span style="color:#777; font-size:14px;">المجموع</span><span style="font-weight:900; color:#c62828; font-size:18px;">.L.L ' + fmt(bill.total) + '</span></div><div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:#999; font-size:12px;">بالدولار</span><span style="font-weight:bold; color:#2e7d32; font-size:14px;">$' + (bill.total/rate).toFixed(2) + '</span></div></div></div>';
+    
+    container.innerHTML = detailsHtml; 
+    showModal('bill-details-modal');
+}
+
+function toggleBillMenu() {
+    const menu = getEl('bill-action-menu');
+    if(menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+async function clearAllHistory() { 
+    if (await confirmModal("⚠️ مسح سجل الفواتير العامة؟<br><small>ملاحظة: الديون لن تُحذف.</small>")) { 
+        savedBills = savedBills.filter(b => b.customName && b.customName.trim() !== "");
+        localStorage.setItem('savedBills', JSON.stringify(savedBills)); 
+        showToast("✅ تم مسح السجل العام");
+        renderBillsList(); 
+    } 
+}
+
+async function clearDailyReport() {
+    if (await confirmModal("⚠️ تصفير العداد (شيفت جديد)؟")) {
+        const today = new Date().toLocaleDateString('ar-LB');
+        const standardDate = new Date().toLocaleDateString();
+        savedBills = savedBills.filter(b => {
+            const isToday = b.time.includes(today) || b.time.includes(standardDate);
+            const hasCustomer = b.customName && b.customName !== "";
+            return !isToday || hasCustomer;
+        });
+        localStorage.setItem('savedBills', JSON.stringify(savedBills));
+        showToast("✅ تم تصفير العداد وبدء شيفت جديد");
+        closeAllModals();
+    }
+}
+
+function renderItems() { ['col1','col2','col3','col4'].forEach(colKey => { const colEl = getEl(colKey); colEl.innerHTML = ''; itemData[colKey].forEach((item, index) => { const btn = document.createElement('button'); btn.className = 'btn'; btn.textContent = item.name; if(item.price === 0 && item.name === "") { btn.style.opacity = "0.5"; btn.style.borderStyle = "dashed"; btn.textContent = ""; } if (item.color) btn.style.borderLeftColor = item.color; setupSmartButton(btn, colKey, index, item); colEl.appendChild(btn); }); }); getEl('rate-display').textContent = `سعر الصرف: ${fmt(rate)}`; }
+
+function setupSmartButton(btn, colKey, index, item) {
+    let timer; let startX, startY; let isScrolling = false; let isLongPress = false;
+    btn.addEventListener('mousedown', () => { 
+        vibrate(btn);
+        timer = setTimeout(async () => { isLongPress = true; if(!sortMode) await checkSettingsPassword(() => openEditModal(colKey, index)); }, 600); 
+    });
+    btn.addEventListener('mouseup', () => { clearTimeout(timer); if (!isLongPress) { if (sortMode) handleSortSelection(colKey, index, btn); else add(item.name, item.price); } isLongPress = false; });
+    btn.addEventListener('touchstart', (e) => {
+        vibrate(btn);
+        startX = e.touches[0].clientX; startY = e.touches[0].clientY; isScrolling = false; isLongPress = false;
+        timer = setTimeout(async () => { if (!isScrolling) { isLongPress = true; if(!sortMode) await checkSettingsPassword(() => openEditModal(colKey, index)); } }, 600);
+    }, {passive: true});
+    btn.addEventListener('touchmove', (e) => { const moveX = Math.abs(e.touches[0].clientX - startX); const moveY = Math.abs(e.touches[0].clientY - startY); if (moveX > 10 || moveY > 10) { isScrolling = true; clearTimeout(timer); } }, {passive: true});
+    btn.addEventListener('touchend', (e) => { clearTimeout(timer); if (isScrolling) return; if (isLongPress) return; e.preventDefault(); if (sortMode) handleSortSelection(colKey, index, btn); else add(item.name, item.price); });
+}
+
+function press(num) { vibrate(event.target); if(enteredNum === '0') enteredNum = ''; enteredNum += num; updateInputDisplay(); }
+function updateInputDisplay() { getEl('input-box').textContent = enteredNum || '0'; }
+function clearInput() { enteredNum = ''; customPriceMode = false; getEl('input-box').style.background = '#fff'; getEl('input-box').style.borderColor = '#e0e0e0'; updateInputDisplay(); }
+function activatePrice() { vibrate(event.target); customPriceMode = true; getEl('input-box').style.background = '#fff9c4'; getEl('input-box').style.borderColor = '#fbc02d'; updateInputDisplay(); }
+
+function add(name, defaultPrice) { 
+    let finalPrice = defaultPrice; 
+    let qty = 1; 
+    if (customPriceMode) { 
+        if (enteredNum && enteredNum !== '0') finalPrice = parseFloat(enteredNum); 
+    } else { 
+        if (enteredNum && enteredNum !== '0') qty = parseFloat(enteredNum); 
+    } 
+    total += (finalPrice * qty); 
+    const isCustom = (finalPrice !== defaultPrice); 
+    const key = name + (isCustom ? '_' + Date.now() : ''); 
+    if(!receiptData[key]) receiptData[key] = {name:name, price:0, count:0, unitPrice: finalPrice}; 
+    receiptData[key].price += (finalPrice * qty); 
+    receiptData[key].count += qty; 
+    enteredNum = ''; 
+    customPriceMode = false; 
+    getEl('input-box').style.background = '#fff'; 
+    getEl('input-box').style.borderColor = '#e0e0e0'; 
+    updateInputDisplay(); 
+    updateTotal(); 
+    renderReceipt(); 
+}
+
+function updateTotal() { getEl('total-lbp').textContent = `المجموع: ${fmt(total)}`; getEl('total-usd').textContent = `$${(total/rate).toFixed(2)}`; const count = Object.values(receiptData).reduce((a,b)=>a+b.count,0); getEl('total-items').textContent = `عدد الأصناف: ${count}`; }
+function toggleReceipt() { const box = getEl('receipt'); box.classList.toggle('show'); renderReceipt(); }
+
+function searchCartCustomer(term) {
+    custNameInput = term;
+    const resDiv = getEl('cart-cust-dropdown');
+    if(!term) { resDiv.style.display = 'none'; return; }
+    const matches = customers.filter(c => c.name.includes(term));
+    if(matches.length === 0) { resDiv.style.display = 'none'; return; }
+    let html = '';
+    matches.forEach(m => {
+        html += '<div style="padding:8px; border-bottom:1px solid #eee; font-size:11px; cursor:pointer;" onclick="selectCartCustomer(\'' + m.name + '\', \'' + m.address + '\', \'' + m.phone + '\')">' + m.name + '</div>';
+    });
+    resDiv.innerHTML = html;
+    resDiv.style.display = 'block';
+}
+
+function selectCartCustomer(n, a, p) {
+    custNameInput = n; 
+    custAddressInput = a; 
+    custPhoneInput = p;
+    renderReceipt();
+}
+
+function renderReceipt() { 
+    const box = getEl('receipt'); 
+    let html = '<div style="text-align:center;border-bottom:1px solid #eee;padding-bottom:5px;font-weight:bold;margin-bottom:5px;">قائمة الطلبات</div><div id="receipt-items-list" style="flex:1;overflow-y:auto;margin-bottom:10px;">'; 
+    for(const [key, item] of Object.entries(receiptData)) { 
+        html += '<div style="padding:6px 0; border-bottom:1px dashed #eee; display:flex; justify-content:space-between; font-size:11px; cursor:pointer;" onclick="removeItem(\'' + key + '\', ' + item.price + ')"><div><span>' + item.name + '</span>' + (item.count > 1 ? '<span style="color:#c62828;font-weight:bold">x' + item.count + '</span>' : '') + '<div style="font-size:9px;color:#777">' + fmt(item.unitPrice) + '</div></div><span style="font-weight:bold">' + fmt(item.price) + '</span></div>'; 
+    } 
+    html += '</div>'; 
+    if(box.classList.contains('show')) { 
+        html += '<div style="border-top:2px solid #333; padding-top:8px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;"><span style="font-weight:900; font-size:14px;">المجموع:</span><span style="font-weight:900; font-size:15px; color:#bf360c">' + fmt(total) + '</span></div><div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:#555;">بالدولار:</span><span style="font-weight:bold; font-size:14px; color:#2e7d32; font-family:sans-serif;">$' + (total/rate).toFixed(2) + '</span></div></div>';
+        html += '<div style="font-size:11px; margin-top:15px; font-weight:bold; color:#555; border-bottom:1px solid #eee; padding-bottom:5px; margin-bottom:5px;">بيانات الزبون:</div>';
+        
+        html += '<div style="position:relative;">';
+        html += '<input id="receipt-cust-name" type="text" oninput="searchCartCustomer(this.value)" value="' + custNameInput + '" placeholder="الاسم" style="width:100%; border:1px solid #ccc; padding:6px; font-size:12px; margin-bottom:5px; border-radius:6px;">';
+        html += '<div id="cart-cust-dropdown" style="display:none; position:absolute; top:35px; right:0; width:100%; background:#fff; border:1px solid #ddd; border-radius:6px; box-shadow:0 4px 8px rgba(0,0,0,0.1); z-index:10; max-height:120px; overflow-y:auto;"></div>';
+        html += '</div>';
+
+        html += '<input id="receipt-cust-address" type="text" oninput="custAddressInput=this.value" value="' + custAddressInput + '" placeholder="العنوان" style="width:100%; border:1px solid #ccc; padding:6px; font-size:12px; margin-bottom:5px; border-radius:6px;">';
+        html += '<input id="receipt-cust-phone" type="text" oninput="custPhoneInput=this.value" value="' + custPhoneInput + '" placeholder="رقم الهاتف" style="width:100%; border:1px solid #ccc; padding:6px; font-size:12px; border-radius:6px;">';
+    } 
+    box.innerHTML = html; 
+    const list = document.getElementById('receipt-items-list'); 
+    if(list) list.scrollTop = list.scrollHeight; 
+}
+
+async function removeItem(key, price) { if(await confirmModal("حذف هذا الصنف؟")) { total -= price; delete receiptData[key]; updateTotal(); renderReceipt(); } }
+
+async function saveBill() {
+    if(total===0) return alertModal("الفاتورة فارغة");
+    
+    let finalName = selectedCustomerForBill || custNameInput;
+    let finalAddress = custAddressInput;
+    let finalPhone = custPhoneInput;
+
+    if (selectedCustomerForBill) {
+        const foundCust = customers.find(c => c.name === selectedCustomerForBill);
+        if (foundCust) {
+            finalAddress = foundCust.address || custAddressInput;
+            finalPhone = foundCust.phone || custPhoneInput;
+        }
+    }
+
+    savedBills.push({ 
+        time: new Date().toLocaleString('ar-LB'), 
+        total: total, 
+        customName: finalName, 
+        custAddress: finalAddress,
+        custPhone: finalPhone,
+        items: JSON.parse(JSON.stringify(receiptData)) 
+    });
+    localStorage.setItem('savedBills', JSON.stringify(savedBills));
+    reset(); 
+    showToast(`✅ تم الحفظ باسم: ${finalName || 'عام'}`);
+}
+
+function reset() { 
+    vibrate(event.target); 
+    total = 0; 
+    receiptData = {}; 
+    custNameInput = ""; 
+    custAddressInput = ""; 
+    custPhoneInput = ""; 
+    selectedCustomerForBill = null; 
+    getEl('customer-display').style.display = 'none'; 
+    clearInput(); 
+    updateTotal(); 
+    getEl('receipt').innerHTML=''; 
+    getEl('receipt').classList.remove('show'); 
+    closeAllModals(); 
+}
+
+function openPay() { 
+    if(total===0) return alertModal("لا يوجد طلبات!"); 
+    getEl('pay-usd').value=''; 
+    getEl('pay-lbp').value=''; 
+    getEl('returned-usd').value=''; 
+    getEl('returned-lbp').value=''; 
+    calcPay(); 
+    showModal('pay-box-modal'); 
+    setTimeout(() => { getEl('pay-usd').focus(); }, 100);
+}
+
+function calcPay() { 
+    const pUsd = Number(getEl('pay-usd').value)||0; 
+    const pLbp = Number(getEl('pay-lbp').value)||0; 
+    const rUsd = Number(getEl('returned-usd').value)||0; 
+    const rLbp = Number(getEl('returned-lbp').value)||0; 
+    const totalGiven = (pUsd * rate) + pLbp;
+    const totalReturned = (rUsd * rate) + rLbp;
+    const netPaid = totalGiven - totalReturned;
+    const diff = total - netPaid;
+    const statusEl = getEl('pay-status-msg');
+    const displayEl = getEl('pay-balance-display');
+    
+    if (Math.abs(diff) < 500) {
+        statusEl.textContent = "✅ خالص (Balanced)";
+        statusEl.style.color = "#2e7d32";
+        displayEl.value = "0 L.L.";
+        displayEl.style.background = "#e8f5e9";
+        displayEl.style.color = "#2e7d32";
+    } else if (diff > 0) {
+        statusEl.textContent = "⚠️ باقي عليه (Remaining):";
+        statusEl.style.color = "#c62828";
+        displayEl.value = fmt(Math.ceil(diff/500)*500) + " L.L.";
+        displayEl.style.background = "#ffebee";
+        displayEl.style.color = "#c62828";
+    } else {
+        statusEl.textContent = "💰 باقي للزبون (Change Due):";
+        statusEl.style.color = "#1565c0";
+        displayEl.value = fmt(Math.abs(Math.round(diff/500)*500)) + " L.L.";
+        displayEl.style.background = "#e3f2fd";
+        displayEl.style.color = "#1565c0";
+    }
+}
+
+function openSettings() { checkSettingsPassword(() => { updatePassBtn(); showModal('settings-modal'); }); }
+async function checkSettingsPassword(callback) { if(!settingsPassword) return callback(); const p = await promptModal("🔒 كلمة المرور:", true); if(p === settingsPassword) callback(); else if(p !== null) alertModal("❌ كلمة المرور خاطئة"); }
+async function managePassword() { if(settingsPassword) { const p = await promptModal("كلمة المرور الحالية:", true); if(p === settingsPassword) { localStorage.removeItem('settingsPassword'); settingsPassword = null; await alertModal("✅ تم إلغاء الحماية"); openSettings(); } else if(p !== null) { await alertModal("❌ خطأ"); openSettings(); } } else { const newP = await promptModal("كلمة مرور جديدة:", true); if(newP) { localStorage.setItem('settingsPassword', newP); settingsPassword = newP; await alertModal("✅ تمت الحماية"); openSettings(); } } }
+function updatePassBtn() { const btn = getEl('pass-btn'); if(settingsPassword) { btn.innerHTML = '<span class="icon">🔓</span> إلغاء كلمة المرور'; btn.style.background = '#ffebee'; btn.style.color = '#c62828'; btn.style.borderColor = '#ffcdd2'; } else { btn.innerHTML = '<span class="icon">🔒</span> حماية الإعدادات'; btn.style.background = '#e3f2fd'; btn.style.color = '#0d47a1'; btn.style.borderColor = '#bbdefb'; } }
+function openAddItemModal() { getEl('new-item-name').value = ''; getEl('new-item-price').value = ''; selectCol('col1'); showModal('add-item-modal'); }
+function selectCol(col) { selectedColForAdd = col; ['col1','col2','col3','col4'].forEach(c => { getEl('btn-'+c).style.background = (c===col) ? '#c8e6c9' : '#fff'; }); }
+function confirmAddItem() { const name = getEl('new-item-name').value.trim(); const price = Number(getEl('new-item-price').value); if(!name) return alertModal("الاسم مطلوب!"); itemData[selectedColForAdd].push({name, price}); saveData(); goBackModal(); alertModal("✅ تم إضافة الصنف"); }
+function toggleSortMode() { sortMode = !sortMode; sortFirstSelection = null; getEl('sort-indicator').style.display = sortMode ? 'flex' : 'none'; if(sortMode) renderItems(); goBackModal(); }
+function handleSortSelection(col, index, btn) { vibrate(btn); if (!sortFirstSelection) { sortFirstSelection = {col, index}; btn.classList.add('sorting-selected'); } else { const s1 = sortFirstSelection; const temp = itemData[s1.col][s1.index]; itemData[s1.col][s1.index] = itemData[col][index]; itemData[col][index] = temp; sortFirstSelection = null; saveData(); } }
+function openEditModal(col, idx) { currentEditCol = col; currentEditIndex = idx; const item = itemData[col][idx]; getEl('edit-name').value = item.name; getEl('edit-price').value = item.price; showModal('edit-modal'); }
+function saveItemEdit() { const name = getEl('edit-name').value; const price = Number(getEl('edit-price').value); if(!name) return; itemData[currentEditCol][currentEditIndex] = { ...itemData[currentEditCol][currentEditIndex], name, price }; saveData(); goBackModal(); }
+async function deleteItem() { if(await confirmModal("حذف الصنف نهائياً؟")) { itemData[currentEditCol].splice(currentEditIndex, 1); saveData(); goBackModal(); } }
+async function changeExchangeRate() { const val = await promptModal(`السعر الحالي: ${fmt(rate)}`, false); if(val && !isNaN(val)) { rate = parseFloat(val); localStorage.setItem('exchangeRate', rate); renderItems(); updateTotal(); } }
+function showDailyReport() { openDailyReportModal(); }
+function openDailyReportModal() {
+    const today = new Date().toLocaleDateString('ar-LB');
+    const dayBills = savedBills.filter(b => b.time.includes(today) || b.time.includes(new Date().toLocaleDateString()));
+    const totalCash = dayBills.reduce((a,b)=>a+b.total,0);
+    const content = `<div style="text-align:center; padding:10px;"><div style="font-size:14px; color:#555; margin-bottom:5px;">التاريخ: ${today}</div><div style="font-size:16px; font-weight:bold; margin-bottom:15px;">عدد العمليات: ${dayBills.length}</div><div style="font-size:24px; font-weight:900; color:#2e7d32; margin-bottom:5px;">${fmt(totalCash)} L.L.</div><div style="font-size:14px; color:#555;">($${(totalCash/rate).toFixed(2)})</div></div>`;
+    getEl('daily-report-content').innerHTML = content;
+    showModal('daily-report-modal');
+}
+async function renameCurrentBill() { if (currentViewedBillIndex === null) return; const newName = await promptModal("اسم الفاتورة / الزبون:", false); if (newName !== null) { savedBills[currentViewedBillIndex].customName = newName; localStorage.setItem('savedBills', JSON.stringify(savedBills)); alertModal("✅ تم تعديل الاسم"); renderBillsList(); } }
+
+function exportDataAndCopy() { getEl('json-area').value = JSON.stringify(itemData); showModal('json-modal'); }
+function doCopy() { getEl('json-area').select(); document.execCommand('copy'); alertModal("تم النسخ!"); }
+async function openJsonImport() { const data = await promptModal("الصق الكود هنا:"); if(data) { try { itemData = JSON.parse(data); saveData(); alertModal("تم الاسترجاع!"); } catch(e) { alertModal("كود خاطئ"); } } }
+async function clearAllData() { if(await confirmModal("حذف كل شيء؟")) { localStorage.clear(); location.reload(); } }
+function saveData() { localStorage.setItem('itemData', JSON.stringify(itemData)); renderItems(); }
+
+function alertModal(msg) { getEl('alert-msg').innerHTML = msg; showModal('custom-alert'); return new Promise(r => getEl('alert-ok').onclick = () => { goBackModal(); r(); }); }
+function confirmModal(msg) { getEl('confirm-msg').innerHTML = msg; showModal('custom-confirm'); return new Promise(r => { getEl('confirm-yes').onclick = () => { goBackModal(); r(true); }; getEl('confirm-no').onclick = () => { goBackModal(); r(false); }; }); }
+function promptModal(msg, isPass) { getEl('prompt-msg').innerHTML = msg; const inp = getEl('prompt-input'); inp.value=''; inp.type=isPass?'password':'text'; showModal('custom-prompt'); inp.focus(); return new Promise(r => { getEl('prompt-ok').onclick = () => { goBackModal(); r(inp.value); }; getEl('prompt-cancel').onclick = () => { goBackModal(); r(null); }; }); }
+
+window.onload = renderItems;
+</script>
 </body>
 </html>
