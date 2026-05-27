@@ -1543,6 +1543,8 @@ let baseStatusText = 'غير متصل';
 let baseStatusColor = 'var(--text-secondary)';
 
 async function openChat(chatId, friendUid, friendProfile=null){
+  cancelReply(); // إغلاق أي رد معلق سابق أو خطأ في الواجهة
+  
   if(!friendProfile){
     const snap = await db.ref('users/'+friendUid).once('value');
     friendProfile = snap.val();
@@ -1582,19 +1584,23 @@ async function openChat(chatId, friendUid, friendProfile=null){
     } else {
       baseStatusText = '🔴 غير متصل'; baseStatusColor = 'var(--text-secondary)';
     }
-    statusEl.textContent = baseStatusText; statusEl.style.color = baseStatusColor;
+    // استدعاء العنصر مباشرة لضمان عدم ضياع الإشارة في الـ DOM
+    const el = document.getElementById('chat-header-status');
+    if(el) { el.textContent = baseStatusText; el.style.color = baseStatusColor; }
   });
 
   if(typingRef && typingListener) typingRef.off('value', typingListener);
   typingRef = db.ref('chats/' + chatId + '/typing/' + friendUid);
   typingListener = typingRef.on('value', snap => {
     const state = snap.val();
+    const el = document.getElementById('chat-header-status');
+    if(!el) return;
     if (state === 'typing') {
-      statusEl.textContent = '✍️ يكتب الآن...'; statusEl.style.color = 'var(--neon-cyan)';
+      el.textContent = '✍️ يكتب الآن...'; el.style.color = 'var(--neon-cyan)';
     } else if (state === 'recording') {
-      statusEl.textContent = '🎙️ يسجل مقطع صوتي...'; statusEl.style.color = 'var(--neon-pink)';
+      el.textContent = '🎙️ يسجل مقطع صوتي...'; el.style.color = 'var(--neon-pink)';
     } else {
-      statusEl.textContent = baseStatusText; statusEl.style.color = baseStatusColor;
+      el.textContent = baseStatusText; el.style.color = baseStatusColor;
     }
   });
 
@@ -1677,7 +1683,6 @@ function attachMessages(chatId) {
 }
 
 function buildMsgEl(msg) {
-  // إذا كانت الرسالة محذوفة
   if (msg.isDeleted) {
     const delRow = document.createElement('div');
     const delIsOut = msg.senderUid === currentUser.uid;
@@ -1695,7 +1700,6 @@ function buildMsgEl(msg) {
     const fProfile = currentChat.friendProfile || {};
     const fPhoto = fProfile.photo;
     const fChar = (fProfile.name || '?').charAt(0);
-
     if (fPhoto) {
       avatarNode = document.createElement('img');
       avatarNode.src = fPhoto;
@@ -1711,40 +1715,55 @@ function buildMsgEl(msg) {
   bubble.className = 'msg-bubble';
   bubble.id = 'msg-' + msg.key;
   
-  // أحداث اللمس: ضغطة مزدوجة للتفاعل، ضغطة مطولة للقائمة، وسحب للرد
+  // دمج قوي وذكي لأحداث اللمس (سحب، ضغط مطول، ونقر مزدوج)
   let lastTap = 0;
   let pressTimer;
   let touchStartX = 0;
   let isSwiping = false;
 
-  bubble.addEventListener('touchstart', function(e) {
+  const handleTouchStart = (e) => {
+    touchStartX = e.touches ? e.touches[0].clientX : e.clientX;
+    isSwiping = false;
+    pressTimer = setTimeout(() => {
+      if (!isSwiping) openMsgMenu(msg, isOut);
+    }, 500); // 500ms للضغط المطول
+  };
+
+  const handleTouchMove = (e) => {
+    const currentX = e.touches ? e.touches[0].clientX : e.clientX;
+    if (Math.abs(currentX - touchStartX) > 15) {
+      isSwiping = true;
+      clearTimeout(pressTimer);
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    clearTimeout(pressTimer);
+    
+    // معالجة النقر المزدوج (Double Tap)
     const currentTime = new Date().getTime();
     const tapLength = currentTime - lastTap;
-    if (tapLength < 300 && tapLength > 0) { toggleReaction(msg.key); e.preventDefault(); }
+    if (tapLength < 300 && tapLength > 0 && !isSwiping) {
+      toggleReaction(msg.key);
+      e.preventDefault();
+    }
     lastTap = currentTime;
 
-    touchStartX = e.changedTouches[0].screenX;
-    isSwiping = false;
-
-    pressTimer = setTimeout(() => { if(!isSwiping) openMsgMenu(msg, isOut); }, 600);
-  });
-
-  bubble.addEventListener('touchmove', function(e) {
-    const touchMoveX = e.changedTouches[0].screenX;
-    if (Math.abs(touchMoveX - touchStartX) > 20) { isSwiping = true; clearTimeout(pressTimer); }
-  });
-
-  bubble.addEventListener('touchend', function(e) {
-    clearTimeout(pressTimer);
-    const touchEndX = e.changedTouches[0].screenX;
+    // معالجة السحب (Swipe)
     if (isSwiping) {
-      if (isOut && (touchStartX - touchEndX > 60)) { prepareReply(msg); } // سحب لليسار لرسائلي
-      if (!isOut && (touchEndX - touchStartX > 60)) { prepareReply(msg); } // سحب لليمين لرسائل الطرف الآخر
+      const touchEndX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+      if (isOut && (touchStartX - touchEndX > 40)) { prepareReply(msg); } // سحب لليسار
+      if (!isOut && (touchEndX - touchStartX > 40)) { prepareReply(msg); } // سحب لليمين
     }
-  });
+  };
 
-  bubble.addEventListener('dblclick', function() { toggleReaction(msg.key); });
+  bubble.addEventListener('touchstart', handleTouchStart, {passive: true});
+  bubble.addEventListener('touchmove', handleTouchMove, {passive: true});
+  bubble.addEventListener('touchend', handleTouchEnd);
+  
+  // دعم إضافي للكمبيوتر ولبعض الهواتف للضغط المطول
   bubble.addEventListener('contextmenu', function(e) { e.preventDefault(); openMsgMenu(msg, isOut); });
+  bubble.addEventListener('dblclick', function() { toggleReaction(msg.key); });
 
   const reactionHtml = `<div id="react-${msg.key}" class="msg-reaction" style="display:${msg.reaction ? 'flex' : 'none'}">${msg.reaction || ''}</div>`;
 
@@ -1757,7 +1776,6 @@ function buildMsgEl(msg) {
 
   const timeEl = `<div class="msg-time" style="display:flex; align-items:center; gap:4px;">${msg.isEdited ? '<span style="font-size:10px; opacity:0.7;">(معدلة)</span>' : ''} ${ticks}${formatTime(msg.timestamp)}</div>`;
 
-  // تجهيز شكل الاقتباس (الرد) إذا كان موجوداً
   let replyHtml = '';
   if (msg.replyTo) {
     replyHtml = `<div class="reply-badge">رد على رسالة</div><div style="background:rgba(0,0,0,0.2); padding:6px; border-radius:6px; margin-bottom:6px; border-right:2px solid var(--neon-cyan); font-size:12px; opacity:0.8; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${escHtml(msg.replyTo.text)}</div>`;
@@ -1766,7 +1784,8 @@ function buildMsgEl(msg) {
   if (msg.type === 'text') {
     bubble.innerHTML = `${replyHtml}<div>${escHtml(msg.text)}</div>${timeEl}`;
   } else if (msg.type === 'image') {
-    bubble.innerHTML = `${replyHtml}<img class="msg-img" src="${msg.url}" onclick="previewImg('${msg.url}')"/>${timeEl}`;
+    // إضافة onload لعمل Scroll تلقائي عند تحميل الصورة لتظهر مباشرة
+    bubble.innerHTML = `${replyHtml}<img class="msg-img" src="${msg.url}" onload="document.getElementById('messages-area').scrollTop = document.getElementById('messages-area').scrollHeight" onclick="previewImg('${msg.url}')"/>${timeEl}`;
   } else if (msg.type === 'voice') {
     const bars = Array.from({length: 20}, () => `<div class="voice-bar" style="height:${Math.floor(Math.random() * 70) + 20}%"></div>`).join('');
     bubble.innerHTML = `${replyHtml}<div class="voice-msg"><button class="voice-play-btn" onclick="playVoice(this,'${msg.url}')"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><div class="voice-waveform">${bars}</div><span class="voice-duration">${msg.duration || '0:00'}</span></div>${timeEl}`;
@@ -1830,8 +1849,9 @@ function copyMsgText(text) {
 
 function prepareReply(msg) {
   replyingToMsg = msg;
-  editingMsgKey = null; // نلغي وضع التعديل إذا كان مفعلاً
+  editingMsgKey = null; 
   const pre = document.getElementById('msg-reply-preview');
+  pre.style.display = 'flex'; // تأكيد الإظهار
   pre.classList.add('active');
   let txt = msg.type === 'text' ? msg.text : msg.type === 'image' ? '📷 صورة' : '🎙️ مقطع صوتي';
   document.getElementById('msg-reply-text').textContent = "رد على: " + txt;
@@ -1840,7 +1860,11 @@ function prepareReply(msg) {
 
 function cancelReply() {
   replyingToMsg = null;
-  document.getElementById('msg-reply-preview').classList.remove('active');
+  const pre = document.getElementById('msg-reply-preview');
+  if(pre) {
+    pre.classList.remove('active');
+    pre.style.display = 'none'; // تأكيد الإخفاء القسري
+  }
 }
 
 function prepareEdit(msgKey, oldText) {
@@ -2226,91 +2250,8 @@ function endCall() {
 
 function closeCallUI() {
   clearInterval(callDurationInt);
-  
-  // إيقاف المايكروفون تماماً وتنظيف مسارات الصوت المحلية
-  if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
-    localStream = null;
-  }
-  // إغلاق اتصال الـ WebRTC وإعادته للحالة الصفرية
-  if (peerConnection) {
-    peerConnection.close();
-    peerConnection = null;
-  }
-  
-  const remoteAudio = document.getElementById('remote-audio-el');
-  if (remoteAudio) remoteAudio.srcObject = null;
-
   if(document.getElementById('screen-call').classList.contains('active')) {
-    renderScreenUI('chat'); 
-  }
-}
-
-async function setupWebRTCPeer(isCaller) {
-  const chatId = [currentUser.uid, currentCallPeer].sort().join('_');
-  const signalRef = db.ref('chats/' + chatId + '/webrtc');
-
-  peerConnection = new RTCPeerConnection(rtcConfig);
-
-  // إضافة تدفق الصوت المحلي إلى الاتصال ليتم إرساله للطرف الآخر
-  if (localStream) {
-    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-  }
-
-  // عندما يصل صوت من الطرف الآخر، قم بربطه بعنصر الصوت المخفي ليعمل فوراً
-  peerConnection.ontrack = (event) => {
-    const remoteAudio = document.getElementById('remote-audio-el');
-    if (remoteAudio && event.streams && event.streams[0]) {
-      remoteAudio.srcObject = event.streams[0];
-    }
-  };
-
-  // إرسال مسارات الـ ICE المتاحة لجهازي إلى الفايربيس ليراها الطرف الثاني
-  peerConnection.onicecandidate = (event) => {
-    if (event.candidate) {
-      signalRef.child(isCaller ? 'callerCandidates' : 'calleeCandidates').push(event.candidate.toJSON());
-    }
-  };
-
-  if (isCaller) {
-    // إذا كنت أنا المتصل: قم بإنشاء العرض (Offer) وإرساله
-    const offer = await peerConnection.createOffer();
-    await peerConnection.setLocalDescription(offer);
-    await signalRef.child('offer').set({ sdp: offer.sdp, type: offer.type });
-
-    // استمع بانتظار رد الطرف الآخر (Answer)
-    signalRef.child('answer').on('value', async snap => {
-      const answer = snap.val();
-      if (answer && peerConnection.signalingState !== 'stable') {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-      }
-    });
-
-    // جلب مسارات الـ ICE الخاصة بالطرف الآخر
-    signalRef.child('calleeCandidates').on('child_added', async snap => {
-      const cand = snap.val();
-      if (cand) await peerConnection.addIceCandidate(new RTCIceCandidate(cand));
-    });
-
-  } else {
-    // إذا كنت أنا المستقبل: انتظر وصول العرض (Offer)
-    signalRef.child('offer').once('value', async snap => {
-      const offer = snap.val();
-      if (offer) {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-        
-        // إنشاء الإجابة (Answer) وإرسالها
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        await signalRef.child('answer').set({ sdp: answer.sdp, type: answer.type });
-      }
-    });
-
-    // جلب مسارات الـ ICE الخاصة بالمتصل
-    signalRef.child('callerCandidates').on('child_added', async snap => {
-      const cand = snap.val();
-      if (cand) await peerConnection.addIceCandidate(new RTCIceCandidate(cand));
-    });
+    renderScreenUI('chat'); // يرجع للشات بس يفصل
   }
 }
 
@@ -2324,7 +2265,8 @@ function startCallTimer() {
     document.getElementById('call-status-view').textContent = `في مكالمة: ${m}:${s<10?'0':''}${s}`;
   }, 1000);
 }
-</script>
 <audio id="remote-audio-el" autoplay style="display:none;"></audio>
+function startCallTimer() {	
+</script>
 </body>
 </html>
