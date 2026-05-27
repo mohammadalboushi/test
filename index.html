@@ -886,8 +886,9 @@ html, body {
         <div class="header-subtitle" id="home-subtitle">مرحباً!</div>
       </div>
       <div class="my-id-badge" id="my-id-badge" onclick="copyMyId()">------</div>
-      <button class="btn-icon" onclick="showScreen('add-friend')" title="إضافة صديق">
+      <button class="btn-icon" onclick="showScreen('add-friend')" title="إضافة صديق" style="position:relative;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+        <div id="friend-req-badge" style="display:none; position:absolute; top:-5px; right:-5px; background:var(--neon-pink); color:white; font-size:10px; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">0</div>
       </button>
     </header>
 
@@ -1186,8 +1187,9 @@ auth.onAuthStateChanged(async user=>{
     document.getElementById('loader-screen').classList.add('hidden');
     showScreen('home');
     
-    // تشغيل مراقب المكالمات
+    // تشغيل مراقب المكالمات ومراقب طلبات الصداقة
     initCallListener(user.uid);
+    initFriendReqBadge();
 
     // نظام الظهور ومتصل الآن
     const myStatusRef = db.ref('users/' + user.uid + '/status');
@@ -1199,6 +1201,16 @@ auth.onAuthStateChanged(async user=>{
       }
     });
   } else {
+    currentUser = null; myProfile = null;
+    db.ref('.info/connected').off();
+    if(myCallListener) { db.ref('calls/'+currentUser?.uid).off('value', myCallListener); myCallListener = null; }
+    // إغلاق مراقب طلبات الصداقة عند الخروج
+    if(globalReqListener) { db.ref('friendRequests/'+currentUser?.uid).off('value', globalReqListener); globalReqListener = null; }
+    
+    document.getElementById('loader-screen').classList.add('hidden');
+    showScreen('login');
+  }
+});
     currentUser = null; myProfile = null;
     db.ref('.info/connected').off();
     if(myCallListener) { db.ref('calls/'+currentUser?.uid).off('value', myCallListener); myCallListener = null; }
@@ -1633,29 +1645,40 @@ function buildMsgEl(msg) {
   const row = document.createElement('div');
   const isOut = msg.senderUid === currentUser.uid;
   row.className = 'msg-row ' + (isOut ? 'out' : 'in');
-  
-  let avatarHtml = '';
+
+  // تجهيز صورة الطرف التاني بطريقة صحيحة بدون ما نضرب الكود
+  let avatarNode = null;
   if (!isOut) {
-    const fPhoto = currentChat.friendProfile.photo;
-    const fChar = (currentChat.friendProfile.name || '?').charAt(0);
-    avatarHtml = fPhoto ? `<img src="${fPhoto}" class="msg-friend-avatar" />` : `<div class="msg-friend-avatar">${fChar}</div>`;
+    const fProfile = currentChat.friendProfile || {};
+    const fPhoto = fProfile.photo;
+    const fChar = (fProfile.name || '?').charAt(0);
+
+    if (fPhoto) {
+      avatarNode = document.createElement('img');
+      avatarNode.src = fPhoto;
+      avatarNode.className = 'msg-friend-avatar';
+    } else {
+      avatarNode = document.createElement('div');
+      avatarNode.className = 'msg-friend-avatar';
+      avatarNode.textContent = fChar;
+    }
   }
 
   const bubble = document.createElement('div');
   bubble.className = 'msg-bubble';
-  bubble.setAttribute('ondblclick', `toggleReaction('${msg.key}')`); // مشان الدبل كليك
-  
+  bubble.setAttribute('ondblclick', `toggleReaction('${msg.key}')`);
+
   const reactionHtml = `<div id="react-${msg.key}" class="msg-reaction" style="display:${msg.reaction ? 'flex' : 'none'}">${msg.reaction || ''}</div>`;
-  
+
   let ticks = '';
   if (isOut) {
     const color = msg.read ? 'var(--neon-cyan)' : 'var(--text-muted)';
     const svgContent = msg.read ? '<polyline points="24 6 13 17 8 12"></polyline><polyline points="20 6 9 17 4 12"></polyline>' : '<polyline points="20 6 9 17 4 12"></polyline>';
     ticks = `<svg id="ticks-${msg.key}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" style="margin-left:4px; margin-bottom:-2px;">${svgContent}</svg>`;
   }
-  
+
   const timeEl = `<div class="msg-time" style="display:flex; align-items:center; gap:4px;">${ticks}${formatTime(msg.timestamp)}</div>`;
-  
+
   if (msg.type === 'text') {
     bubble.innerHTML = `<div>${escHtml(msg.text)}</div>${timeEl}`;
   } else if (msg.type === 'image') {
@@ -1664,11 +1687,13 @@ function buildMsgEl(msg) {
     const bars = Array.from({length: 20}, () => `<div class="voice-bar" style="height:${Math.floor(Math.random() * 70) + 20}%"></div>`).join('');
     bubble.innerHTML = `<div class="voice-msg"><button class="voice-play-btn" onclick="playVoice(this,'${msg.url}')"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><div class="voice-waveform">${bars}</div><span class="voice-duration">${msg.duration || '0:00'}</span></div>${timeEl}`;
   }
-  
-  bubble.innerHTML += reactionHtml; // نضيف القلب للفقاعة
-  
-  if (!isOut) row.appendChild(avatarHtml); // صورة صاحبك عاليمين
+
+  bubble.innerHTML += reactionHtml;
+
+  // هون التركيب النظيف
+  if (!isOut && avatarNode) row.appendChild(avatarNode);
   row.appendChild(bubble);
+  
   return row;
 }
 
