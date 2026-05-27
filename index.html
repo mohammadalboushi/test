@@ -1688,24 +1688,15 @@ function attachMessages(chatId) {
     if (msg.senderUid !== currentUser.uid && !msg.read) snap.ref.update({ read: true });
   });
 
+  // تم التعديل هنا: عند حدوث أي تغيير (تعديل، حذف، تفاعل، قراءة) سيتم استبدال سطر الرسالة بالكامل في الواجهة مباشرة
   messagesRef.on('child_changed', snap => {
     const msg = snap.val();
     msg.key = snap.key;
     
-    const ticksEl = document.getElementById('ticks-' + msg.key);
-    if (ticksEl && msg.read) {
-      ticksEl.setAttribute('stroke', 'var(--neon-cyan)');
-      ticksEl.innerHTML = '<polyline points="20 6 9 17 4 12"></polyline><polyline points="24 6 13 17 8 12"></polyline>';
-    }
-    
-    const reactEl = document.getElementById('react-' + msg.key);
-    if (reactEl) {
-      if (msg.reaction) {
-        reactEl.style.display = 'flex';
-        reactEl.innerHTML = msg.reaction;
-      } else {
-        reactEl.style.display = 'none';
-      }
+    const oldRow = document.getElementById('row-' + msg.key);
+    if (oldRow) {
+      const newRow = buildMsgEl(msg);
+      oldRow.replaceWith(newRow);
     }
   });
 }
@@ -1713,6 +1704,7 @@ function attachMessages(chatId) {
 function buildMsgEl(msg) {
   if (msg.isDeleted) {
     const delRow = document.createElement('div');
+    delRow.id = 'row-' + msg.key; // إضافة ID لسطر الرسالة المحذوفة
     const delIsOut = msg.senderUid === currentUser.uid;
     delRow.className = 'msg-row ' + (delIsOut ? 'out' : 'in');
     delRow.innerHTML = `<div class="msg-bubble" style="background:transparent; border:1px solid var(--border-subtle); color:var(--text-muted); font-style:italic; font-size:12px;">🚫 تم حذف هذه الرسالة</div>`;
@@ -1720,6 +1712,7 @@ function buildMsgEl(msg) {
   }
 
   const row = document.createElement('div');
+  row.id = 'row-' + msg.key; // إضافة ID لسطر الرسالة العادية ليتم استبداله عند التعديل
   const isOut = msg.senderUid === currentUser.uid;
   row.className = 'msg-row ' + (isOut ? 'out' : 'in');
 
@@ -1748,18 +1741,19 @@ function buildMsgEl(msg) {
   let touchStartX = 0;
   let touchStartY = 0;
   let isSwiping = false;
+  let isVerticalScroll = false;
 
   const handleTouchStart = (e) => {
     touchStartX = e.touches ? e.touches[0].clientX : e.clientX;
     touchStartY = e.touches ? e.touches[0].clientY : e.clientY;
     isSwiping = false;
+    isVerticalScroll = false;
     
-    // إضافة أنيميشن بسيط عند بداية الضغط للتلميح
     bubble.style.transform = 'scale(0.98)';
     bubble.style.transition = 'transform 0.2s';
 
     pressTimer = setTimeout(() => {
-      if (!isSwiping) {
+      if (!isSwiping && !isVerticalScroll) {
         bubble.style.transform = 'scale(1)';
         openMsgMenu(msg, isOut);
       }
@@ -1767,26 +1761,31 @@ function buildMsgEl(msg) {
   };
 
   const handleTouchMove = (e) => {
+    if (!touchStartX || !touchStartY) return;
+
     const currentX = e.touches ? e.touches[0].clientX : e.clientX;
     const currentY = e.touches ? e.touches[0].clientY : e.clientY;
     
-    // إلغاء الضغطة المطولة إذا قام المستخدم بالتمرير للأعلى أو الأسفل (Scroll)
-    if (Math.abs(currentY - touchStartY) > 10) {
+    const diffX = currentX - touchStartX;
+    const diffY = currentY - touchStartY;
+    
+    // منع السحب إذا كان المستخدم يمرر المحادثة للأعلى أو الأسفل
+    if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 10) {
+       isVerticalScroll = true;
        clearTimeout(pressTimer);
        bubble.style.transform = 'scale(1)';
+       return;
     }
     
-    // تفعيل وضع السحب للرد
-    if (Math.abs(currentX - touchStartX) > 20) {
+    // تفعيل السحب الأفقي للرد
+    if (Math.abs(diffX) > 15 && !isVerticalScroll) {
       isSwiping = true;
       clearTimeout(pressTimer);
       
-      // حركة مرئية للرسالة مع السحب
-      let swipeDist = currentX - touchStartX;
-      // تقييد اتجاه السحب (لليسار لرسائلي، لليمين لرسائل الطرف الآخر)
-      if ((isOut && swipeDist < 0) || (!isOut && swipeDist > 0)) {
-        let limitDist = Math.min(Math.abs(swipeDist), 60);
-        let sign = swipeDist > 0 ? 1 : -1;
+      let limitDist = Math.min(Math.abs(diffX), 70);
+      let sign = diffX > 0 ? 1 : -1;
+      
+      if ((isOut && diffX < 0) || (!isOut && diffX > 0)) {
         bubble.style.transform = `translateX(${limitDist * sign}px)`;
       }
     }
@@ -1794,25 +1793,27 @@ function buildMsgEl(msg) {
 
   const handleTouchEnd = (e) => {
     clearTimeout(pressTimer);
-    bubble.style.transform = 'scale(1)'; // إعادة الرسالة لمكانها
+    bubble.style.transform = 'scale(1)'; 
     
-    const currentTime = new Date().getTime();
-    const tapLength = currentTime - lastTap;
-    if (tapLength < 300 && tapLength > 0 && !isSwiping) {
-      toggleReaction(msg.key);
-      if (e.cancelable) e.preventDefault();
+    if (!isSwiping && !isVerticalScroll) {
+      const currentTime = new Date().getTime();
+      const tapLength = currentTime - lastTap;
+      if (tapLength < 300 && tapLength > 0) {
+        toggleReaction(msg.key);
+        if (e.cancelable) e.preventDefault();
+      }
+      lastTap = currentTime;
     }
-    lastTap = currentTime;
 
     if (isSwiping) {
       const touchEndX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
-      const diff = touchStartX - touchEndX;
+      const diffX = touchStartX - touchEndX;
       
-      // إذا كانت رسالتي وسحبت لليسار (diff > 40)
-      if (isOut && diff > 40) { prepareReply(msg); if(navigator.vibrate) navigator.vibrate(50); } 
-      // إذا كانت رسالة الطرف الآخر وسحبت لليمين (diff < -40)
-      if (!isOut && diff < -40) { prepareReply(msg); if(navigator.vibrate) navigator.vibrate(50); } 
+      if (isOut && diffX > 40) { prepareReply(msg); if(navigator.vibrate) navigator.vibrate(50); } 
+      if (!isOut && diffX < -40) { prepareReply(msg); if(navigator.vibrate) navigator.vibrate(50); } 
     }
+    
+    touchStartX = 0; touchStartY = 0;
   };
 
   bubble.addEventListener('touchstart', handleTouchStart, {passive: true});
