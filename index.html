@@ -1845,7 +1845,7 @@ function buildMsgEl(msg) {
     bubble.innerHTML = `${replyHtml}<img class="msg-img" src="${msg.url}" onload="document.getElementById('messages-area').scrollTop = document.getElementById('messages-area').scrollHeight" onclick="previewImg('${msg.url}')"/>${timeEl}`;
   } else if (msg.type === 'voice') {
     const bars = Array.from({length: 20}, () => `<div class="voice-bar" style="height:${Math.floor(Math.random() * 70) + 20}%"></div>`).join('');
-    bubble.innerHTML = `${replyHtml}<div class="voice-msg"><button class="voice-play-btn" onclick="playVoice(this,'${msg.url}')"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><div class="voice-waveform">${bars}</div><span class="voice-duration">${msg.duration || '0:00'}</span></div>${timeEl}`;
+    bubble.innerHTML = `${replyHtml}<div class="voice-msg"><button class="voice-play-btn" onclick="playVoice(this,'${msg.url}', '${msg.key}')"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><div class="voice-waveform" style="position:relative; cursor:pointer;" onclick="seekVoice(event, '${msg.url}', '${msg.key}')">${bars}<div id="progress-${msg.key}" class="voice-progress-fill" style="position:absolute; right:0; top:0; bottom:0; width:0%; background:rgba(0,240,255,0.4); pointer-events:none; z-index:1; border-radius:2px; transition: width 0.1s linear;"></div></div><span class="voice-duration">${msg.duration || '0:00'}</span></div>${timeEl}`;
   }
 
   bubble.innerHTML += reactionHtml;
@@ -1930,11 +1930,26 @@ function prepareEdit(msgKey, oldText) {
 }
 
 function confirmDeleteMsg(msgKey) {
-  openModal('حذف الرسالة', 'هل تريد حذف هذه الرسالة من عندك فقط أم من عند الجميع؟').then(ok => {
+  openModal('حذف الرسالة', 'هل تريد حذف هذه الرسالة من الجميع؟').then(ok => {
     if(ok) {
       if(!currentChat) return;
       db.ref('chats/'+currentChat.chatId+'/messages/'+msgKey).update({ isDeleted: true, text: null, url: null, type: 'deleted' })
-        .then(() => showToast('تم حذف الرسالة', 'success'));
+        .then(() => {
+          // جلب آخر رسالة لتحديث القائمة الخارجية
+          db.ref('chats/'+currentChat.chatId+'/messages').orderByChild('timestamp').limitToLast(1).once('value', snap => {
+            if(snap.exists()){
+              snap.forEach(child => {
+                const m = child.val();
+                let text = m.isDeleted ? '🚫 رسالة محذوفة' : (m.type==='text' ? m.text : m.type==='image' ? '📷 صورة' : '🎙️ مقطع صوتي');
+                const updates = {};
+                updates[`userChats/${currentUser.uid}/${currentChat.chatId}/lastMsg`] = text;
+                updates[`userChats/${currentChat.friendUid}/${currentChat.chatId}/lastMsg`] = text;
+                db.ref().update(updates);
+              });
+            }
+          });
+          showToast('تم حذف الرسالة', 'success');
+        });
     }
   });
 }
@@ -1969,6 +1984,21 @@ async function sendTextMsg(){
       text: text,
       isEdited: true
     });
+    
+    // تحديث القائمة الخارجية إذا كانت الرسالة المعدلة هي الأخيرة
+    db.ref('chats/'+currentChat.chatId+'/messages').orderByChild('timestamp').limitToLast(1).once('value', snap => {
+      if(snap.exists()){
+        snap.forEach(child => {
+          if(child.key === editingMsgKey) {
+            const updates = {};
+            updates[`userChats/${currentUser.uid}/${currentChat.chatId}/lastMsg`] = text;
+            updates[`userChats/${currentChat.friendUid}/${currentChat.chatId}/lastMsg`] = text;
+            db.ref().update(updates);
+          }
+        });
+      }
+    });
+
     editingMsgKey = null;
     showToast('تم تعديل الرسالة', 'success');
     return;
@@ -2136,15 +2166,67 @@ function cancelVoiceRecord() {
    VOICE PLAYBACK
 ═════════════════════════════════════════════════════════ */
 let currentAudio = null;
-function playVoice(btn, url){
-  if(currentAudio){ currentAudio.pause(); currentAudio=null;
-    document.querySelectorAll('.voice-play-btn').forEach(b=>b.innerHTML=`<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`);
+let currentAudioUrl = null;
+let audioUpdateInterval = null;
+
+function playVoice(btn, url, msgKey) {
+  if (currentAudio && currentAudioUrl === url) {
+    if (!currentAudio.paused) {
+      currentAudio.pause();
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+      clearInterval(audioUpdateInterval);
+      return;
+    } else {
+      currentAudio.play();
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+      startAudioProgress(msgKey);
+      return;
+    }
   }
-  const audio = new Audio(url);
-  currentAudio = audio;
-  btn.innerHTML=`<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
-  audio.play();
-  audio.onended=()=>{ btn.innerHTML=`<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`; currentAudio=null; };
+
+  if (currentAudio) {
+    currentAudio.pause();
+    document.querySelectorAll('.voice-play-btn').forEach(b => b.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`);
+    document.querySelectorAll('.voice-progress-fill').forEach(f => f.style.width = '0%');
+    clearInterval(audioUpdateInterval);
+  }
+
+  currentAudioUrl = url;
+  currentAudio = new Audio(url);
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+  currentAudio.play();
+  startAudioProgress(msgKey);
+
+  currentAudio.onended = () => {
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+    const fill = document.getElementById('progress-' + msgKey);
+    if (fill) fill.style.width = '0%';
+    currentAudio = null;
+    currentAudioUrl = null;
+    clearInterval(audioUpdateInterval);
+  };
+}
+
+function startAudioProgress(msgKey) {
+  clearInterval(audioUpdateInterval);
+  audioUpdateInterval = setInterval(() => {
+    if (currentAudio && !currentAudio.paused && currentAudio.duration) {
+      let perc = (currentAudio.currentTime / currentAudio.duration) * 100;
+      let fill = document.getElementById('progress-' + msgKey);
+      if (fill) fill.style.width = perc + '%';
+    }
+  }, 100);
+}
+
+function seekVoice(event, url, msgKey) {
+  if (!currentAudio || currentAudioUrl !== url || !currentAudio.duration) return;
+  const rect = event.currentTarget.getBoundingClientRect();
+  const clickX = rect.right - event.clientX; // حسبة متوافقة مع اتجاه الـ RTL
+  let perc = clickX / rect.width;
+  if(perc < 0) perc = 0; if(perc > 1) perc = 1;
+  currentAudio.currentTime = currentAudio.duration * perc;
+  const fill = document.getElementById('progress-' + msgKey);
+  if (fill) fill.style.width = (perc * 100) + '%';
 }
 
 /* ═════════════════════════════════════════════════════════
