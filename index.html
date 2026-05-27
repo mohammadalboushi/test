@@ -919,6 +919,9 @@ html, body {
         <div class="chat-header-name" id="chat-header-name">…</div>
         <div class="chat-header-status" id="chat-header-status">● متصل</div>
       </div>
+      <button class="btn-icon" onclick="startCall()" title="اتصال" style="color:var(--neon-green); border-color:rgba(0,255,136,0.3);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      </button>
     </header>
 
     <div class="messages-area" id="messages-area">
@@ -958,6 +961,10 @@ html, body {
       </div>
       <button class="btn-primary" id="btn-search-friend" onclick="searchFriend()">بحث</button>
       <div id="search-result-area"></div>
+      
+      <div class="neon-line" style="margin: 20px 0;"></div>
+      <div class="field-label">طلبات الصداقة الواردة</div>
+      <div id="friend-requests-list" style="display:flex; flex-direction:column; gap:10px;"></div>
     </div>
   </div>
 
@@ -969,11 +976,19 @@ html, body {
       <button class="btn-icon" onclick="showScreen('home')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <div class="header-title">الملف الشخصي</div>
+      <div class="header-title">الإعدادات</div>
     </header>
     <div class="profile-body">
-      <div class="profile-avatar" id="profile-avatar">أ</div>
-      <div class="profile-name" id="profile-name">اسمك</div>
+      <div class="profile-avatar-wrap" onclick="document.getElementById('file-avatar-input').click()" style="cursor:pointer" title="تغيير الصورة">
+        <div class="profile-avatar" id="profile-avatar">أ</div>
+        <div style="position:absolute; bottom:0; right:0; background:var(--bg-surface); border-radius:50%; padding:6px; border:1px solid var(--neon-cyan); box-shadow: var(--shadow-neon);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--neon-cyan)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+      </div>
+      
+      <div style="width:100%; display:flex; gap:8px;">
+        <input type="text" class="text-input" id="profile-name-input" placeholder="اسمك" style="letter-spacing:normal; text-align:center; font-family:var(--font-ar); font-size:16px; font-weight:700;" />
+        <button class="btn-icon" onclick="saveProfileName()" style="width:52px; background:linear-gradient(135deg, var(--neon-cyan), var(--neon-blue)); color:var(--bg-void); flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></button>
+      </div>
+
       <div class="profile-id-card">
         <div class="profile-id-label">رقم التعريف الخاص بك</div>
         <div class="profile-id-value" id="profile-id-value">------</div>
@@ -981,6 +996,24 @@ html, body {
       </div>
       <button class="btn-primary" onclick="copyMyId()">📋 نسخ رقم الـ ID</button>
       <button class="btn-danger" onclick="confirmLogout()">تسجيل الخروج</button>
+    </div>
+  </div>
+  <div class="screen" id="screen-call" style="background:var(--bg-void); z-index:500; justify-content:center; align-items:center; text-align:center;">
+    <style>
+      .call-pulse { width:120px; height:120px; border-radius:50%; background:linear-gradient(135deg, var(--neon-cyan), var(--neon-blue)); display:flex; align-items:center; justify-content:center; font-size:48px; color:white; font-weight:bold; box-shadow:0 0 0 0 rgba(0,240,255,0.6); animation:pulse-ring 1.5s infinite; border:3px solid var(--neon-cyan); margin:0 auto 20px; }
+      @keyframes pulse-ring { 0% { transform:scale(0.95); box-shadow:0 0 0 0 rgba(0,240,255,0.6); } 70% { transform:scale(1); box-shadow:0 0 0 25px rgba(0,240,255,0); } 100% { transform:scale(0.95); box-shadow:0 0 0 0 rgba(0,240,255,0); } }
+      .call-btn { width:64px; height:64px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform 0.2s; color:white; }
+      .call-btn:active { transform:scale(0.9); }
+      .btn-red { background:rgba(255,0,144,0.15); border:2px solid var(--neon-pink); color:var(--neon-pink); box-shadow:0 0 15px rgba(255,0,144,0.4); }
+      .btn-green { background:rgba(0,255,136,0.15); border:2px solid var(--neon-green); color:var(--neon-green); box-shadow:0 0 15px rgba(0,255,136,0.4); }
+    </style>
+    <div class="call-pulse" id="call-avatar-view">أ</div>
+    <div id="call-name-view" style="font-size:26px; font-weight:700; margin-bottom:8px;">الاسم</div>
+    <div id="call-status-view" style="font-size:16px; color:var(--neon-cyan); margin-bottom:60px;">جاري الاتصال...</div>
+    
+    <div style="display:flex; gap:40px; justify-content:center;" id="call-actions">
+      <button class="call-btn btn-red" onclick="endCall()"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path><line x1="23" y1="1" x2="1" y2="23"></line></svg></button>
+      <button class="call-btn btn-green" id="btn-accept-call" onclick="acceptCall()"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>
     </div>
   </div>
 
@@ -1092,6 +1125,7 @@ function renderScreenUI(name){
   if(name === 'add-friend'){
     document.getElementById('friend-id-input').value='';
     document.getElementById('search-result-area').innerHTML='';
+    loadFriendRequests();
   }
   if(name !== 'chat') detachMessages();
 }
@@ -1138,6 +1172,9 @@ auth.onAuthStateChanged(async user=>{
     document.getElementById('loader-screen').classList.add('hidden');
     showScreen('home');
     
+    // تشغيل مراقب المكالمات
+    initCallListener(user.uid);
+
     // نظام الظهور ومتصل الآن
     const myStatusRef = db.ref('/users/' + user.uid + '/status');
     db.ref('.info/connected').on('value', snap => {
@@ -1149,6 +1186,7 @@ auth.onAuthStateChanged(async user=>{
   } else {
     currentUser = null; myProfile = null;
     db.ref('.info/connected').off();
+    if(myCallListener) { db.ref('calls/'+currentUser?.uid).off('value', myCallListener); myCallListener = null; }
     document.getElementById('loader-screen').classList.add('hidden');
     showScreen('login');
   }
@@ -1219,7 +1257,7 @@ function copyMyId(){
 ═════════════════════════════════════════════════════════ */
 function populateProfile(){
   if(!myProfile) return;
-  document.getElementById('profile-name').textContent = myProfile.name;
+  document.getElementById('profile-name-input').value = myProfile.name;
   document.getElementById('profile-id-value').textContent = myProfile.uniqueId;
   const av = document.getElementById('profile-avatar');
   if(myProfile.photo){
@@ -1228,6 +1266,40 @@ function populateProfile(){
     av.textContent = myProfile.name.charAt(0);
   }
 }
+
+async function saveProfileName() {
+  const newName = document.getElementById('profile-name-input').value.trim();
+  if(!newName || !myProfile) return;
+  showToast('جاري الحفظ...');
+  try {
+    await db.ref('users/'+myProfile.uid).update({ name: newName });
+    myProfile.name = newName;
+    localStorage.setItem('myProfile', JSON.stringify(myProfile));
+    updateHomeHeader();
+    showToast('تم تغيير الاسم بنجاح', 'success');
+  } catch(e) { showToast('فشل الحفظ: '+e.message, 'error'); }
+}
+
+document.getElementById('file-avatar-input').addEventListener('change', async e => {
+  const file = e.target.files[0]; if(!file || !myProfile) return;
+  e.target.value = '';
+  showToast('جاري رفع الصورة...');
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'malaboushi_preset');
+    const res = await fetch('https://api.cloudinary.com/v1_1/dwqdzwgms/auto/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    if(data.secure_url) {
+      await db.ref('users/'+myProfile.uid).update({ photo: data.secure_url });
+      myProfile.photo = data.secure_url;
+      localStorage.setItem('myProfile', JSON.stringify(myProfile));
+      updateHomeHeader();
+      populateProfile();
+      showToast('تم تحديث صورتك الشخصية', 'success');
+    } else { throw new Error('تعذر الرفع من الخادم'); }
+  } catch(e){ showToast('فشل رفع الصورة: '+e.message, 'error'); }
+});
 
 /* ═════════════════════════════════════════════════════════
    CHATS LIST
@@ -1296,32 +1368,95 @@ async function searchFriend(){
   finally{ btn.disabled=false; btn.textContent='بحث'; }
 }
 
-function renderSearchResult(friend, uid){
+function renderSearchResult(friend, uid) {
   const area = document.getElementById('search-result-area');
-  const initials = (friend.name||'?').charAt(0);
-  area.innerHTML=`
+  const initials = (friend.name || '?').charAt(0);
+  area.innerHTML = `
     <div class="search-result-card">
       <div class="search-result-avatar">${initials}</div>
       <div class="search-result-info">
         <div class="search-result-name">${escHtml(friend.name)}</div>
         <div class="search-result-id">${friend.uniqueId}</div>
       </div>
-      <button class="btn-primary" style="width:auto;padding:11px 20px;font-size:13px" onclick="startChat('${uid}')">محادثة</button>
+      <button class="btn-primary" id="btn-send-req-${uid}" style="width:auto;padding:11px 20px;font-size:13px" onclick="sendFriendRequest('${uid}')">إرسال طلب</button>
     </div>`;
+}
+
+async function sendFriendRequest(friendUid) {
+  if (!currentUser || !myProfile) return;
+  const btn = document.getElementById(`btn-send-req-${friendUid}`);
+  btn.disabled = true; btn.textContent = 'جاري الإرسال...';
+  try {
+    await db.ref('friendRequests/' + friendUid + '/' + currentUser.uid).set({
+      uid: currentUser.uid,
+      name: myProfile.name,
+      timestamp: Date.now()
+    });
+    showToast('تم إرسال طلب الصداقة بنجاح', 'success');
+    btn.textContent = 'تم الإرسال ✔';
+  } catch (e) {
+    showToast('فشل إرسال الطلب: ' + e.message, 'error');
+    btn.disabled = false; btn.textContent = 'إرسال طلب';
+  }
+}
+
+let friendRequestsListener = null;
+function loadFriendRequests() {
+  if (!currentUser) return;
+  const list = document.getElementById('friend-requests-list');
+  
+  if (friendRequestsListener) db.ref('friendRequests/' + currentUser.uid).off('value', friendRequestsListener);
+
+  friendRequestsListener = db.ref('friendRequests/' + currentUser.uid).on('value', snap => {
+    list.innerHTML = '';
+    if (!snap.exists()) {
+      list.innerHTML = '<div style="font-size:13px; color:var(--text-muted); text-align:center; padding:10px;">لا توجد طلبات واردة</div>';
+      return;
+    }
+    snap.forEach(reqSnap => {
+      const req = reqSnap.val();
+      const div = document.createElement('div');
+      div.className = 'search-result-card';
+      div.style.padding = '12px 16px';
+      const initials = (req.name || '?').charAt(0);
+      div.innerHTML = `
+        <div class="search-result-avatar" style="width:40px; height:40px; font-size:15px;">${initials}</div>
+        <div class="search-result-info">
+          <div class="search-result-name" style="font-size:14px; margin-bottom:0;">${escHtml(req.name)}</div>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn-primary" style="width:auto; padding:6px 12px; font-size:12px; background:var(--neon-green); box-shadow:none;" onclick="acceptFriendRequest('${req.uid}')">موافقة</button>
+          <button class="btn-danger" style="width:auto; padding:6px 12px; font-size:12px;" onclick="rejectFriendRequest('${req.uid}')">رفض</button>
+        </div>`;
+      list.appendChild(div);
+    });
+  });
+}
+
+async function acceptFriendRequest(friendUid) {
+  showToast('جاري القبول...');
+  try {
+    await db.ref('friendRequests/' + currentUser.uid + '/' + friendUid).remove();
+    await startChat(friendUid);
+    showToast('تم قبول الطلب وبدء المحادثة بنجاح!', 'success');
+  } catch (e) { showToast('حدث خطأ: ' + e.message, 'error'); }
+}
+
+async function rejectFriendRequest(friendUid) {
+  try {
+    await db.ref('friendRequests/' + currentUser.uid + '/' + friendUid).remove();
+    showToast('تم رفض طلب الصداقة');
+  } catch (e) { showToast('حدث خطأ: ' + e.message, 'error'); }
 }
 
 async function startChat(friendUid){
   if(!currentUser||!myProfile) return;
   const friendSnap = await db.ref('users/'+friendUid).once('value');
   const friend = friendSnap.val();
-  // deterministic chatId
   const chatId = [currentUser.uid, friendUid].sort().join('_');
-  // ensure chat node
   await db.ref('chats/'+chatId+'/meta').update({ participants:[currentUser.uid,friendUid], createdAt: Date.now() });
-  // update both users' chatList
-  await db.ref('userChats/'+currentUser.uid+'/'+chatId).update({ friendUid, friendName:friend.name, friendPhoto:friend.photo||'', updatedAt:Date.now(), lastMsg:'', unread:0 });
-  await db.ref('userChats/'+friendUid+'/'+chatId).update({ friendUid:currentUser.uid, friendName:myProfile.name, friendPhoto:myProfile.photo||'', updatedAt:Date.now(), lastMsg:'', unread:0 });
-  openChat(chatId, friendUid, friend);
+  await db.ref('userChats/'+currentUser.uid+'/'+chatId).update({ friendUid, friendName:friend.name, friendPhoto:friend.photo||'', updatedAt:Date.now(), lastMsg:'تم قبول طلب الصداقة، ابدأ المحادثة الآن!', unread:0 });
+  await db.ref('userChats/'+friendUid+'/'+chatId).update({ friendUid:currentUser.uid, friendName:myProfile.name, friendPhoto:myProfile.photo||'', updatedAt:Date.now(), lastMsg:'تم قبول طلب الصداقة، ابدأ المحادثة الآن!', unread:0 });
 }
 
 /* ═════════════════════════════════════════════════════════
@@ -1429,6 +1564,14 @@ function attachMessages(chatId){
       createBubbleEffect();
     }
     
+    // تحديث حالة القراءة (الصحين)
+    snap.forEach(msgSnap => {
+      const msg = msgSnap.val();
+      if(msg.senderUid !== currentUser.uid && !msg.read) {
+        msgSnap.ref.update({ read: true });
+      }
+    });
+    
     area.scrollTop = area.scrollHeight;
     setTimeout(() => isInitialLoad = false, 500);
   });
@@ -1440,7 +1583,13 @@ function buildMsgEl(msg){
   row.className = 'msg-row '+(isOut?'out':'in');
   const bubble = document.createElement('div');
   bubble.className = 'msg-bubble';
-  const timeEl = `<div class="msg-time">${formatTime(msg.timestamp)}</div>`;
+  
+  let ticks = '';
+  if(isOut){
+    const color = msg.read ? 'var(--neon-cyan)' : 'var(--text-muted)';
+    ticks = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" style="margin-left:4px; margin-bottom:-2px;"><polyline points="20 6 9 17 4 12"></polyline>${msg.read ? '<polyline points="24 6 13 17 8 12"></polyline>' : ''}</svg>`;
+  }
+  const timeEl = `<div class="msg-time" style="display:flex; align-items:center; gap:4px;">${ticks}${formatTime(msg.timestamp)}</div>`;
   if(msg.type==='text'){
     bubble.innerHTML = `<div>${escHtml(msg.text)}</div>${timeEl}`;
   } else if(msg.type==='image'){
@@ -1652,6 +1801,83 @@ function formatDate(ts){
     try{ myProfile = JSON.parse(cached); }catch(e){}
   }
 })();
+/* ═════════════════════════════════════════════════════════
+   CALL SYSTEM (المكالمات)
+═════════════════════════════════════════════════════════ */
+let myCallListener = null;
+let currentCallPeer = null;
+let callDurationInt = null;
+let callStartTime = 0;
+
+function initCallListener(uid) {
+  if(myCallListener) db.ref('calls/'+uid).off('value', myCallListener);
+  myCallListener = db.ref('calls/'+uid).on('value', snap => {
+    const data = snap.val();
+    if(!data) { closeCallUI(); return; }
+    
+    currentCallPeer = data.peerUid;
+    document.getElementById('call-name-view').textContent = data.peerName || 'مستخدم';
+    document.getElementById('call-avatar-view').textContent = (data.peerName||'?').charAt(0);
+
+    if(data.status === 'incoming') {
+      document.getElementById('call-status-view').textContent = 'يتصل بك...';
+      document.getElementById('btn-accept-call').style.display = 'flex';
+      if(navigator.vibrate) navigator.vibrate([500, 500, 500, 500]); // رنة
+      renderScreenUI('call');
+    } 
+    else if(data.status === 'answered') {
+      document.getElementById('btn-accept-call').style.display = 'none';
+      startCallTimer();
+    }
+  });
+}
+
+function startCall() {
+  if(!currentChat) return;
+  currentCallPeer = currentChat.friendUid;
+  document.getElementById('call-name-view').textContent = currentChat.friendProfile.name;
+  document.getElementById('call-avatar-view').textContent = currentChat.friendProfile.name.charAt(0);
+  document.getElementById('call-status-view').textContent = 'جاري الاتصال...';
+  document.getElementById('btn-accept-call').style.display = 'none';
+  
+  // تحديث حالتي للاتصال وحالة الطرف الثاني للوارد
+  db.ref('calls/'+currentUser.uid).set({ status: 'calling', peerUid: currentCallPeer, peerName: currentChat.friendProfile.name });
+  db.ref('calls/'+currentCallPeer).set({ status: 'incoming', peerUid: currentUser.uid, peerName: myProfile.name });
+  
+  renderScreenUI('call');
+}
+
+function acceptCall() {
+  if(!currentCallPeer) return;
+  db.ref('calls/'+currentUser.uid).update({ status: 'answered' });
+  db.ref('calls/'+currentCallPeer).update({ status: 'answered' });
+}
+
+function endCall() {
+  if(currentCallPeer) {
+    db.ref('calls/'+currentCallPeer).remove();
+    db.ref('calls/'+currentUser.uid).remove();
+  }
+  closeCallUI();
+}
+
+function closeCallUI() {
+  clearInterval(callDurationInt);
+  if(document.getElementById('screen-call').classList.contains('active')) {
+    renderScreenUI('chat'); // يرجع للشات بس يفصل
+  }
+}
+
+function startCallTimer() {
+  clearInterval(callDurationInt);
+  callStartTime = Date.now();
+  document.getElementById('call-status-view').style.color = 'var(--neon-green)';
+  callDurationInt = setInterval(() => {
+    const sec = Math.floor((Date.now() - callStartTime)/1000);
+    const m = Math.floor(sec/60); const s = sec%60;
+    document.getElementById('call-status-view').textContent = `في مكالمة: ${m}:${s<10?'0':''}${s}`;
+  }, 1000);
+}
 </script>
 </body>
 </html>
