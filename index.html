@@ -218,9 +218,20 @@ html, body {
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; transition: all .2s;
   color: var(--neon-cyan); flex-shrink: 0;
+  position: relative; /* أضفنا هذا السطر لضبط مكان النقطة الحمراء */
 }
 .btn-icon:active { transform: scale(0.92); background: rgba(0,240,255,0.12); }
 .btn-icon svg { width: 20px; height: 20px; }
+
+.badge-req {
+  position: absolute; top: -6px; right: -6px;
+  background: var(--neon-pink); color: white;
+  font-size: 11px; font-weight: bold; font-family: var(--font-en);
+  min-width: 18px; height: 18px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 10px rgba(255,0,144,0.6); border: 2px solid var(--bg-surface);
+  z-index: 5;
+}
 
 /* ═══════════════════════════════════════════════
    HOME SCREEN
@@ -887,6 +898,7 @@ html, body {
       </div>
       <div class="my-id-badge" id="my-id-badge" onclick="copyMyId()">------</div>
       <button class="btn-icon" onclick="showScreen('add-friend')" title="إضافة صديق">
+        <span class="badge-req" id="home-req-badge" style="display:none;">0</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
       </button>
     </header>
@@ -928,11 +940,16 @@ html, body {
       </button>
     </header>
 
-    <div class="messages-area" id="messages-area">
-      <!-- messages injected here -->
+        <div class="messages-area" id="messages-area">
+      </div>
+
+    <div class="msg-reply-preview" id="msg-reply-preview">
+      <div id="msg-reply-text" style="flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; padding-left:10px;">الرد على...</div>
+      <div class="msg-reply-close" onclick="cancelReply()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>
     </div>
 
     <div class="input-bar">
+
       <button class="btn-attach" id="btn-attach" onclick="document.getElementById('file-img-input').click()" title="إرسال صورة">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
       </button>
@@ -1188,6 +1205,9 @@ auth.onAuthStateChanged(async user=>{
     
     // تشغيل مراقب المكالمات
     initCallListener(user.uid);
+    
+    // تشغيل مراقب طلبات الصداقة في الخلفية
+    initFriendRequestsListener(user.uid);
 
     // نظام الظهور ومتصل الآن
     const myStatusRef = db.ref('users/' + user.uid + '/status');
@@ -1362,10 +1382,13 @@ function renderChatsList(filter=''){
     div.className='chat-item';
     div.dataset.chatid=chatId;
     const initials = (data.friendName||'?').charAt(0);
+    const avatarHtml = data.friendPhoto 
+        ? `<img src="${data.friendPhoto}" class="chat-avatar" />`
+        : `<div class="chat-avatar">${initials}</div>`;
     const timeStr  = data.updatedAt ? formatTime(data.updatedAt) : '';
     const lastMsg  = data.lastMsg || 'اضغط لبدء المحادثة';
     div.innerHTML=`
-      <div class="chat-avatar">${initials}</div>
+      ${avatarHtml}
       <div class="chat-info">
         <div class="chat-name">${escHtml(data.friendName||'مستخدم')}</div>
         <div class="chat-last-msg">${escHtml(lastMsg)}</div>
@@ -1434,36 +1457,53 @@ async function sendFriendRequest(friendUid) {
 }
 
 let friendRequestsListener = null;
-function loadFriendRequests() {
-  if (!currentUser) return;
-  const list = document.getElementById('friend-requests-list');
-  
-  if (friendRequestsListener) db.ref('friendRequests/' + currentUser.uid).off('value', friendRequestsListener);
 
-  friendRequestsListener = db.ref('friendRequests/' + currentUser.uid).on('value', snap => {
-    list.innerHTML = '';
+function initFriendRequestsListener(uid) {
+  if (friendRequestsListener) db.ref('friendRequests/' + uid).off('value', friendRequestsListener);
+  
+  friendRequestsListener = db.ref('friendRequests/' + uid).on('value', snap => {
+    const list = document.getElementById('friend-requests-list');
+    const badge = document.getElementById('home-req-badge');
+    
     if (!snap.exists()) {
-      list.innerHTML = '<div style="font-size:13px; color:var(--text-muted); text-align:center; padding:10px;">لا توجد طلبات واردة</div>';
+      if(badge) badge.style.display = 'none';
+      if(list) list.innerHTML = '<div style="font-size:13px; color:var(--text-muted); text-align:center; padding:10px;">لا توجد طلبات واردة</div>';
       return;
     }
+    
+    let count = 0;
+    let htmlStr = '';
+    
     snap.forEach(reqSnap => {
+      count++;
       const req = reqSnap.val();
-      const div = document.createElement('div');
-      div.className = 'search-result-card';
-      div.style.padding = '12px 16px';
       const initials = (req.name || '?').charAt(0);
-      div.innerHTML = `
-        <div class="search-result-avatar" style="width:40px; height:40px; font-size:15px;">${initials}</div>
-        <div class="search-result-info">
-          <div class="search-result-name" style="font-size:14px; margin-bottom:0;">${escHtml(req.name)}</div>
-        </div>
-        <div style="display:flex; gap:6px;">
-          <button class="btn-primary" style="width:auto; padding:6px 12px; font-size:12px; background:var(--neon-green); box-shadow:none;" onclick="acceptFriendRequest('${req.uid}')">موافقة</button>
-          <button class="btn-danger" style="width:auto; padding:6px 12px; font-size:12px;" onclick="rejectFriendRequest('${req.uid}')">رفض</button>
+      htmlStr += `
+        <div class="search-result-card" style="padding: 12px 16px;">
+          <div class="search-result-avatar" style="width:40px; height:40px; font-size:15px;">${initials}</div>
+          <div class="search-result-info">
+            <div class="search-result-name" style="font-size:14px; margin-bottom:0;">${escHtml(req.name)}</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn-primary" style="width:auto; padding:6px 12px; font-size:12px; background:var(--neon-green); box-shadow:none;" onclick="acceptFriendRequest('${req.uid}')">موافقة</button>
+            <button class="btn-danger" style="width:auto; padding:6px 12px; font-size:12px;" onclick="rejectFriendRequest('${req.uid}')">رفض</button>
+          </div>
         </div>`;
-      list.appendChild(div);
     });
+    
+    // تحديث الشارة الحمراء (Badge) بناءً على العدد
+    if(badge) {
+      badge.textContent = count;
+      badge.style.display = count > 0 ? 'flex' : 'none';
+    }
+    
+    // تحديث القائمة المباشرة إذا كانت الشاشة مفتوحة
+    if(list) list.innerHTML = htmlStr;
   });
+}
+
+function loadFriendRequests() {
+  // أصبحت فارغة لأن المستمع العام (initFriendRequestsListener) يتكفل بتحديث القائمة بشكل فوري ودائم بالخلفية
 }
 
 async function acceptFriendRequest(friendUid) {
@@ -1509,7 +1549,14 @@ async function openChat(chatId, friendUid, friendProfile=null){
   }
   currentChat = { chatId, friendUid, friendProfile };
   document.getElementById('chat-header-name').textContent = friendProfile.name;
-  document.getElementById('chat-header-avatar').textContent = (friendProfile.name||'?').charAt(0);
+  
+  const avatarEl = document.getElementById('chat-header-avatar');
+  if (friendProfile.photo) {
+    avatarEl.outerHTML = `<img src="${friendProfile.photo}" class="chat-header-avatar" id="chat-header-avatar" />`;
+  } else {
+    avatarEl.outerHTML = `<div class="chat-header-avatar" id="chat-header-avatar">${(friendProfile.name||'?').charAt(0)}</div>`;
+  }
+  
   db.ref('userChats/'+currentUser.uid+'/'+chatId+'/unread').set(0);
   
   const statusEl = document.getElementById('chat-header-status');
@@ -1521,7 +1568,7 @@ async function openChat(chatId, friendUid, friendProfile=null){
   friendStatusListener = friendStatusRef.on('value', snap => {
     const status = snap.val();
     if(status === 'online') {
-      baseStatusText = '● متصل الآن'; baseStatusColor = 'var(--neon-green)';
+      baseStatusText = '🟢 متصل الآن'; baseStatusColor = 'var(--neon-green)';
     } else if (status) {
       const d = new Date(status); const today = new Date(); let prefix = '';
       if(d.toDateString() === today.toDateString()) prefix = 'اليوم';
@@ -1530,10 +1577,10 @@ async function openChat(chatId, friendUid, friendProfile=null){
         if(d.toDateString() === yes.toDateString()) prefix = 'أمس';
         else prefix = d.toLocaleDateString('ar-EG', {day:'2-digit', month:'short'});
       }
-      baseStatusText = 'آخر ظهور: ' + prefix + ' ' + formatTime(status);
+      baseStatusText = '🔴 آخر ظهور: ' + prefix + ' ' + formatTime(status);
       baseStatusColor = 'var(--text-secondary)';
     } else {
-      baseStatusText = 'غير متصل'; baseStatusColor = 'var(--text-secondary)';
+      baseStatusText = '🔴 غير متصل'; baseStatusColor = 'var(--text-secondary)';
     }
     statusEl.textContent = baseStatusText; statusEl.style.color = baseStatusColor;
   });
@@ -1630,11 +1677,19 @@ function attachMessages(chatId) {
 }
 
 function buildMsgEl(msg) {
+  // إذا كانت الرسالة محذوفة
+  if (msg.isDeleted) {
+    const delRow = document.createElement('div');
+    const delIsOut = msg.senderUid === currentUser.uid;
+    delRow.className = 'msg-row ' + (delIsOut ? 'out' : 'in');
+    delRow.innerHTML = `<div class="msg-bubble" style="background:transparent; border:1px solid var(--border-subtle); color:var(--text-muted); font-style:italic; font-size:12px;">🚫 تم حذف هذه الرسالة</div>`;
+    return delRow;
+  }
+
   const row = document.createElement('div');
   const isOut = msg.senderUid === currentUser.uid;
   row.className = 'msg-row ' + (isOut ? 'out' : 'in');
 
-  // تجهيز صورة الطرف التاني بطريقة صحيحة بدون ما نضرب الكود
   let avatarNode = null;
   if (!isOut) {
     const fProfile = currentChat.friendProfile || {};
@@ -1654,7 +1709,42 @@ function buildMsgEl(msg) {
 
   const bubble = document.createElement('div');
   bubble.className = 'msg-bubble';
-  bubble.setAttribute('ondblclick', `toggleReaction('${msg.key}')`);
+  bubble.id = 'msg-' + msg.key;
+  
+  // أحداث اللمس: ضغطة مزدوجة للتفاعل، ضغطة مطولة للقائمة، وسحب للرد
+  let lastTap = 0;
+  let pressTimer;
+  let touchStartX = 0;
+  let isSwiping = false;
+
+  bubble.addEventListener('touchstart', function(e) {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTap;
+    if (tapLength < 300 && tapLength > 0) { toggleReaction(msg.key); e.preventDefault(); }
+    lastTap = currentTime;
+
+    touchStartX = e.changedTouches[0].screenX;
+    isSwiping = false;
+
+    pressTimer = setTimeout(() => { if(!isSwiping) openMsgMenu(msg, isOut); }, 600);
+  });
+
+  bubble.addEventListener('touchmove', function(e) {
+    const touchMoveX = e.changedTouches[0].screenX;
+    if (Math.abs(touchMoveX - touchStartX) > 20) { isSwiping = true; clearTimeout(pressTimer); }
+  });
+
+  bubble.addEventListener('touchend', function(e) {
+    clearTimeout(pressTimer);
+    const touchEndX = e.changedTouches[0].screenX;
+    if (isSwiping) {
+      if (isOut && (touchStartX - touchEndX > 60)) { prepareReply(msg); } // سحب لليسار لرسائلي
+      if (!isOut && (touchEndX - touchStartX > 60)) { prepareReply(msg); } // سحب لليمين لرسائل الطرف الآخر
+    }
+  });
+
+  bubble.addEventListener('dblclick', function() { toggleReaction(msg.key); });
+  bubble.addEventListener('contextmenu', function(e) { e.preventDefault(); openMsgMenu(msg, isOut); });
 
   const reactionHtml = `<div id="react-${msg.key}" class="msg-reaction" style="display:${msg.reaction ? 'flex' : 'none'}">${msg.reaction || ''}</div>`;
 
@@ -1665,20 +1755,25 @@ function buildMsgEl(msg) {
     ticks = `<svg id="ticks-${msg.key}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" style="margin-left:4px; margin-bottom:-2px;">${svgContent}</svg>`;
   }
 
-  const timeEl = `<div class="msg-time" style="display:flex; align-items:center; gap:4px;">${ticks}${formatTime(msg.timestamp)}</div>`;
+  const timeEl = `<div class="msg-time" style="display:flex; align-items:center; gap:4px;">${msg.isEdited ? '<span style="font-size:10px; opacity:0.7;">(معدلة)</span>' : ''} ${ticks}${formatTime(msg.timestamp)}</div>`;
+
+  // تجهيز شكل الاقتباس (الرد) إذا كان موجوداً
+  let replyHtml = '';
+  if (msg.replyTo) {
+    replyHtml = `<div class="reply-badge">رد على رسالة</div><div style="background:rgba(0,0,0,0.2); padding:6px; border-radius:6px; margin-bottom:6px; border-right:2px solid var(--neon-cyan); font-size:12px; opacity:0.8; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${escHtml(msg.replyTo.text)}</div>`;
+  }
 
   if (msg.type === 'text') {
-    bubble.innerHTML = `<div>${escHtml(msg.text)}</div>${timeEl}`;
+    bubble.innerHTML = `${replyHtml}<div>${escHtml(msg.text)}</div>${timeEl}`;
   } else if (msg.type === 'image') {
-    bubble.innerHTML = `<img class="msg-img" src="${msg.url}" onclick="previewImg('${msg.url}')"/>${timeEl}`;
+    bubble.innerHTML = `${replyHtml}<img class="msg-img" src="${msg.url}" onclick="previewImg('${msg.url}')"/>${timeEl}`;
   } else if (msg.type === 'voice') {
     const bars = Array.from({length: 20}, () => `<div class="voice-bar" style="height:${Math.floor(Math.random() * 70) + 20}%"></div>`).join('');
-    bubble.innerHTML = `<div class="voice-msg"><button class="voice-play-btn" onclick="playVoice(this,'${msg.url}')"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><div class="voice-waveform">${bars}</div><span class="voice-duration">${msg.duration || '0:00'}</span></div>${timeEl}`;
+    bubble.innerHTML = `${replyHtml}<div class="voice-msg"><button class="voice-play-btn" onclick="playVoice(this,'${msg.url}')"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><div class="voice-waveform">${bars}</div><span class="voice-duration">${msg.duration || '0:00'}</span></div>${timeEl}`;
   }
 
   bubble.innerHTML += reactionHtml;
 
-  // هون التركيب النظيف
   if (!isOut && avatarNode) row.appendChild(avatarNode);
   row.appendChild(bubble);
   
@@ -1692,6 +1787,79 @@ function toggleReaction(msgKey) {
   ref.once('value', snap => {
     const m = snap.val();
     if(m) ref.update({ reaction: m.reaction === '❤️' ? null : '❤️' });
+  });
+}
+
+/* ═════════════════════════════════════════════════════════
+   MSG CONTEXT MENU & ACTIONS
+═════════════════════════════════════════════════════════ */
+let replyingToMsg = null;
+let editingMsgKey = null;
+
+function openMsgMenu(msg, isOut) {
+  const menu = document.getElementById('msg-menu');
+  menu.innerHTML = '';
+  
+  // زر الرد (متاح للجميع)
+  menu.innerHTML += `<button class="msg-menu-btn" onclick="prepareReply(${JSON.stringify(msg).replace(/"/g, '&quot;')}); closeMsgMenu();"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg> رد</button>`;
+  
+  // زر النسخ (للرسائل النصية فقط)
+  if (msg.type === 'text') {
+    menu.innerHTML += `<button class="msg-menu-btn" onclick="copyMsgText('${msg.text.replace(/'/g, "\\'")}'); closeMsgMenu();"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> نسخ النص</button>`;
+  }
+
+  // خيارات التعديل والحذف (إذا كانت رسالتي)
+  if (isOut) {
+    if (msg.type === 'text') {
+      menu.innerHTML += `<button class="msg-menu-btn" onclick="prepareEdit('${msg.key}', '${msg.text.replace(/'/g, "\\'")}'); closeMsgMenu();"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> تعديل</button>`;
+    }
+    menu.innerHTML += `<button class="msg-menu-btn danger" onclick="confirmDeleteMsg('${msg.key}'); closeMsgMenu();"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg> حذف الرسالة</button>`;
+  }
+
+  document.getElementById('msg-menu-overlay').classList.add('open');
+  if(navigator.vibrate) navigator.vibrate(50); // اهتزاز خفيف عند فتح القائمة
+}
+
+function closeMsgMenu() {
+  document.getElementById('msg-menu-overlay').classList.remove('open');
+}
+
+function copyMsgText(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('تم نسخ النص', 'success'));
+}
+
+function prepareReply(msg) {
+  replyingToMsg = msg;
+  editingMsgKey = null; // نلغي وضع التعديل إذا كان مفعلاً
+  const pre = document.getElementById('msg-reply-preview');
+  pre.classList.add('active');
+  let txt = msg.type === 'text' ? msg.text : msg.type === 'image' ? '📷 صورة' : '🎙️ مقطع صوتي';
+  document.getElementById('msg-reply-text').textContent = "رد على: " + txt;
+  document.getElementById('msg-input').focus();
+}
+
+function cancelReply() {
+  replyingToMsg = null;
+  document.getElementById('msg-reply-preview').classList.remove('active');
+}
+
+function prepareEdit(msgKey, oldText) {
+  editingMsgKey = msgKey;
+  cancelReply(); // نلغي الرد في حال كنا نرد
+  const inp = document.getElementById('msg-input');
+  inp.value = oldText;
+  inp.focus();
+  showToast('وضع التعديل مفعل', 'info');
+}
+
+function confirmDeleteMsg(msgKey) {
+  openModal('حذف الرسالة', 'هل تريد حذف هذه الرسالة من عندك فقط أم من عند الجميع؟').then(ok => {
+    // استخدمنا openModal الموجودة مسبقاً، لكن سنحتاج تعديلها لتقبل ٣ أزرار مستقبلاً، حالياً سنحذفها للجميع كإعداد افتراضي
+    if(ok) {
+      if(!currentChat) return;
+      db.ref('chats/'+currentChat.chatId+'/messages/'+msgKey).update({ isDeleted: true, text: null, url: null, type: 'deleted' })
+        .then(() => showToast('تم حذف الرسالة', 'success'));
+    }
   });
 }
 
@@ -1716,9 +1884,38 @@ async function sendTextMsg(){
   const inp = document.getElementById('msg-input');
   const text = inp.value.trim();
   if(!text||!currentChat) return;
+  
   inp.value=''; autoResize(inp);
-  inp.focus(); // هاد السطر بيخلي الكيبورد يضل فاتح وما يسكر
-  await pushMessage({ type:'text', text, senderUid:currentUser.uid, timestamp:Date.now() });
+  inp.focus(); 
+
+  // إذا كنا في وضع التعديل
+  if (editingMsgKey) {
+    await db.ref('chats/'+currentChat.chatId+'/messages/'+editingMsgKey).update({
+      text: text,
+      isEdited: true
+    });
+    editingMsgKey = null;
+    showToast('تم تعديل الرسالة', 'success');
+    return;
+  }
+
+  // تجهيز معلومات الرد إذا كانت موجودة
+  let replyData = null;
+  if (replyingToMsg) {
+    replyData = {
+      key: replyingToMsg.key,
+      text: replyingToMsg.type === 'text' ? replyingToMsg.text : replyingToMsg.type === 'image' ? '📷 صورة' : '🎙️ صوت'
+    };
+    cancelReply(); // إغلاق واجهة الرد بعد الإرسال
+  }
+
+  await pushMessage({ 
+    type: 'text', 
+    text: text, 
+    senderUid: currentUser.uid, 
+    timestamp: Date.now(),
+    replyTo: replyData 
+  });
 }
 
 async function sendImageMsg(url){
@@ -1935,9 +2132,21 @@ let currentCallPeer = null;
 let callDurationInt = null;
 let callStartTime = 0;
 
+// إعدادات WebRTC ونقل الصوت الفعلي
+let localStream = null;
+let peerConnection = null;
+let audioRemote = null; // عنصر لتشغيل الصوت القادم
+
+const rtcConfig = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' }
+  ]
+};
+
 function initCallListener(uid) {
   if(myCallListener) db.ref('calls/'+uid).off('value', myCallListener);
-  myCallListener = db.ref('calls/'+uid).on('value', snap => {
+  myCallListener = db.ref('calls/'+uid).on('value', async snap => {
     const data = snap.val();
     if(!data) { closeCallUI(); return; }
     
@@ -1948,39 +2157,67 @@ function initCallListener(uid) {
     if(data.status === 'incoming') {
       document.getElementById('call-status-view').textContent = 'يتصل بك...';
       document.getElementById('btn-accept-call').style.display = 'flex';
-      if(navigator.vibrate) navigator.vibrate([500, 500, 500, 500]); // رنة
+      if(navigator.vibrate) navigator.vibrate([500, 500, 500, 500]); 
       renderScreenUI('call');
     } 
     else if(data.status === 'answered') {
       document.getElementById('btn-accept-call').style.display = 'none';
       startCallTimer();
+      // الطرف الذي اتصل يقوم بإنشاء اتصال الـ WebRTC الفعلي عند إجابة الطرف الآخر
+      if (data.role === 'caller' && !peerConnection) {
+        setupWebRTCPeer(true);
+      }
     }
   });
 }
 
-function startCall() {
+async function startCall() {
   if(!currentChat) return;
   currentCallPeer = currentChat.friendUid;
   document.getElementById('call-name-view').textContent = currentChat.friendProfile.name;
   document.getElementById('call-avatar-view').textContent = currentChat.friendProfile.name.charAt(0);
-  document.getElementById('call-status-view').textContent = 'جاري الاتصال...';
+  document.getElementById('call-status-view').textContent = 'جاري الاتصال وفتح المايكروفون...';
   document.getElementById('btn-accept-call').style.display = 'none';
   
-  // تحديث حالتي للاتصال وحالة الطرف الثاني للوارد
-  db.ref('calls/'+currentUser.uid).set({ status: 'calling', peerUid: currentCallPeer, peerName: currentChat.friendProfile.name });
-  db.ref('calls/'+currentCallPeer).set({ status: 'incoming', peerUid: currentUser.uid, peerName: myProfile.name });
-  
   renderScreenUI('call');
+
+  try {
+    // فتح المايكروفون والحصول على تدفق الصوت المحلي
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    document.getElementById('call-status-view').textContent = 'جاري الاتصال...';
+    
+    // تسجيل المكالمة في قاعدة البيانات مع تحديد دور المتصل (caller)
+    db.ref('calls/'+currentUser.uid).set({ status: 'calling', role: 'caller', peerUid: currentCallPeer, peerName: currentChat.friendProfile.name });
+    db.ref('calls/'+currentCallPeer).set({ status: 'incoming', role: 'callee', peerUid: currentUser.uid, peerName: myProfile.name });
+  } catch (e) {
+    showToast('فشل فتح المايكروفون: تأكد من الصلاحيات', 'error');
+    endCall();
+  }
 }
 
-function acceptCall() {
+async function acceptCall() {
   if(!currentCallPeer) return;
-  db.ref('calls/'+currentUser.uid).update({ status: 'answered' });
-  db.ref('calls/'+currentCallPeer).update({ status: 'answered' });
+  document.getElementById('call-status-view').textContent = 'جاري فتح المايكروفون للرد...';
+  
+  try {
+    // فتح مايكروفون الطرف المستقبل أيضاً قبل الموافقة الرسمية
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    
+    await db.ref('calls/'+currentUser.uid).update({ status: 'answered' });
+    await db.ref('calls/'+currentCallPeer).update({ status: 'answered' });
+    
+    // إنشاء نظام الـ WebRTC للمستقبل (callee)
+    setupWebRTCPeer(false);
+  } catch (e) {
+    showToast('لا يمكن الرد بدون صلاحية المايكروفون', 'error');
+    endCall();
+  }
 }
 
 function endCall() {
   if(currentCallPeer) {
+    // تنظيف بيانات الإشارات لـ WebRTC من الفايربيس عند الإنهاء
+    db.ref('chats/' + [currentUser.uid, currentCallPeer].sort().join('_') + '/webrtc').remove();
     db.ref('calls/'+currentCallPeer).remove();
     db.ref('calls/'+currentUser.uid).remove();
   }
@@ -1989,8 +2226,91 @@ function endCall() {
 
 function closeCallUI() {
   clearInterval(callDurationInt);
+  
+  // إيقاف المايكروفون تماماً وتنظيف مسارات الصوت المحلية
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
+  }
+  // إغلاق اتصال الـ WebRTC وإعادته للحالة الصفرية
+  if (peerConnection) {
+    peerConnection.close();
+    peerConnection = null;
+  }
+  
+  const remoteAudio = document.getElementById('remote-audio-el');
+  if (remoteAudio) remoteAudio.srcObject = null;
+
   if(document.getElementById('screen-call').classList.contains('active')) {
-    renderScreenUI('chat'); // يرجع للشات بس يفصل
+    renderScreenUI('chat'); 
+  }
+}
+
+async function setupWebRTCPeer(isCaller) {
+  const chatId = [currentUser.uid, currentCallPeer].sort().join('_');
+  const signalRef = db.ref('chats/' + chatId + '/webrtc');
+
+  peerConnection = new RTCPeerConnection(rtcConfig);
+
+  // إضافة تدفق الصوت المحلي إلى الاتصال ليتم إرساله للطرف الآخر
+  if (localStream) {
+    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+  }
+
+  // عندما يصل صوت من الطرف الآخر، قم بربطه بعنصر الصوت المخفي ليعمل فوراً
+  peerConnection.ontrack = (event) => {
+    const remoteAudio = document.getElementById('remote-audio-el');
+    if (remoteAudio && event.streams && event.streams[0]) {
+      remoteAudio.srcObject = event.streams[0];
+    }
+  };
+
+  // إرسال مسارات الـ ICE المتاحة لجهازي إلى الفايربيس ليراها الطرف الثاني
+  peerConnection.onicecandidate = (event) => {
+    if (event.candidate) {
+      signalRef.child(isCaller ? 'callerCandidates' : 'calleeCandidates').push(event.candidate.toJSON());
+    }
+  };
+
+  if (isCaller) {
+    // إذا كنت أنا المتصل: قم بإنشاء العرض (Offer) وإرساله
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+    await signalRef.child('offer').set({ sdp: offer.sdp, type: offer.type });
+
+    // استمع بانتظار رد الطرف الآخر (Answer)
+    signalRef.child('answer').on('value', async snap => {
+      const answer = snap.val();
+      if (answer && peerConnection.signalingState !== 'stable') {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+      }
+    });
+
+    // جلب مسارات الـ ICE الخاصة بالطرف الآخر
+    signalRef.child('calleeCandidates').on('child_added', async snap => {
+      const cand = snap.val();
+      if (cand) await peerConnection.addIceCandidate(new RTCIceCandidate(cand));
+    });
+
+  } else {
+    // إذا كنت أنا المستقبل: انتظر وصول العرض (Offer)
+    signalRef.child('offer').once('value', async snap => {
+      const offer = snap.val();
+      if (offer) {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        
+        // إنشاء الإجابة (Answer) وإرسالها
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        await signalRef.child('answer').set({ sdp: answer.sdp, type: answer.type });
+      }
+    });
+
+    // جلب مسارات الـ ICE الخاصة بالمتصل
+    signalRef.child('callerCandidates').on('child_added', async snap => {
+      const cand = snap.val();
+      if (cand) await peerConnection.addIceCandidate(new RTCIceCandidate(cand));
+    });
   }
 }
 
@@ -2005,5 +2325,6 @@ function startCallTimer() {
   }, 1000);
 }
 </script>
+<audio id="remote-audio-el" autoplay style="display:none;"></audio>
 </body>
 </html>
