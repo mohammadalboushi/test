@@ -401,8 +401,9 @@ html, body {
   from { opacity: 0; transform: translateY(8px) scale(0.97); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
-.msg-row.out { justify-content: flex-start; }
-.msg-row.in  { justify-content: flex-end; }
+.msg-row.out { justify-content: flex-end; }
+.msg-row.in  { justify-content: flex-start; }
+.msg-friend-avatar { width: 32px; height: 32px; border-radius: 50%; margin-left: 8px; align-self: flex-end; background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple)); color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; flex-shrink: 0; object-fit: cover; border: 1px solid rgba(0,240,255,0.4); }
 
 .msg-bubble {
   max-width: 72%; padding: 10px 14px;
@@ -461,6 +462,9 @@ html, body {
 }
 .voice-duration { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
 
+.msg-reaction { position:absolute; bottom:-10px; left:10px; background:var(--bg-surface); border:1px solid var(--border-glow); border-radius:12px; padding:2px 6px; font-size:13px; box-shadow:var(--shadow-neon); z-index:2; cursor:pointer; user-select:none; animation: popIn 0.2s ease;}
+.msg-row.out .msg-reaction { left:auto; right:10px; }
+@keyframes popIn { 0% {transform:scale(0);} 100% {transform:scale(1);} }
 /* Date separator */
 .date-sep {
   text-align: center; font-size: 11px; color: var(--text-muted);
@@ -932,9 +936,19 @@ html, body {
       <button class="btn-attach" id="btn-attach" onclick="document.getElementById('file-img-input').click()" title="إرسال صورة">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
       </button>
-      <div class="msg-input-wrap">
+      
+      <button class="btn-attach" id="btn-cancel-voice" onclick="cancelVoiceRecord()" title="إلغاء التسجيل" style="display:none; color:var(--neon-pink); border-color:var(--neon-pink); background:rgba(255,0,144,0.1);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      </button>
+
+      <div class="msg-input-wrap" id="msg-input-wrap">
         <textarea class="msg-input" id="msg-input" placeholder="اكتب رسالة…" rows="1" oninput="autoResize(this)" onkeydown="handleMsgKey(event)"></textarea>
       </div>
+
+      <div id="recording-indicator" style="display:none; flex:1; text-align:center; color:var(--neon-pink); font-weight:bold; font-size:14px;">
+        جاري التسجيل... <span>0:00</span>
+      </div>
+
       <button class="btn-voice" id="btn-voice" onclick="toggleRecording()" title="رسالة صوتية">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
       </button>
@@ -1176,12 +1190,13 @@ auth.onAuthStateChanged(async user=>{
     initCallListener(user.uid);
 
     // نظام الظهور ومتصل الآن
-    const myStatusRef = db.ref('/users/' + user.uid + '/status');
+    const myStatusRef = db.ref('users/' + user.uid + '/status');
     db.ref('.info/connected').on('value', snap => {
-      if (snap.val() === false) return;
-      myStatusRef.onDisconnect().set(Date.now()).then(() => {
-        myStatusRef.set('online');
-      });
+      if (snap.val() === true) {
+        myStatusRef.onDisconnect().set(Date.now()).then(() => {
+          myStatusRef.set('online');
+        });
+      }
     });
   } else {
     currentUser = null; myProfile = null;
@@ -1304,13 +1319,31 @@ document.getElementById('file-avatar-input').addEventListener('change', async e 
 /* ═════════════════════════════════════════════════════════
    CHATS LIST
 ═════════════════════════════════════════════════════════ */
+let lastUnreads = {};
+let isFirstChatsLoad = true;
+
 function loadChats(){
   if(!currentUser) return;
   if(chatsListener) db.ref('userChats/'+currentUser.uid).off('value', chatsListener);
   chatsListener = db.ref('userChats/'+currentUser.uid).orderByChild('updatedAt').on('value', snap=>{
     chatsData = {};
-    if(snap.exists()) snap.forEach(c=>{ chatsData[c.key]=c.val(); });
+    let hasNewMessage = false;
+    if(snap.exists()) {
+      snap.forEach(c => { 
+        const d = c.val(); 
+        chatsData[c.key] = d; 
+        if (!isFirstChatsLoad && d.unread > (lastUnreads[c.key] || 0)) hasNewMessage = true;
+        lastUnreads[c.key] = d.unread;
+      }); 
+    }
     renderChatsList();
+    
+    // الفقاعات والاهتزاز فقط إذا كنت برا الشات
+    if (hasNewMessage && !document.getElementById('screen-chat').classList.contains('active')) {
+       if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+       createBubbleEffect();
+    }
+    setTimeout(() => isFirstChatsLoad = false, 1000);
   });
 }
 
@@ -1464,6 +1497,10 @@ async function startChat(friendUid){
 ═════════════════════════════════════════════════════════ */
 let friendStatusListener = null;
 let friendStatusRef = null;
+let typingRef = null;
+let typingListener = null;
+let baseStatusText = 'غير متصل';
+let baseStatusColor = 'var(--text-secondary)';
 
 async function openChat(chatId, friendUid, friendProfile=null){
   if(!friendProfile){
@@ -1471,14 +1508,10 @@ async function openChat(chatId, friendUid, friendProfile=null){
     friendProfile = snap.val();
   }
   currentChat = { chatId, friendUid, friendProfile };
-  // header
   document.getElementById('chat-header-name').textContent = friendProfile.name;
-  const hav = document.getElementById('chat-header-avatar');
-  hav.textContent = (friendProfile.name||'?').charAt(0);
-  // reset unread
+  document.getElementById('chat-header-avatar').textContent = (friendProfile.name||'?').charAt(0);
   db.ref('userChats/'+currentUser.uid+'/'+chatId+'/unread').set(0);
   
-  // جلب حالة الاتصال
   const statusEl = document.getElementById('chat-header-status');
   statusEl.textContent = 'جاري التحقق...';
   statusEl.style.color = 'var(--text-muted)';
@@ -1488,24 +1521,33 @@ async function openChat(chatId, friendUid, friendProfile=null){
   friendStatusListener = friendStatusRef.on('value', snap => {
     const status = snap.val();
     if(status === 'online') {
-      statusEl.textContent = '● متصل الآن';
-      statusEl.style.color = 'var(--neon-green)';
+      baseStatusText = '● متصل الآن'; baseStatusColor = 'var(--neon-green)';
     } else if (status) {
-      // دمج تاريخ ووقت لآخر ظهور
-      const d = new Date(status);
-      const today = new Date();
-      let prefix = '';
+      const d = new Date(status); const today = new Date(); let prefix = '';
       if(d.toDateString() === today.toDateString()) prefix = 'اليوم';
       else {
         const yes = new Date(today); yes.setDate(today.getDate()-1);
         if(d.toDateString() === yes.toDateString()) prefix = 'أمس';
         else prefix = d.toLocaleDateString('ar-EG', {day:'2-digit', month:'short'});
       }
-      statusEl.textContent = 'آخر ظهور: ' + prefix + ' ' + formatTime(status);
-      statusEl.style.color = 'var(--text-secondary)';
+      baseStatusText = 'آخر ظهور: ' + prefix + ' ' + formatTime(status);
+      baseStatusColor = 'var(--text-secondary)';
     } else {
-      statusEl.textContent = 'غير متصل';
-      statusEl.style.color = 'var(--text-secondary)';
+      baseStatusText = 'غير متصل'; baseStatusColor = 'var(--text-secondary)';
+    }
+    statusEl.textContent = baseStatusText; statusEl.style.color = baseStatusColor;
+  });
+
+  if(typingRef && typingListener) typingRef.off('value', typingListener);
+  typingRef = db.ref('chats/' + chatId + '/typing/' + friendUid);
+  typingListener = typingRef.on('value', snap => {
+    const state = snap.val();
+    if (state === 'typing') {
+      statusEl.textContent = '✍️ يكتب الآن...'; statusEl.style.color = 'var(--neon-cyan)';
+    } else if (state === 'recording') {
+      statusEl.textContent = '🎙️ يسجل مقطع صوتي...'; statusEl.style.color = 'var(--neon-pink)';
+    } else {
+      statusEl.textContent = baseStatusText; statusEl.style.color = baseStatusColor;
     }
   });
 
@@ -1514,9 +1556,11 @@ async function openChat(chatId, friendUid, friendProfile=null){
 }
 
 function detachMessages(){
-  if(messagesRef && messagesListener){ messagesRef.off('value', messagesListener); messagesListener=null; }
+  if(messagesRef && messagesListener){ messagesRef.off('child_added', messagesListener); messagesRef.off('child_changed'); messagesListener=null; }
   if(friendStatusRef && friendStatusListener){ friendStatusRef.off('value', friendStatusListener); friendStatusListener=null; }
+  if(typingRef && typingListener){ typingRef.off('value', typingListener); typingListener=null; }
 }
+
 
 let isInitialLoad = true;
 
@@ -1533,97 +1577,134 @@ function createBubbleEffect() {
   }
 }
 
-function attachMessages(chatId){
+function attachMessages(chatId) {
   detachMessages();
   const area = document.getElementById('messages-area');
-  area.innerHTML='';
-  isInitialLoad = true;
-  messagesRef = db.ref('chats/'+chatId+'/messages');
-  messagesListener = messagesRef.orderByChild('timestamp').on('value', snap=>{
-    area.innerHTML='';
-    if(!snap.exists()) return;
-    let lastDate='';
-    let lastMsg = null;
-    snap.forEach(msgSnap=>{
-      const msg = msgSnap.val();
-      lastMsg = msg;
-      const dateStr = formatDate(msg.timestamp);
-      if(dateStr!==lastDate){
-        const sep=document.createElement('div');
-        sep.className='date-sep';
-        sep.innerHTML=`<span>${dateStr}</span>`;
-        area.appendChild(sep);
-        lastDate=dateStr;
-      }
-      area.appendChild(buildMsgEl(msg));
-    });
+  area.innerHTML = '';
+  lastMsgDate = '';
+  
+  // تحديث اسمي وصورتي عند الطرف التاني
+  db.ref('userChats/'+currentChat.friendUid+'/'+chatId).update({ friendName: myProfile.name, friendPhoto: myProfile.photo || '' });
+
+  messagesRef = db.ref('chats/' + chatId + '/messages');
+  
+  messagesListener = messagesRef.orderByChild('timestamp').on('child_added', snap => {
+    const msg = snap.val();
+    msg.key = snap.key; // ضرورية مشان نعرف أي رسالة نعدل
     
-    // تشغيل الاهتزاز والفقاعات إذا كانت الرسالة جديدة ومو منك
-    if(!isInitialLoad && lastMsg && lastMsg.senderUid !== currentUser.uid) {
-      if(navigator.vibrate) navigator.vibrate([100, 50, 100]); // اهتزاز
-      createBubbleEffect();
+    const dateStr = formatDate(msg.timestamp);
+    if (dateStr !== lastMsgDate) {
+      const sep = document.createElement('div'); sep.className = 'date-sep'; sep.innerHTML = `<span>${dateStr}</span>`;
+      area.appendChild(sep); lastMsgDate = dateStr;
     }
     
-    // تحديث حالة القراءة (الصحين)
-    snap.forEach(msgSnap => {
-      const msg = msgSnap.val();
-      if(msg.senderUid !== currentUser.uid && !msg.read) {
-        msgSnap.ref.update({ read: true });
-      }
-    });
-    
+    area.appendChild(buildMsgEl(msg));
     area.scrollTop = area.scrollHeight;
-    setTimeout(() => isInitialLoad = false, 500);
+    
+    if (msg.senderUid !== currentUser.uid && !msg.read) snap.ref.update({ read: true });
+  });
+
+  // مراقبة التغيرات (الصحين والقلب)
+  messagesRef.on('child_changed', snap => {
+    const msg = snap.val();
+    msg.key = snap.key;
+    
+    // تحديث الصحين
+    const ticksEl = document.getElementById('ticks-' + msg.key);
+    if (ticksEl && msg.read) {
+      ticksEl.setAttribute('stroke', 'var(--neon-cyan)');
+      ticksEl.innerHTML = '<polyline points="20 6 9 17 4 12"></polyline><polyline points="24 6 13 17 8 12"></polyline>';
+    }
+    
+    // تحديث القلب
+    const reactEl = document.getElementById('react-' + msg.key);
+    if (reactEl) {
+      if (msg.reaction) {
+        reactEl.style.display = 'flex';
+        reactEl.innerHTML = msg.reaction;
+      } else {
+        reactEl.style.display = 'none';
+      }
+    }
   });
 }
 
-function buildMsgEl(msg){
+function buildMsgEl(msg) {
   const row = document.createElement('div');
   const isOut = msg.senderUid === currentUser.uid;
-  row.className = 'msg-row '+(isOut?'out':'in');
+  row.className = 'msg-row ' + (isOut ? 'out' : 'in');
+  
+  let avatarHtml = '';
+  if (!isOut) {
+    const fPhoto = currentChat.friendProfile.photo;
+    const fChar = (currentChat.friendProfile.name || '?').charAt(0);
+    avatarHtml = fPhoto ? `<img src="${fPhoto}" class="msg-friend-avatar" />` : `<div class="msg-friend-avatar">${fChar}</div>`;
+  }
+
   const bubble = document.createElement('div');
   bubble.className = 'msg-bubble';
+  bubble.setAttribute('ondblclick', `toggleReaction('${msg.key}')`); // مشان الدبل كليك
+  
+  const reactionHtml = `<div id="react-${msg.key}" class="msg-reaction" style="display:${msg.reaction ? 'flex' : 'none'}">${msg.reaction || ''}</div>`;
   
   let ticks = '';
-  if(isOut){
+  if (isOut) {
     const color = msg.read ? 'var(--neon-cyan)' : 'var(--text-muted)';
-    ticks = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" style="margin-left:4px; margin-bottom:-2px;"><polyline points="20 6 9 17 4 12"></polyline>${msg.read ? '<polyline points="24 6 13 17 8 12"></polyline>' : ''}</svg>`;
+    const svgContent = msg.read ? '<polyline points="24 6 13 17 8 12"></polyline><polyline points="20 6 9 17 4 12"></polyline>' : '<polyline points="20 6 9 17 4 12"></polyline>';
+    ticks = `<svg id="ticks-${msg.key}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" style="margin-left:4px; margin-bottom:-2px;">${svgContent}</svg>`;
   }
+  
   const timeEl = `<div class="msg-time" style="display:flex; align-items:center; gap:4px;">${ticks}${formatTime(msg.timestamp)}</div>`;
-  if(msg.type==='text'){
+  
+  if (msg.type === 'text') {
     bubble.innerHTML = `<div>${escHtml(msg.text)}</div>${timeEl}`;
-  } else if(msg.type==='image'){
+  } else if (msg.type === 'image') {
     bubble.innerHTML = `<img class="msg-img" src="${msg.url}" onclick="previewImg('${msg.url}')"/>${timeEl}`;
-  } else if(msg.type==='voice'){
-    const bars = Array.from({length:20},()=>{
-      const h=Math.floor(Math.random()*70)+20;
-      return `<div class="voice-bar" style="height:${h}%"></div>`;
-    }).join('');
-    bubble.innerHTML=`
-      <div class="voice-msg">
-        <button class="voice-play-btn" onclick="playVoice(this,'${msg.url}')">
-          <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        </button>
-        <div class="voice-waveform">${bars}</div>
-        <span class="voice-duration">${msg.duration||'0:00'}</span>
-      </div>${timeEl}`;
+  } else if (msg.type === 'voice') {
+    const bars = Array.from({length: 20}, () => `<div class="voice-bar" style="height:${Math.floor(Math.random() * 70) + 20}%"></div>`).join('');
+    bubble.innerHTML = `<div class="voice-msg"><button class="voice-play-btn" onclick="playVoice(this,'${msg.url}')"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><div class="voice-waveform">${bars}</div><span class="voice-duration">${msg.duration || '0:00'}</span></div>${timeEl}`;
   }
+  
+  bubble.innerHTML += reactionHtml; // نضيف القلب للفقاعة
+  
+  if (!isOut) row.appendChild(avatarHtml); // صورة صاحبك عاليمين
   row.appendChild(bubble);
   return row;
+}
+
+// دالة التفاعل (القلب) اللي بتشتغل مع الدبل كليك
+function toggleReaction(msgKey) {
+  if(!currentChat) return;
+  const ref = db.ref('chats/'+currentChat.chatId+'/messages/'+msgKey);
+  ref.once('value', snap => {
+    const m = snap.val();
+    if(m) ref.update({ reaction: m.reaction === '❤️' ? null : '❤️' });
+  });
 }
 
 /* ═════════════════════════════════════════════════════════
    SEND MESSAGES
 ═════════════════════════════════════════════════════════ */
+let typingTimeout = null;
 function handleMsgKey(e){
   if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendTextMsg(); }
+  
+  if(currentChat && !isRecording) {
+    db.ref('chats/'+currentChat.chatId+'/typing/'+currentUser.uid).set('typing');
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => {
+      db.ref('chats/'+currentChat.chatId+'/typing/'+currentUser.uid).remove();
+    }, 1500);
+  }
 }
 
 async function sendTextMsg(){
+  if(currentChat) db.ref('chats/'+currentChat.chatId+'/typing/'+currentUser.uid).remove();
   const inp = document.getElementById('msg-input');
   const text = inp.value.trim();
   if(!text||!currentChat) return;
   inp.value=''; autoResize(inp);
+  inp.focus(); // هاد السطر بيخلي الكيبورد يضل فاتح وما يسكر
   await pushMessage({ type:'text', text, senderUid:currentUser.uid, timestamp:Date.now() });
 }
 
@@ -1681,6 +1762,8 @@ document.getElementById('file-img-input').addEventListener('change', async e=>{
 /* ═════════════════════════════════════════════════════════
    VOICE RECORDING
 ═════════════════════════════════════════════════════════ */
+let isRecordingCanceled = false;
+
 async function toggleRecording(){
   if(isRecording){ stopRecording(); return; }
   if(!navigator.mediaDevices) { showToast('المتصفح لا يدعم التسجيل','error'); return; }
@@ -1689,11 +1772,18 @@ async function toggleRecording(){
       audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 }
     });
     audioChunks=[];
+    isRecordingCanceled = false; // تصفير حالة الإلغاء
     mediaRecorder = new MediaRecorder(stream, {audioBitsPerSecond: 128000});
     mediaRecorder.ondataavailable = e=> { if(e.data.size > 0) audioChunks.push(e.data); };
     mediaRecorder.onstop = async ()=>{
-      const blob = new Blob(audioChunks, {type: 'audio/webm'});
       stream.getTracks().forEach(t=>t.stop());
+      
+      if(isRecordingCanceled) {
+        showToast('تم رمي التسجيل بالسلة 🗑️');
+        return; // بنوقف هون وما بنرفع شي
+      }
+
+      const blob = new Blob(audioChunks, {type: 'audio/webm'});
       showToast('جاري الرفع بلمح البصر…');
       try {
         const formData = new FormData();
@@ -1717,25 +1807,48 @@ async function toggleRecording(){
     mediaRecorder.start(200);
     isRecording=true;
     recordStart = Date.now();
+    
+    // تغييرات الواجهة (إخفاء النص وإظهار السلة)
     document.getElementById('btn-voice').classList.add('recording');
+    document.getElementById('msg-input-wrap').style.display = 'none';
+    document.getElementById('btn-attach').style.display = 'none';
+    document.getElementById('btn-cancel-voice').style.display = 'flex';
+    document.getElementById('recording-indicator').style.display = 'block';
+    if(currentChat) db.ref('chats/'+currentChat.chatId+'/typing/'+currentUser.uid).set('recording');
+    
     startRecordTimer();
   } catch(e){ showToast('تعذر الوصول للمايكروفون','error'); }
 }
 
 let recordStart=0, recordTimerInt=null, recordDurationStr='0:00';
 function startRecordTimer(){
+  const indSpan = document.querySelector('#recording-indicator span');
   recordTimerInt = setInterval(()=>{
     const sec = Math.floor((Date.now()-recordStart)/1000);
     const m = Math.floor(sec/60), s = sec%60;
     recordDurationStr = m+':'+(s<10?'0':'')+s;
-    showToast('🔴 تسجيل: '+recordDurationStr);
+    if(indSpan) indSpan.textContent = recordDurationStr;
   },1000);
 }
+
 function stopRecording(){
   if(mediaRecorder) mediaRecorder.stop();
   isRecording=false;
+  if(currentChat) db.ref('chats/'+currentChat.chatId+'/typing/'+currentUser.uid).remove();
+  
+  // إرجاع الواجهة لوضعها الطبيعي
   document.getElementById('btn-voice').classList.remove('recording');
+  document.getElementById('msg-input-wrap').style.display = 'block';
+  document.getElementById('btn-attach').style.display = 'flex';
+  document.getElementById('btn-cancel-voice').style.display = 'none';
+  document.getElementById('recording-indicator').style.display = 'none';
+  
   clearInterval(recordTimerInt);
+}
+
+function cancelVoiceRecord() {
+  isRecordingCanceled = true;
+  stopRecording();
 }
 
 /* ═════════════════════════════════════════════════════════
