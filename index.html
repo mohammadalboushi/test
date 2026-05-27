@@ -1069,7 +1069,21 @@ let isRecording     = false;
 /* ═════════════════════════════════════════════════════════
    NAVIGATION
 ═════════════════════════════════════════════════════════ */
+window.addEventListener('popstate', (e) => {
+  if(e.state && e.state.screen) {
+    renderScreenUI(e.state.screen);
+  } else {
+    renderScreenUI('home');
+    history.pushState({screen: 'home'}, '', '');
+  }
+});
+
 function showScreen(name){
+  history.pushState({screen: name}, '', '');
+  renderScreenUI(name);
+}
+
+function renderScreenUI(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const el = document.getElementById('screen-'+name);
   if(el) el.classList.add('active');
@@ -1123,8 +1137,18 @@ auth.onAuthStateChanged(async user=>{
     await ensureUserProfile(user);
     document.getElementById('loader-screen').classList.add('hidden');
     showScreen('home');
+    
+    // نظام الظهور ومتصل الآن
+    const myStatusRef = db.ref('/users/' + user.uid + '/status');
+    db.ref('.info/connected').on('value', snap => {
+      if (snap.val() === false) return;
+      myStatusRef.onDisconnect().set(Date.now()).then(() => {
+        myStatusRef.set('online');
+      });
+    });
   } else {
     currentUser = null; myProfile = null;
+    db.ref('.info/connected').off();
     document.getElementById('loader-screen').classList.add('hidden');
     showScreen('login');
   }
@@ -1303,6 +1327,9 @@ async function startChat(friendUid){
 /* ═════════════════════════════════════════════════════════
    OPEN CHAT
 ═════════════════════════════════════════════════════════ */
+let friendStatusListener = null;
+let friendStatusRef = null;
+
 async function openChat(chatId, friendUid, friendProfile=null){
   if(!friendProfile){
     const snap = await db.ref('users/'+friendUid).once('value');
@@ -1315,25 +1342,76 @@ async function openChat(chatId, friendUid, friendProfile=null){
   hav.textContent = (friendProfile.name||'?').charAt(0);
   // reset unread
   db.ref('userChats/'+currentUser.uid+'/'+chatId+'/unread').set(0);
+  
+  // جلب حالة الاتصال
+  const statusEl = document.getElementById('chat-header-status');
+  statusEl.textContent = 'جاري التحقق...';
+  statusEl.style.color = 'var(--text-muted)';
+  
+  if(friendStatusRef && friendStatusListener) friendStatusRef.off('value', friendStatusListener);
+  friendStatusRef = db.ref('users/' + friendUid + '/status');
+  friendStatusListener = friendStatusRef.on('value', snap => {
+    const status = snap.val();
+    if(status === 'online') {
+      statusEl.textContent = '● متصل الآن';
+      statusEl.style.color = 'var(--neon-green)';
+    } else if (status) {
+      // دمج تاريخ ووقت لآخر ظهور
+      const d = new Date(status);
+      const today = new Date();
+      let prefix = '';
+      if(d.toDateString() === today.toDateString()) prefix = 'اليوم';
+      else {
+        const yes = new Date(today); yes.setDate(today.getDate()-1);
+        if(d.toDateString() === yes.toDateString()) prefix = 'أمس';
+        else prefix = d.toLocaleDateString('ar-EG', {day:'2-digit', month:'short'});
+      }
+      statusEl.textContent = 'آخر ظهور: ' + prefix + ' ' + formatTime(status);
+      statusEl.style.color = 'var(--text-secondary)';
+    } else {
+      statusEl.textContent = 'غير متصل';
+      statusEl.style.color = 'var(--text-secondary)';
+    }
+  });
+
   showScreen('chat');
   attachMessages(chatId);
 }
 
 function detachMessages(){
   if(messagesRef && messagesListener){ messagesRef.off('value', messagesListener); messagesListener=null; }
+  if(friendStatusRef && friendStatusListener){ friendStatusRef.off('value', friendStatusListener); friendStatusListener=null; }
+}
+
+let isInitialLoad = true;
+
+function createBubbleEffect() {
+  for(let i=0; i<8; i++){
+    const bubble = document.createElement('div');
+    bubble.style.cssText = `position:fixed; bottom:80px; left:${Math.random()*100}%; width:15px; height:15px; background:var(--neon-cyan); border-radius:50%; box-shadow:0 0 10px var(--neon-cyan); opacity:0.8; z-index:999; pointer-events:none; transition: all 2s ease-out; transform: translateY(0) scale(1);`;
+    document.body.appendChild(bubble);
+    setTimeout(() => {
+      bubble.style.transform = `translateY(-${Math.random()*200+100}px) scale(0)`;
+      bubble.style.opacity = '0';
+    }, 50);
+    setTimeout(() => bubble.remove(), 2000);
+  }
 }
 
 function attachMessages(chatId){
   detachMessages();
   const area = document.getElementById('messages-area');
   area.innerHTML='';
+  isInitialLoad = true;
   messagesRef = db.ref('chats/'+chatId+'/messages');
   messagesListener = messagesRef.orderByChild('timestamp').on('value', snap=>{
     area.innerHTML='';
     if(!snap.exists()) return;
     let lastDate='';
+    let lastMsg = null;
     snap.forEach(msgSnap=>{
       const msg = msgSnap.val();
+      lastMsg = msg;
       const dateStr = formatDate(msg.timestamp);
       if(dateStr!==lastDate){
         const sep=document.createElement('div');
@@ -1344,7 +1422,15 @@ function attachMessages(chatId){
       }
       area.appendChild(buildMsgEl(msg));
     });
+    
+    // تشغيل الاهتزاز والفقاعات إذا كانت الرسالة جديدة ومو منك
+    if(!isInitialLoad && lastMsg && lastMsg.senderUid !== currentUser.uid) {
+      if(navigator.vibrate) navigator.vibrate([100, 50, 100]); // اهتزاز
+      createBubbleEffect();
+    }
+    
     area.scrollTop = area.scrollHeight;
+    setTimeout(() => isInitialLoad = false, 500);
   });
 }
 
@@ -1424,12 +1510,22 @@ document.getElementById('file-img-input').addEventListener('change', async e=>{
   e.target.value='';
   showToast('جاري رفع الصورة…');
   try {
-    const path = `chats/${currentChat.chatId}/images/${Date.now()}_${file.name}`;
-    const ref = storage.ref(path);
-    await ref.put(file);
-    const url = await ref.getDownloadURL();
-    await sendImageMsg(url);
-    showToast('تم إرسال الصورة','success');
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'malaboushi_preset');
+
+    const res = await fetch('https://api.cloudinary.com/v1_1/dwqdzwgms/auto/upload', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    
+    if(data.secure_url) {
+      await sendImageMsg(data.secure_url);
+      showToast('تم إرسال الصورة','success');
+    } else {
+      throw new Error('تعذر الرفع من الخادم');
+    }
   } catch(e){ showToast('فشل رفع الصورة: '+e.message,'error'); }
 });
 
@@ -1440,24 +1536,36 @@ async function toggleRecording(){
   if(isRecording){ stopRecording(); return; }
   if(!navigator.mediaDevices) { showToast('المتصفح لا يدعم التسجيل','error'); return; }
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 }
+    });
     audioChunks=[];
-    mediaRecorder = new MediaRecorder(stream, {mimeType:'audio/webm'});
-    mediaRecorder.ondataavailable = e=>audioChunks.push(e.data);
+    mediaRecorder = new MediaRecorder(stream, {audioBitsPerSecond: 128000});
+    mediaRecorder.ondataavailable = e=> { if(e.data.size > 0) audioChunks.push(e.data); };
     mediaRecorder.onstop = async ()=>{
-      const blob = new Blob(audioChunks,{type:'audio/webm'});
+      const blob = new Blob(audioChunks, {type: 'audio/webm'});
       stream.getTracks().forEach(t=>t.stop());
-      showToast('جاري إرسال الرسالة الصوتية…');
+      showToast('جاري الرفع بلمح البصر…');
       try {
-        const path = `chats/${currentChat.chatId}/voice/${Date.now()}.webm`;
-        const ref = storage.ref(path);
-        await ref.put(blob);
-        const url = await ref.getDownloadURL();
-        await sendVoiceMsg(url, recordDurationStr);
-        showToast('تم إرسال الرسالة الصوتية','success');
+        const formData = new FormData();
+        formData.append('file', blob);
+        formData.append('upload_preset', 'malaboushi_preset');
+
+        const res = await fetch('https://api.cloudinary.com/v1_1/dwqdzwgms/auto/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+
+        if(data.secure_url) {
+          await sendVoiceMsg(data.secure_url, recordDurationStr);
+          showToast('طارت الرسالة! 🚀','success');
+        } else {
+           throw new Error('تعذر الرفع من الخادم');
+        }
       } catch(e){ showToast('فشل الإرسال: '+e.message,'error'); }
     };
-    mediaRecorder.start();
+    mediaRecorder.start(200);
     isRecording=true;
     recordStart = Date.now();
     document.getElementById('btn-voice').classList.add('recording');
