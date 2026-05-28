@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
 
-<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -864,7 +863,6 @@ html, body {
   <img id="img-preview-el" src="" alt=""/>
 </div>
 
-<!-- MODAL -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
     <div class="modal-title" id="modal-title">تأكيد</div>
@@ -876,7 +874,6 @@ html, body {
   </div>
 </div>
 
-<!-- MSG CONTEXT MENU -->
 <div class="msg-menu-overlay" id="msg-menu-overlay" onclick="if(event.target===this)closeMsgMenu()">
   <div class="msg-menu" id="msg-menu"></div>
 </div>
@@ -884,12 +881,10 @@ html, body {
 <input type="file" id="file-img-input" accept="image/*"/>
 <input type="file" id="file-avatar-input" accept="image/*"/>
 
-<!-- Remote audio for calls -->
 <audio id="remote-audio-el" autoplay playsinline style="display:none;"></audio>
 
 <div id="app">
 
-  <!-- LOGIN -->
   <div class="screen" id="screen-login">
     <div class="login-logo">
       <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -933,7 +928,6 @@ html, body {
     </div>
   </div>
 
-  <!-- HOME -->
   <div class="screen" id="screen-home">
     <header class="app-header home-header">
       <div id="home-avatar" class="home-avatar-placeholder" onclick="showScreen('profile')">أ</div>
@@ -967,7 +961,6 @@ html, body {
     </button>
   </div>
 
-  <!-- CHAT -->
   <div class="screen" id="screen-chat">
     <header class="app-header chat-header">
       <button class="btn-icon" onclick="showScreen('home')">
@@ -1018,7 +1011,6 @@ html, body {
     </div>
   </div>
 
-  <!-- ADD FRIEND -->
   <div class="screen" id="screen-add-friend">
     <header class="app-header">
       <button class="btn-icon" onclick="showScreen('home')">
@@ -1040,7 +1032,6 @@ html, body {
     </div>
   </div>
 
-  <!-- PROFILE -->
   <div class="screen" id="screen-profile">
     <header class="app-header">
       <button class="btn-icon" onclick="showScreen('home')">
@@ -1073,7 +1064,6 @@ html, body {
     </div>
   </div>
 
-  <!-- CALL SCREEN -->
   <div class="screen" id="screen-call" style="background:var(--bg-void); z-index:500; justify-content:center; align-items:center; text-align:center;">
     <div id="call-avatar-view" class="call-pulse">أ</div>
     <div id="call-name-view" style="font-size:26px; font-weight:700; margin-bottom:8px;">الاسم</div>
@@ -1093,9 +1083,7 @@ html, body {
     </div>
   </div>
 
-</div><!-- /app -->
-
-<script>
+</div><script>
 /* ═══════════════════════════════════
    FIREBASE INIT
 ═══════════════════════════════════ */
@@ -1277,7 +1265,6 @@ auth.onAuthStateChanged(async user => {
 
 /* ═══════════════════════════════════
    PRESENCE — متصل الآن / آخر ظهور
-   FIX: Use onDisconnect BEFORE setting online
 ═══════════════════════════════════ */
 function setupPresence(uid){
   const myStatusRef   = db.ref('users/' + uid + '/status');
@@ -1285,7 +1272,6 @@ function setupPresence(uid){
 
   connectedRef.on('value', snap => {
     if(snap.val() === false) return;
-    // Set disconnect handler FIRST, then set online
     myStatusRef.onDisconnect().set(Date.now()).then(() => {
       myStatusRef.set('online');
     });
@@ -1326,7 +1312,6 @@ async function generateUniqueId(){
 function confirmLogout(){
   openModal('تسجيل الخروج', 'هل أنت متأكد أنك تريد تسجيل الخروج؟').then(ok => {
     if(ok){
-      // Set offline before signing out
       if(currentUser) db.ref('users/' + currentUser.uid + '/status').set(Date.now());
       auth.signOut().then(() => {
         localStorage.removeItem('myProfile');
@@ -1772,6 +1757,9 @@ function attachMessages(chatId){
   });
 }
 
+/* ═══════════════════════════════════
+   BUILD MESSAGE ELEMENT
+═══════════════════════════════════ */
 function buildMsgEl(msg){
   if(msg.isDeleted){
     const row = document.createElement('div');
@@ -1784,6 +1772,7 @@ function buildMsgEl(msg){
   const isOut = msg.senderUid === currentUser.uid;
   row.className = 'msg-row ' + (isOut ? 'out' : 'in');
 
+  // Friend avatar (for received messages)
   if(!isOut){
     const fProfile = currentChat.friendProfile || {};
     let avatarNode;
@@ -1803,6 +1792,7 @@ function buildMsgEl(msg){
   bubble.className = 'msg-bubble';
   bubble.id = 'msg-' + msg.key;
 
+  // Gesture handling
   let lastTap = 0, pressTimer, touchStartX = 0, isSwiping = false;
 
   bubble.addEventListener('touchstart', e => {
@@ -1824,6 +1814,7 @@ function buildMsgEl(msg){
   bubble.addEventListener('dblclick', () => toggleReaction(msg.key));
   bubble.addEventListener('contextmenu', e => { e.preventDefault(); openMsgMenu(msg, isOut); });
 
+  // Ticks for outgoing
   let ticks = '';
   if(isOut){
     const color   = msg.read ? 'var(--neon-cyan)' : 'var(--text-muted)';
@@ -1836,6 +1827,7 @@ function buildMsgEl(msg){
   const timeEl   = `<div class="msg-time">${msg.isEdited ? '<span style="font-size:10px;opacity:0.7;">(معدلة)</span>' : ''}${ticks}${formatTime(msg.timestamp)}</div>`;
   const reactHtml = `<div id="react-${msg.key}" class="msg-reaction" style="display:${msg.reaction?'flex':'none'}">${msg.reaction||''}</div>`;
 
+  // Reply quote
   let replyHtml = '';
   if(msg.replyTo){
     replyHtml = `<div class="reply-badge">↩ رد على رسالة</div><div style="background:rgba(0,0,0,0.2);padding:6px;border-radius:6px;margin-bottom:6px;border-right:2px solid var(--neon-cyan);font-size:12px;opacity:0.8;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${escHtml(msg.replyTo.text)}</div>`;
@@ -1858,11 +1850,6 @@ function buildMsgEl(msg){
         </div>
         <span class="voice-duration">${msg.duration||'0:00'}</span>
       </div>${timeEl}${reactHtml}`;
-  }
-
-  row.appendChild(bubble);
-  return row;
-}
   }
 
   row.appendChild(bubble);
@@ -2238,7 +2225,6 @@ async function startCall(){
   renderScreenUI('call');
 
   try {
-    // FIX: Get mic first, THEN write to Firebase
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     callIsCaller = true;
 
@@ -2256,7 +2242,6 @@ async function acceptCall(){
   document.getElementById('btn-accept-call').style.display = 'none';
 
   try {
-    // FIX: Get mic before answering
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     callIsCaller = false;
 
@@ -2299,14 +2284,12 @@ function closeCallUI(){
 
 /* ═══════════════════════════════════
    WebRTC Setup
-   FIX: Proper signaling + audio tracks
 ═══════════════════════════════════ */
 async function setupWebRTCPeer(isCaller){
   if(!currentCallPeer) return;
   const chatId    = [currentUser.uid, currentCallPeer].sort().join('_');
   const signalRef = db.ref('chats/' + chatId + '/webrtc');
 
-  // هاد السطر حصراً لازم يتنفذ من المتصل بس لحتى ما يضربوا الاتصال ببعض
   if(isCaller) {
     await signalRef.remove();
   }
