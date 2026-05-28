@@ -787,9 +787,14 @@ html, body {
   background: rgba(0,0,0,0.92);
   display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none; transition: opacity .25s;
+  overflow: hidden;
 }
 #img-preview-overlay.open { opacity: 1; pointer-events: all; }
-#img-preview-overlay img { max-width: 94%; max-height: 90vh; border-radius: 12px; }
+#img-preview-overlay img { 
+  max-width: 94%; max-height: 90vh; border-radius: 12px; 
+  transition: transform 0.2s ease-out; transform-origin: center;
+  touch-action: none;
+}
 
 #file-img-input, #file-avatar-input { display: none; }
 
@@ -859,7 +864,7 @@ html, body {
 
 <div class="toast" id="toast"></div>
 
-<div id="img-preview-overlay" onclick="this.classList.remove('open')">
+<div id="img-preview-overlay">
   <img id="img-preview-el" src="" alt=""/>
 </div>
 
@@ -1005,7 +1010,7 @@ html, body {
       <button class="btn-voice" id="btn-voice" onclick="toggleRecording()" title="رسالة صوتية">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
       </button>
-      <button class="btn-send" id="btn-send" onclick="sendTextMsg()">
+      <button class="btn-send" id="btn-send" onclick="sendTextMsg()" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
     </div>
@@ -1186,11 +1191,34 @@ const rtcConfig = {
 })();
 
 /* ═══════════════════════════════════
-   NAVIGATION
+   NAVIGATION & BACK BUTTON
 ═══════════════════════════════════ */
+// منع الخروج من التطبيق نهائياً بدفع حالات وهمية
+history.pushState({ screen: 'home' }, '', '');
+history.pushState({ screen: 'home' }, '', '');
+
 window.addEventListener('popstate', e => {
+  const overlay = document.getElementById('img-preview-overlay');
+  if (overlay.classList.contains('open')) {
+    const img = document.getElementById('img-preview-el');
+    // إذا معمول زوم، زر الرجوع بيرجع الصورة لحجمها الطبيعي بس
+    if (img.style.transform !== 'scale(1)' && img.style.transform !== '') {
+       img.style.transform = 'scale(1)';
+       history.pushState({ overlay: 'image' }, '', ''); // دفع حالة لتلتقط الضغطة الجاية
+       return;
+    }
+    // إذا مافي زوم، بنسكر الصورة
+    closeImgPreview();
+    return;
+  }
+
   const sc = e.state && e.state.screen ? e.state.screen : 'home';
   renderScreenUI(sc);
+
+  // إذا رجعنا للرئيسية، بنضيف حالة وهمية لمنع الخروج
+  if(sc === 'home'){
+     history.pushState({ screen: 'home' }, '', '');
+  }
 });
 
 function showScreen(name){
@@ -1848,7 +1876,7 @@ function buildMsgEl(msg){
           ${bars}
           <div id="progress-${msg.key}" class="voice-progress-fill" style="position:absolute; right:0; top:0; bottom:0; width:0%; background:rgba(0,240,255,0.4); pointer-events:none; z-index:1; border-radius:2px; transition: width 0.1s linear;"></div>
         </div>
-        <span class="voice-duration">${msg.duration||'0:00'}</span>
+        <span id="dur-${msg.key}" class="voice-duration" data-orig="${msg.duration||'0:00'}">${msg.duration||'0:00'}</span>
       </div>${timeEl}${reactHtml}`;
   }
 
@@ -1978,6 +2006,7 @@ async function sendTextMsg(){
   const text = inp.value.trim();
   if(!text || !currentChat) return;
   inp.value = ''; autoResize(inp);
+  inp.focus(); // إبقاء الكيبورد مفتوح
 
   if(editingMsgKey){
     await db.ref('chats/' + currentChat.chatId + '/messages/' + editingMsgKey).update({ text, isEdited: true });
@@ -2042,7 +2071,14 @@ async function toggleRecording(){
   if(isRecording){ stopRecording(); return; }
   if(!navigator.mediaDevices){ showToast('المتصفح لا يدعم التسجيل', 'error'); return; }
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // إجبار المتصفح على سحب الصوت الخام لمنع مشاكل جودة البلوتوث
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      audio: { 
+        echoCancellation: false, 
+        noiseSuppression: false, 
+        autoGainControl: false 
+      } 
+    });
     audioChunks = [];
     isRecordingCanceled = false;
     mediaRecorder = new MediaRecorder(stream, { audioBitsPerSecond: 128000 });
@@ -2141,6 +2177,11 @@ function playVoice(btn, url, msgKey) {
     btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
     const fill = document.getElementById('progress-' + msgKey);
     if (fill) fill.style.width = '0%';
+    
+    // إرجاع الوقت لشكله الطبيعي بعد الانتهاء
+    const durEl = document.getElementById('dur-' + msgKey);
+    if (durEl) durEl.textContent = durEl.getAttribute('data-orig');
+
     currentAudio = null;
     currentAudioUrl = null;
     clearInterval(audioUpdateInterval);
@@ -2154,6 +2195,16 @@ function startAudioProgress(msgKey) {
       let perc = (currentAudio.currentTime / currentAudio.duration) * 100;
       let fill = document.getElementById('progress-' + msgKey);
       if (fill) fill.style.width = perc + '%';
+
+      // تحديث عداد الثواني
+      const durEl = document.getElementById('dur-' + msgKey);
+      if (durEl) {
+        const curSec = Math.floor(currentAudio.currentTime);
+        const m = Math.floor(curSec / 60);
+        const s = curSec % 60;
+        const orig = durEl.getAttribute('data-orig');
+        durEl.textContent = `${m}:${s < 10 ? '0' : ''}${s} / ${orig}`;
+      }
     }
   }, 100);
 }
@@ -2171,12 +2222,42 @@ function seekVoice(event, url, msgKey) {
 }
 
 /* ═══════════════════════════════════
-   IMAGE PREVIEW
+   IMAGE PREVIEW & ZOOM
 ═══════════════════════════════════ */
 function previewImg(url){
-  document.getElementById('img-preview-el').src = url;
+  const img = document.getElementById('img-preview-el');
+  img.src = url;
+  img.style.transform = 'scale(1)';
   document.getElementById('img-preview-overlay').classList.add('open');
+  history.pushState({ overlay: 'image' }, '', '');
 }
+
+function closeImgPreview() {
+  document.getElementById('img-preview-overlay').classList.remove('open');
+}
+
+const imgEl = document.getElementById('img-preview-el');
+const overlayEl = document.getElementById('img-preview-overlay');
+
+// إغلاق عند الضغط على الخلفية السوداء
+overlayEl.addEventListener('click', (e) => {
+  if (e.target === overlayEl) {
+    history.back(); // رح يستدعي الـ popstate فوق
+  }
+});
+
+// زوم بالضغطتين (Double Tap)
+let imgLastTap = 0;
+imgEl.addEventListener('touchstart', (e) => {
+  const currentTime = new Date().getTime();
+  const tapLength = currentTime - imgLastTap;
+  if (tapLength < 300 && tapLength > 0) {
+    const isZoomed = imgEl.style.transform === 'scale(2.5)';
+    imgEl.style.transform = isZoomed ? 'scale(1)' : 'scale(2.5)';
+    e.preventDefault();
+  }
+  imgLastTap = currentTime;
+});
 
 /* ═══════════════════════════════════
    CALL SYSTEM — WebRTC
