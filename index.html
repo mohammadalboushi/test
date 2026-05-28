@@ -1374,6 +1374,21 @@ function populateProfile(){
   }
 }
 
+async function updateMyInfoInFriendsChats() {
+  const snap = await db.ref('userChats/' + currentUser.uid).once('value');
+  if(!snap.exists()) return;
+  const updates = {};
+  snap.forEach(child => {
+    const chatId = child.key;
+    const friendUid = child.val().friendUid;
+    updates[`userChats/${friendUid}/${chatId}/friendName`] = myProfile.name;
+    updates[`userChats/${friendUid}/${chatId}/friendPhoto`] = myProfile.photo || '';
+  });
+  if(Object.keys(updates).length > 0) {
+    await db.ref().update(updates);
+  }
+}
+
 async function saveProfileName(){
   const newName = document.getElementById('profile-name-input').value.trim();
   if(!newName || !myProfile) return;
@@ -1383,6 +1398,7 @@ async function saveProfileName(){
     myProfile.name = newName;
     localStorage.setItem('myProfile', JSON.stringify(myProfile));
     updateHomeHeader();
+    await updateMyInfoInFriendsChats();
     showToast('تم تغيير الاسم بنجاح', 'success');
   } catch(e){ showToast('فشل الحفظ: ' + e.message, 'error'); }
 }
@@ -1403,6 +1419,7 @@ document.getElementById('file-avatar-input').addEventListener('change', async e 
       localStorage.setItem('myProfile', JSON.stringify(myProfile));
       updateHomeHeader();
       populateProfile();
+      await updateMyInfoInFriendsChats();
       showToast('تم تحديث الصورة', 'success');
     } else { throw new Error('تعذر الرفع'); }
   } catch(e){ showToast('فشل رفع الصورة: ' + e.message, 'error'); }
@@ -1411,6 +1428,9 @@ document.getElementById('file-avatar-input').addEventListener('change', async e 
 /* ═══════════════════════════════════
    CHATS LIST
 ═══════════════════════════════════ */
+let friendsStatus = {};
+let presenceListeners = {};
+
 function loadChats(){
   if(!currentUser) return;
   if(chatsListener) db.ref('userChats/' + currentUser.uid).off('value', chatsListener);
@@ -1423,6 +1443,13 @@ function loadChats(){
         chatsData[c.key] = d;
         if(!isFirstChatsLoad && d.unread > (lastUnreads[c.key] || 0)) hasNew = true;
         lastUnreads[c.key] = d.unread;
+
+        if(!presenceListeners[d.friendUid]) {
+          presenceListeners[d.friendUid] = db.ref('users/' + d.friendUid + '/status').on('value', sSnap => {
+            friendsStatus[d.friendUid] = sSnap.val();
+            renderChatsList();
+          });
+        }
       });
     }
     renderChatsList();
@@ -1454,10 +1481,17 @@ function renderChatsList(filter=''){
     const avatarHtml = data.friendPhoto
       ? `<img src="${data.friendPhoto}" class="chat-avatar" style="object-fit:cover;"/>`
       : `<div class="chat-avatar">${initials}</div>`;
+
+    const isOnline = friendsStatus[data.friendUid] === 'online';
+    const onlineBadge = isOnline ? `<div style="position:absolute; bottom:2px; right:2px; width:13px; height:13px; background:var(--neon-green); border-radius:50%; border:2px solid var(--bg-surface); z-index:2;"></div>` : '';
+
     const timeStr = data.updatedAt ? formatTime(data.updatedAt) : '';
     const lastMsg = data.lastMsg || 'اضغط لبدء المحادثة';
     div.innerHTML = `
-      ${avatarHtml}
+      <div style="position:relative; display:inline-block; flex-shrink:0;">
+        ${avatarHtml}
+        ${onlineBadge}
+      </div>
       <div class="chat-info">
         <div class="chat-name">${escHtml(data.friendName||'مستخدم')}</div>
         <div class="chat-last-msg">${escHtml(lastMsg)}</div>
@@ -1709,7 +1743,10 @@ function attachMessages(chatId){
     }
     area.appendChild(buildMsgEl(msg));
     area.scrollTop = area.scrollHeight;
-    if(msg.senderUid !== currentUser.uid && !msg.read) snap.ref.update({ read: true });
+    if(msg.senderUid !== currentUser.uid) {
+      if(!msg.read) snap.ref.update({ read: true });
+      db.ref('userChats/' + currentUser.uid + '/' + chatId + '/unread').set(0);
+    }
   });
 
   msgChangedListener = messagesRef.on('child_changed', snap => {
@@ -1735,9 +1772,6 @@ function attachMessages(chatId){
   });
 }
 
-/* ═══════════════════════════════════
-   BUILD MESSAGE ELEMENT
-═══════════════════════════════════ */
 function buildMsgEl(msg){
   if(msg.isDeleted){
     const row = document.createElement('div');
@@ -1750,7 +1784,6 @@ function buildMsgEl(msg){
   const isOut = msg.senderUid === currentUser.uid;
   row.className = 'msg-row ' + (isOut ? 'out' : 'in');
 
-  // Friend avatar (for received messages)
   if(!isOut){
     const fProfile = currentChat.friendProfile || {};
     let avatarNode;
@@ -1770,7 +1803,6 @@ function buildMsgEl(msg){
   bubble.className = 'msg-bubble';
   bubble.id = 'msg-' + msg.key;
 
-  // Gesture handling
   let lastTap = 0, pressTimer, touchStartX = 0, isSwiping = false;
 
   bubble.addEventListener('touchstart', e => {
@@ -1792,7 +1824,6 @@ function buildMsgEl(msg){
   bubble.addEventListener('dblclick', () => toggleReaction(msg.key));
   bubble.addEventListener('contextmenu', e => { e.preventDefault(); openMsgMenu(msg, isOut); });
 
-  // Ticks for outgoing
   let ticks = '';
   if(isOut){
     const color   = msg.read ? 'var(--neon-cyan)' : 'var(--text-muted)';
@@ -1805,7 +1836,6 @@ function buildMsgEl(msg){
   const timeEl   = `<div class="msg-time">${msg.isEdited ? '<span style="font-size:10px;opacity:0.7;">(معدلة)</span>' : ''}${ticks}${formatTime(msg.timestamp)}</div>`;
   const reactHtml = `<div id="react-${msg.key}" class="msg-reaction" style="display:${msg.reaction?'flex':'none'}">${msg.reaction||''}</div>`;
 
-  // Reply quote
   let replyHtml = '';
   if(msg.replyTo){
     replyHtml = `<div class="reply-badge">↩ رد على رسالة</div><div style="background:rgba(0,0,0,0.2);padding:6px;border-radius:6px;margin-bottom:6px;border-right:2px solid var(--neon-cyan);font-size:12px;opacity:0.8;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${escHtml(msg.replyTo.text)}</div>`;
@@ -1814,10 +1844,25 @@ function buildMsgEl(msg){
   if(msg.type === 'text'){
     bubble.innerHTML = `${replyHtml}<div>${escHtml(msg.text)}</div>${timeEl}${reactHtml}`;
   } else if(msg.type === 'image'){
-    bubble.innerHTML = `${replyHtml}<img class="msg-img" src="${msg.url}" onclick="previewImg('${msg.url}')"/>${timeEl}${reactHtml}`;
+    bubble.innerHTML = `${replyHtml}<img class="msg-img" src="${msg.url}" onload="document.getElementById('messages-area').scrollTop = document.getElementById('messages-area').scrollHeight" onclick="previewImg('${msg.url}')"/>${timeEl}${reactHtml}`;
   } else if(msg.type === 'voice'){
     const bars = Array.from({length:20}, () => `<div class="voice-bar" style="height:${Math.floor(Math.random()*70)+20}%"></div>`).join('');
-    bubble.innerHTML = `${replyHtml}<div class="voice-msg"><button class="voice-play-btn" onclick="playVoice(this,'${msg.url}')"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><div class="voice-waveform">${bars}</div><span class="voice-duration">${msg.duration||'0:00'}</span></div>${timeEl}${reactHtml}`;
+    bubble.innerHTML = `${replyHtml}
+      <div class="voice-msg">
+        <button class="voice-play-btn" onclick="playVoice(this,'${msg.url}', '${msg.key}')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+        <div class="voice-waveform" style="position:relative; cursor:pointer;" onclick="seekVoice(event, '${msg.url}', '${msg.key}')">
+          ${bars}
+          <div id="progress-${msg.key}" class="voice-progress-fill" style="position:absolute; right:0; top:0; bottom:0; width:0%; background:rgba(0,240,255,0.4); pointer-events:none; z-index:1; border-radius:2px; transition: width 0.1s linear;"></div>
+        </div>
+        <span class="voice-duration">${msg.duration||'0:00'}</span>
+      </div>${timeEl}${reactHtml}`;
+  }
+
+  row.appendChild(bubble);
+  return row;
+}
   }
 
   row.appendChild(bubble);
@@ -2010,7 +2055,7 @@ async function toggleRecording(){
   if(isRecording){ stopRecording(); return; }
   if(!navigator.mediaDevices){ showToast('المتصفح لا يدعم التسجيل', 'error'); return; }
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     audioChunks = [];
     isRecordingCanceled = false;
     mediaRecorder = new MediaRecorder(stream, { audioBitsPerSecond: 128000 });
@@ -2038,7 +2083,6 @@ async function toggleRecording(){
     document.getElementById('btn-attach').style.display = 'none';
     document.getElementById('btn-cancel-voice').style.display = 'flex';
     document.getElementById('recording-indicator').style.display = 'flex';
-    // FIX: Set recording status in Firebase for the other user to see
     if(currentChat) db.ref('chats/' + currentChat.chatId + '/typing/' + currentUser.uid).set('recording');
     startRecordTimer();
   } catch(e){ showToast('تعذر الوصول للمايكروفون', 'error'); }
@@ -2075,15 +2119,68 @@ function cancelVoiceRecord(){
    VOICE PLAYBACK
 ═══════════════════════════════════ */
 let currentAudio = null;
-function playVoice(btn, url){
-  if(currentAudio){ currentAudio.pause(); currentAudio = null;
-    document.querySelectorAll('.voice-play-btn').forEach(b => b.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`);
+let currentAudioUrl = null;
+let audioUpdateInterval = null;
+
+function playVoice(btn, url, msgKey) {
+  if (currentAudio && currentAudioUrl === url) {
+    if (!currentAudio.paused) {
+      currentAudio.pause();
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+      clearInterval(audioUpdateInterval);
+      return;
+    } else {
+      currentAudio.play();
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+      startAudioProgress(msgKey);
+      return;
+    }
   }
-  const audio = new Audio(url);
-  currentAudio = audio;
+
+  if (currentAudio) {
+    currentAudio.pause();
+    document.querySelectorAll('.voice-play-btn').forEach(b => b.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`);
+    document.querySelectorAll('.voice-progress-fill').forEach(f => f.style.width = '0%');
+    clearInterval(audioUpdateInterval);
+  }
+
+  currentAudioUrl = url;
+  currentAudio = new Audio(url);
   btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
-  audio.play();
-  audio.onended = () => { btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`; currentAudio = null; };
+  currentAudio.play();
+  startAudioProgress(msgKey);
+
+  currentAudio.onended = () => {
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+    const fill = document.getElementById('progress-' + msgKey);
+    if (fill) fill.style.width = '0%';
+    currentAudio = null;
+    currentAudioUrl = null;
+    clearInterval(audioUpdateInterval);
+  };
+}
+
+function startAudioProgress(msgKey) {
+  clearInterval(audioUpdateInterval);
+  audioUpdateInterval = setInterval(() => {
+    if (currentAudio && !currentAudio.paused && currentAudio.duration) {
+      let perc = (currentAudio.currentTime / currentAudio.duration) * 100;
+      let fill = document.getElementById('progress-' + msgKey);
+      if (fill) fill.style.width = perc + '%';
+    }
+  }, 100);
+}
+
+function seekVoice(event, url, msgKey) {
+  if (!currentAudio || currentAudioUrl !== url || !currentAudio.duration) return;
+  const rect = event.currentTarget.getBoundingClientRect();
+  const clickX = rect.right - event.clientX;
+  let perc = clickX / rect.width;
+  if (perc < 0) perc = 0;
+  if (perc > 1) perc = 1;
+  currentAudio.currentTime = currentAudio.duration * perc;
+  const fill = document.getElementById('progress-' + msgKey);
+  if (fill) fill.style.width = (perc * 100) + '%';
 }
 
 /* ═══════════════════════════════════
@@ -2224,9 +2321,15 @@ async function setupWebRTCPeer(isCaller){
 
   peerConnection.ontrack = event => {
     const remoteAudio = document.getElementById('remote-audio-el');
-    if(remoteAudio && event.streams && event.streams[0]){
-      remoteAudio.srcObject = event.streams[0];
-      remoteAudio.play().catch(() => {});
+    if(remoteAudio){
+      if(event.streams && event.streams[0]){
+        remoteAudio.srcObject = event.streams[0];
+      } else {
+        remoteAudio.srcObject = new MediaStream([event.track]);
+      }
+      remoteAudio.muted = false;
+      remoteAudio.volume = 1;
+      remoteAudio.play().catch(e => console.error("Audio play error:", e));
     }
   };
 
