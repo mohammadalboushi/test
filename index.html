@@ -1527,6 +1527,15 @@ function loadChats(){
         if(!isFirstChatsLoad && d.unread > (lastUnreads[c.key] || 0)) hasNew = true;
         lastUnreads[c.key] = d.unread;
 
+        // 🔥 مزامنة تلقائية: إذا كان الشخص في المحادثات، تأكد أنه موجود في قائمة الأصدقاء (لإصلاح المشكلة القديمة)
+        db.ref('friendsList/' + currentUser.uid + '/' + d.friendUid).once('value', fSnap => {
+          if(!fSnap.exists()) {
+            db.ref('friendsList/' + currentUser.uid + '/' + d.friendUid).set({
+              name: d.friendName, photo: d.friendPhoto || '', timestamp: d.updatedAt || Date.now()
+            });
+          }
+        });
+
         if(!presenceListeners[d.friendUid]) {
           presenceListeners[d.friendUid] = db.ref('users/' + d.friendUid + '/status').on('value', sSnap => {
             friendsStatus[d.friendUid] = sSnap.val();
@@ -1714,8 +1723,15 @@ async function startChat(friendUid){
   const friend = friendSnap.val();
   const chatId = [currentUser.uid, friendUid].sort().join('_');
   await db.ref('chats/' + chatId + '/meta').update({ participants: [currentUser.uid, friendUid], createdAt: Date.now() });
+  
+  // 1. إضافة للشاشة الرئيسية (المحادثات)
   await db.ref('userChats/' + currentUser.uid + '/' + chatId).update({ friendUid, friendName: friend.name, friendPhoto: friend.photo||'', updatedAt: Date.now(), lastMsg: 'ابدأ المحادثة الآن!', unread: 0 });
   await db.ref('userChats/' + friendUid + '/' + chatId).update({ friendUid: currentUser.uid, friendName: myProfile.name, friendPhoto: myProfile.photo||'', updatedAt: Date.now(), lastMsg: 'ابدأ المحادثة الآن!', unread: 0 });
+
+  // 2. 🔥 إضافة لقائمة الأصدقاء فوراً للطرفين 🔥
+  await db.ref('friendsList/' + currentUser.uid + '/' + friendUid).update({ name: friend.name, photo: friend.photo||'', timestamp: Date.now() });
+  await db.ref('friendsList/' + friendUid + '/' + currentUser.uid).update({ name: myProfile.name, photo: myProfile.photo||'', timestamp: Date.now() });
+
   openChat(chatId, friendUid, friend);
 }
 
