@@ -941,9 +941,13 @@ html, body {
         <div class="header-subtitle" id="home-subtitle">مرحباً!</div>
       </div>
       <div class="my-id-badge" id="my-id-badge" onclick="copyMyId()">------</div>
-      <button class="btn-icon" onclick="showScreen('add-friend')" title="إضافة صديق">
+      
+      <!-- أيقونة جميع الأصدقاء -->
+      <button class="btn-icon" onclick="showScreen('add-friend')" title="الأصدقاء">
         <span class="badge-req" id="home-req-badge" style="display:none;">0</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
       </button>
     </header>
 
@@ -1031,7 +1035,7 @@ html, body {
       <button class="btn-icon" onclick="showScreen('home')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <div class="header-title">إضافة صديق</div>
+      <div class="header-title">الأصدقاء</div>
     </header>
     <div class="add-friend-body">
       <div>
@@ -1201,31 +1205,54 @@ const rtcConfig = {
 })();
 
 /* ═══════════════════════════════════
-   NAVIGATION & BACK BUTTON
+   NAVIGATION & BACK BUTTON (STRICT)
 ═══════════════════════════════════ */
-history.pushState({ screen: 'home' }, '', '');
+// تفعيل الحماية من البداية
 history.pushState({ screen: 'home' }, '', '');
 
 window.addEventListener('popstate', e => {
-  const overlay = document.getElementById('img-preview-overlay');
-  if (overlay.classList.contains('open')) {
+  const imgOverlay = document.getElementById('img-preview-overlay');
+  const msgMenuOverlay = document.getElementById('msg-menu-overlay');
+  const modalOverlay = document.getElementById('modal-overlay');
+
+  let isPopupOpen = false;
+
+  // 1. إغلاق زوم الصورة أو نافذة الصورة
+  if (imgOverlay && imgOverlay.classList.contains('open')) {
     const img = document.getElementById('img-preview-el');
     if (currentScale > 1) {
        currentScale = 1; imgTx = 0; imgTy = 0;
        img.style.transition = 'transform 0.2s ease';
        img.style.transform = `translate(0px, 0px) scale(1)`;
-       history.pushState({ overlay: 'image' }, '', ''); 
-       return;
+    } else {
+       closeImgPreview();
     }
-    closeImgPreview();
-    history.pushState({ screen: currentChat ? 'chat' : 'home' }, '', '');
+    isPopupOpen = true;
+  }
+
+  // 2. إغلاق قائمة الخيارات (الضغطة المطولة)
+  if (msgMenuOverlay && msgMenuOverlay.classList.contains('open')) {
+    closeMsgMenu();
+    isPopupOpen = true;
+  }
+
+  // 3. إغلاق نوافذ التأكيد
+  if (modalOverlay && modalOverlay.classList.contains('open')) {
+    modalOverlay.classList.remove('open');
+    isPopupOpen = true;
+  }
+
+  // إذا سكرنا أي نافذة، بندفع حالة وهمية لضمان عدم الرجوع للخلف
+  if (isPopupOpen) {
+    history.pushState({ screen: document.getElementById('screen-chat').classList.contains('active') ? 'chat' : 'home' }, '', '');
     return;
   }
 
+  // التنقل العادي والحماية الصارمة من الخروج نهائياً
   const sc = e.state && e.state.screen ? e.state.screen : 'home';
   renderScreenUI(sc);
   
-  // حماية صارمة: كل ما يضغط رجوع، ندفع حالة وهمية لحتى ما يطلع من المتصفح
+  // القفل السحري: بكل مرة بيضغط رجوع، المتصفح بينجبر يبقى جوا التطبيق
   history.pushState({ screen: sc }, '', '');
 });
 
