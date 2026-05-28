@@ -1594,6 +1594,20 @@ async function startChat(friendUid){
 /* ═══════════════════════════════════
    OPEN CHAT
 ═══════════════════════════════════ */
+function detachStatusAndTyping(){
+  if(friendStatusRef && friendStatusListener){ friendStatusRef.off('value', friendStatusListener); friendStatusRef = null; friendStatusListener = null; }
+  if(typingRef && typingListener){ typingRef.off('value', typingListener); typingRef = null; typingListener = null; }
+}
+
+function detachMessages(){
+  if(messagesRef){
+    if(messagesListener) messagesRef.off('child_added', messagesListener);
+    if(msgChangedListener) messagesRef.off('child_changed', msgChangedListener);
+    messagesListener = null; msgChangedListener = null;
+  }
+  detachStatusAndTyping();
+}
+
 async function openChat(chatId, friendUid, friendProfile=null){
   if(!friendProfile){
     const snap = await db.ref('users/' + friendUid).once('value');
@@ -1601,7 +1615,6 @@ async function openChat(chatId, friendUid, friendProfile=null){
   }
   currentChat = { chatId, friendUid, friendProfile };
 
-  // Update header avatar
   const avatarEl = document.getElementById('chat-header-avatar');
   if(friendProfile.photo){
     avatarEl.outerHTML = `<img src="${friendProfile.photo}" class="chat-header-avatar" id="chat-header-avatar" style="object-fit:cover;"/>`;
@@ -1610,17 +1623,20 @@ async function openChat(chatId, friendUid, friendProfile=null){
   }
   document.getElementById('chat-header-name').textContent = friendProfile.name;
 
-  // Reset unread
   db.ref('userChats/' + currentUser.uid + '/' + chatId + '/unread').set(0);
 
-  // Detach old listeners
-  detachStatusAndTyping();
+  // 1. نفصل الرسايل القديمة أول شي
+  detachMessages();
 
+  // 2. نرسم الواجهة ونربط الرسايل بدون ما نفصل المراقبة
+  renderScreenUI('chat');
+  attachMessages(chatId);
+
+  // 3. نركب مراقبة حالة الاتصال ومؤشر الكتابة
   const statusEl = document.getElementById('chat-header-status');
   statusEl.textContent  = 'جاري التحقق...';
   statusEl.style.color  = 'var(--text-muted)';
 
-  /* ── FIX: Listen to friend status ── */
   friendStatusRef = db.ref('users/' + friendUid + '/status');
   friendStatusListener = friendStatusRef.on('value', snap => {
     const val = snap.val();
@@ -1643,7 +1659,6 @@ async function openChat(chatId, friendUid, friendProfile=null){
       baseStatusText  = '🔴 غير متصل';
       baseStatusColor = 'var(--text-secondary)';
     }
-    // Only update if not currently showing typing/recording
     const cur = statusEl.textContent;
     if(!cur.includes('يكتب') && !cur.includes('يسجل')){
       statusEl.textContent = baseStatusText;
@@ -1651,7 +1666,6 @@ async function openChat(chatId, friendUid, friendProfile=null){
     }
   });
 
-  /* ── FIX: Listen to typing indicator ── */
   typingRef = db.ref('chats/' + chatId + '/typing/' + friendUid);
   typingListener = typingRef.on('value', snap => {
     const state = snap.val();
@@ -1666,35 +1680,16 @@ async function openChat(chatId, friendUid, friendProfile=null){
       statusEl.style.color = baseStatusColor;
     }
   });
-
-  renderScreenUI('chat');
-  attachMessages(chatId);
-}
-
-function detachStatusAndTyping(){
-  if(friendStatusRef && friendStatusListener){ friendStatusRef.off('value', friendStatusListener); friendStatusRef = null; friendStatusListener = null; }
-  if(typingRef && typingListener){ typingRef.off('value', typingListener); typingRef = null; typingListener = null; }
-}
-
-function detachMessages(){
-  if(messagesRef){
-    if(messagesListener) messagesRef.off('child_added', messagesListener);
-    if(msgChangedListener) messagesRef.off('child_changed', msgChangedListener);
-    messagesListener = null; msgChangedListener = null;
-  }
-  detachStatusAndTyping();
 }
 
 /* ═══════════════════════════════════
    ATTACH MESSAGES
 ═══════════════════════════════════ */
 function attachMessages(chatId){
-  detachMessages();
   const area = document.getElementById('messages-area');
   area.innerHTML = '';
   lastMsgDate = '';
 
-  // Keep friend's chat updated with our latest name/photo
   db.ref('userChats/' + currentChat.friendUid + '/' + chatId).update({
     friendName: myProfile.name,
     friendPhoto: myProfile.photo || ''
@@ -1719,19 +1714,16 @@ function attachMessages(chatId){
 
   msgChangedListener = messagesRef.on('child_changed', snap => {
     const msg = { ...snap.val(), key: snap.key };
-    // Update ticks
     const ticksEl = document.getElementById('ticks-' + msg.key);
     if(ticksEl && msg.read){
       ticksEl.setAttribute('stroke', 'var(--neon-cyan)');
       ticksEl.innerHTML = '<polyline points="20 6 9 17 4 12"></polyline><polyline points="24 6 13 17 8 12"></polyline>';
     }
-    // Update reaction
     const reactEl = document.getElementById('react-' + msg.key);
     if(reactEl){
       if(msg.reaction){ reactEl.style.display = 'flex'; reactEl.innerHTML = msg.reaction; }
       else { reactEl.style.display = 'none'; }
     }
-    // Update deleted state - rebuild the bubble
     if(msg.isDeleted){
       const bubbleEl = document.getElementById('msg-' + msg.key);
       if(bubbleEl){
@@ -2217,29 +2209,27 @@ async function setupWebRTCPeer(isCaller){
   const chatId    = [currentUser.uid, currentCallPeer].sort().join('_');
   const signalRef = db.ref('chats/' + chatId + '/webrtc');
 
-  // Clean previous signals
-  await signalRef.remove();
+  // هاد السطر حصراً لازم يتنفذ من المتصل بس لحتى ما يضربوا الاتصال ببعض
+  if(isCaller) {
+    await signalRef.remove();
+  }
 
   peerConnection = new RTCPeerConnection(rtcConfig);
 
-  // FIX: Add all local audio tracks to the connection
   if(localStream){
     localStream.getTracks().forEach(track => {
       peerConnection.addTrack(track, localStream);
     });
   }
 
-  // FIX: When remote track arrives, play it immediately
   peerConnection.ontrack = event => {
     const remoteAudio = document.getElementById('remote-audio-el');
     if(remoteAudio && event.streams && event.streams[0]){
       remoteAudio.srcObject = event.streams[0];
-      // Force play (needed on mobile)
       remoteAudio.play().catch(() => {});
     }
   };
 
-  // FIX: Send ICE candidates to Firebase as they are discovered
   peerConnection.onicecandidate = event => {
     if(event.candidate){
       const candPath = isCaller ? 'callerCandidates' : 'calleeCandidates';
@@ -2257,14 +2247,10 @@ async function setupWebRTCPeer(isCaller){
   };
 
   if(isCaller){
-    // --- CALLER FLOW ---
-    // 1. Create offer
     const offer = await peerConnection.createOffer({ offerToReceiveAudio: true });
     await peerConnection.setLocalDescription(offer);
-    // 2. Save offer to Firebase
     await signalRef.child('offer').set({ sdp: offer.sdp, type: offer.type });
 
-    // 3. Wait for answer
     signalRef.child('answer').on('value', async snap => {
       const answer = snap.val();
       if(answer && peerConnection && peerConnection.signalingState === 'have-local-offer'){
@@ -2274,30 +2260,23 @@ async function setupWebRTCPeer(isCaller){
       }
     });
 
-    // 4. Receive callee ICE candidates
     signalRef.child('calleeCandidates').on('child_added', async snap => {
       const cand = snap.val();
       if(cand && peerConnection){ try { await peerConnection.addIceCandidate(new RTCIceCandidate(cand)); } catch(e){} }
     });
 
   } else {
-    // --- CALLEE FLOW ---
-    // 1. Wait for offer
     signalRef.child('offer').once('value', async snap => {
       const offer = snap.val();
       if(!offer || !peerConnection) return;
       try {
-        // 2. Set remote description from offer
         await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-        // 3. Create answer
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
-        // 4. Save answer to Firebase
         await signalRef.child('answer').set({ sdp: answer.sdp, type: answer.type });
       } catch(e){ console.warn('callee setup:', e); }
     });
 
-    // 5. Receive caller ICE candidates
     signalRef.child('callerCandidates').on('child_added', async snap => {
       const cand = snap.val();
       if(cand && peerConnection){ try { await peerConnection.addIceCandidate(new RTCIceCandidate(cand)); } catch(e){} }
