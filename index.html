@@ -1,445 +1,367 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>M.Al.Boushi Store</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --bg-body: #0f172a; 
-            --bg-gradient: radial-gradient(circle at top, #1e293b, #0f172a);
-            --text-main: #f8fafc; --text-muted: #94a3b8;
-            --primary: #3b82f6; 
-            --card-bg: rgba(30, 41, 59, 0.95);
-            --border: rgba(255,255,255,0.08);
-            --nav-bg: #0f172a;
-        }
-        [data-theme="light"] {
-            --bg-body: #f8fafc;
-            --bg-gradient: radial-gradient(circle at top, #e2e8f0, #f8fafc);
-            --text-main: #1e293b; --text-muted: #64748b;
-            --primary: #2563eb;
-            --card-bg: #ffffff;
-            --border: rgba(0,0,0,0.08);
-            --nav-bg: #ffffff;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-        body { 
-            background: var(--bg-body); background-image: var(--bg-gradient);
-            color: var(--text-main); font-family: 'Cairo', sans-serif; min-height: 100vh; 
-            padding-bottom: 30px; overflow-x: hidden; background-attachment: fixed;
-        }
-        body.no-scroll { overflow: hidden; }
-
-        header {
-            position: sticky; top: 0; z-index: 1000; background: var(--nav-bg);
-            border-bottom: 1px solid var(--border); padding: 15px 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
-        .logo { font-size: 1.3rem; font-weight: 900; letter-spacing: 1px; }
-        .logo span { color: var(--primary); }
-        .header-left { display: flex; gap: 25px; align-items: center; } 
-        .icon-btn { font-size: 1.4rem; cursor: pointer; transition: 0.2s; color: var(--text-main); }
-
-        .hero { text-align: center; padding: 25px 20px 5px; }
-        .hero h1 { font-size: 1.8rem; margin-bottom: 5px; color: var(--primary); }
-        .hero p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; }
-
-        .stats { display: flex; justify-content: center; gap: 12px; margin-bottom: 25px; }
-        .stat-item { 
-            background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; 
-            padding: 10px 20px; min-width: 90px; cursor: pointer; user-select: none;
-        }
-        .stat-item:active { transform: scale(0.95); border-color: var(--primary); }
-        .stat-num { font-weight: 800; color: var(--primary); font-size: 1.2rem; display: block; }
-        .stat-lbl { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
-
-        .search-container { position: relative; max-width: 500px; margin: 0 auto 20px; }
-        .search-box {
-            width: 100%; background: var(--card-bg); border: 1px solid var(--border);
-            padding: 14px 45px 14px 20px; border-radius: 50px; color: var(--text-main);
-            font-family: 'Cairo'; font-size: 1rem; outline: none; 
-        }
-        .search-box:focus { border-color: var(--primary); }
-        .search-icon { position: absolute; right: 20px; top: 16px; color: var(--text-muted); }
-
-        .tabs-wrapper { position: sticky; top: 73px; z-index: 900; padding: 5px 0; margin-bottom: 15px; background: transparent; }
-        .tabs-container { display: flex; gap: 8px; overflow-x: auto; padding: 5px 20px; scrollbar-width: none; }
-        .tabs-container::-webkit-scrollbar { display: none; }
-        .tab-btn {
-            background: var(--card-bg); color: var(--text-muted); border: 1px solid var(--border);
-            padding: 8px 20px; border-radius: 50px; cursor: pointer; transition: 0.2s;
-            font-family: 'Cairo'; font-weight: 700; font-size: 0.85rem; white-space: nowrap; flex-shrink: 0;
-        }
-        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-
-        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 10px 20px; max-width: 1000px; margin: 0 auto; }
-
-        .card {
-            background: var(--card-bg); border-radius: 18px; padding: 15px; 
-            text-decoration: none; color: var(--text-main); display: flex; flex-direction: column; 
-            align-items: center; border: 1px solid var(--border); position: relative; 
-            transition: transform 0.1s; cursor: pointer;
-        }
-        .card:active { transform: scale(0.97); background: rgba(59, 130, 246, 0.05); }
-
-        .mod-badge {
-            position: absolute; top: 10px; left: 10px; 
-            background: rgba(59, 130, 246, 0.1); color: var(--primary);
-            font-size: 0.65rem; padding: 3px 8px; border-radius: 6px; font-weight: bold;
-        }
-
-        .heart-btn {
-            position: absolute; top: 10px; right: 10px; font-size: 1.1rem; color: var(--text-muted);
-            cursor: pointer; z-index: 5; background: none; border: none; padding: 5px;
-        }
-        .heart-btn.active { color: #ef4444; }
-
-        .card img { width: 75px; height: 75px; border-radius: 16px; margin-bottom: 12px; object-fit: cover; background: #334155; }
-        .card-title { font-size: 0.9rem; font-weight: 700; text-align: center; margin-bottom: 10px; line-height: 1.3; height: 38px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-
-        .get-btn {
-            background: transparent; color: var(--primary); border: 1.5px solid var(--primary);
-            font-size: 0.8rem; font-weight: 700; padding: 6px 0; border-radius: 50px; 
-            width: 100%; text-align: center; display: block;
-        }
-        .card:hover .get-btn { background: var(--primary); color: white; }
-        .get-btn.secondary { border-color: #94a3b8; color: #94a3b8; } 
-
-        .sidebar { height: 100%; width: 0; position: fixed; z-index: 2000; top: 0; right: 0; background-color: var(--nav-bg); overflow-x: hidden; transition: 0.3s; padding-top: 20px; border-left: 1px solid var(--border); box-shadow: -5px 0 20px rgba(0,0,0,0.5); }
-        .sidebar-header { text-align: center; padding-bottom: 20px; margin-bottom: 10px; }
-        .profile-img { width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--primary); margin-bottom: 10px; object-fit: cover; }
-        .sidebar-link { margin: 10px 20px; padding: 12px 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; text-decoration: none; font-size: 0.95rem; color: var(--text-muted); display: flex; align-items: center; border: 1px solid var(--border); }
-        .sidebar-link i { width: 30px; color: var(--primary); font-size: 1.1rem; }
-        .close-btn { position: absolute; top: 15px; left: 20px; font-size: 25px; color: var(--text-muted); background: none; border: none; }
-
-        #imgViewer {
-            display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%;
-            background-color: #000; justify-content: center; align-items: center; flex-direction: column;
-        }
-        #imgViewer img { max-width: 100%; max-height: 80vh; object-fit: contain; }
-        .close-viewer { position: absolute; top: 20px; right: 20px; color: white; font-size: 30px; cursor: pointer; background: rgba(255,255,255,0.2); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-
-        #overlay { position: fixed; display: none; width: 100%; height: 100%; top: 0; left: 0; background: rgba(0,0,0,0.5); z-index: 1500; }
-        .status { grid-column: span 2; text-align: center; color: var(--text-muted); margin-top: 50px; font-size: 0.9rem; }
-        footer { text-align: center; padding: 30px; color: var(--text-muted); font-size: 0.8rem; margin-top: 40px; border-top: 1px solid var(--border); }
-
-        @media (min-width: 768px) {
-            header { padding: 15px 40px; }
-            .hero h1 { font-size: 2.4rem; }
-            .hero p { font-size: 1.1rem; margin-bottom: 35px; }
-            .search-container { max-width: 600px; }
-            .search-box { padding: 16px 50px 16px 20px; font-size: 1.1rem; }
-            .search-icon { top: 18px; font-size: 1.2rem; }
-            .grid { 
-                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
-                gap: 20px; 
-                padding: 20px 40px;
-                max-width: 1200px;
-            }
-            .card { padding: 20px; }
-            .card img { width: 90px; height: 90px; }
-            .card-title { font-size: 1rem; }
-            .get-btn { font-size: 0.9rem; padding: 8px 0; }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#06131f" />
+  <title>Weather & Compass</title>
+  <style>
+    :root{
+      --bg0:#04111d;
+      --bg1:#071b2c;
+      --bg2:#0e2a43;
+      --glass:rgba(255,255,255,.10);
+      --glass2:rgba(255,255,255,.06);
+      --line:rgba(255,255,255,.14);
+      --text:#f4fbff;
+      --muted:#b6c8d7;
+      --amber:#ffcc72;
+      --gold:#ffd76a;
+      --cyan:#8be7ff;
+      --shadow:0 18px 50px rgba(0,0,0,.35);
+      --radius:28px;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;height:100%}
+    body{
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 20% 10%, rgba(255,211,114,.22), transparent 22%),
+        radial-gradient(circle at 80% 18%, rgba(139,231,255,.18), transparent 20%),
+        linear-gradient(180deg, var(--bg2) 0%, var(--bg1) 42%, var(--bg0) 100%);
+      min-height:100vh;
+      overflow-x:hidden;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding:16px;
+    }
+    .phone{
+      width:min(430px, 100%);
+      min-height:calc(100vh - 32px);
+      border-radius:38px;
+      padding:14px;
+      background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.18);
+      backdrop-filter:blur(22px) saturate(150%);
+      border:1px solid rgba(255,255,255,.14);
+      position:relative;
+      overflow:hidden;
+    }
+    .phone::before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,.20), transparent 24%),
+        linear-gradient(180deg, rgba(255,255,255,.06), transparent 30%);
+      pointer-events:none;
+    }
+    .topbar,.panel,.forecast-row,.list-item{
+      background:linear-gradient(180deg, var(--glass), var(--glass2));
+      border:1px solid var(--line);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 10px 30px rgba(0,0,0,.16);
+      backdrop-filter:blur(16px) saturate(140%);
+    }
+    .topbar{
+      height:56px;
+      border-radius:20px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 14px;
+      margin-bottom:14px;
+      position:relative;
+      z-index:2;
+    }
+    .location{display:flex;flex-direction:column;gap:2px}
+    .location b{font-size:15px;font-weight:800;letter-spacing:.2px}
+    .location span{font-size:12px;color:var(--muted)}
+    .icon-btn{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);font-size:18px}
+    .hero{display:grid;gap:12px}
+    .panel{border-radius:var(--radius);padding:16px;position:relative;overflow:hidden}
+    .weather-main{min-height:250px}
+    .weather-main::after{
+      content:"";
+      position:absolute; inset:auto -20% -40% -20%; height:220px;
+      background:radial-gradient(circle, rgba(255,215,106,.22), transparent 62%);
+      pointer-events:none;
+    }
+    .weather-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .temp-wrap{display:flex;flex-direction:column;gap:4px}
+    .temp{font-size:72px;line-height:.92;font-weight:900;letter-spacing:-2px}
+    .desc{font-size:15px;color:#eef7ff;font-weight:700}
+    .sub{font-size:12px;color:var(--muted)}
+    .sun-art{
+      width:110px;height:110px;flex:0 0 auto;position:relative;margin-top:8px;
+      filter:drop-shadow(0 10px 18px rgba(255,199,87,.24));
+    }
+    .sun-core{position:absolute;inset:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%, #fff7c8 0%, #ffd76a 28%, #ffb546 60%, #ff8f2d 100%);box-shadow:0 0 28px rgba(255,208,94,.55), inset 0 0 10px rgba(255,255,255,.24)}
+    .ray{position:absolute;left:50%;top:50%;width:10px;height:36px;margin-left:-5px;margin-top:-18px;border-radius:10px;background:linear-gradient(180deg, rgba(255,244,184,.95), rgba(255,198,85,.0));transform-origin:center 54px;opacity:.85}
+    .r1{transform:translateY(-52px) rotate(0deg)} .r2{transform:translateY(-52px) rotate(45deg)} .r3{transform:translateY(-52px) rotate(90deg)} .r4{transform:translateY(-52px) rotate(135deg)} .r5{transform:translateY(-52px) rotate(22deg)} .r6{transform:translateY(-52px) rotate(67deg)}
+    .cloud{position:absolute;width:44px;height:22px;border-radius:999px;background:rgba(255,255,255,.92);box-shadow:14px 0 0 -2px rgba(255,255,255,.92), 28px 4px 0 -8px rgba(255,255,255,.92);opacity:.62}
+    .cloud.c1{left:12px;top:16px;transform:scale(.85)}
+    .cloud.c2{right:18px;bottom:16px;transform:scale(.7)}
+    .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+    .mini{border-radius:18px;padding:12px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)}
+    .mini .label{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .mini .value{font-size:15px;font-weight:800}
+    .hours{display:flex;gap:10px;overflow:auto;padding-bottom:2px;margin-top:14px;scrollbar-width:none}
+    .hours::-webkit-scrollbar{display:none}
+    .hour{min-width:88px;border-radius:18px;padding:12px 10px;text-align:center;flex:0 0 auto}
+    .hour .t{font-size:13px;color:var(--muted)}
+    .hour .i{font-size:20px;margin:6px 0}
+    .hour .v{font-size:16px;font-weight:800}
+    .tools{display:grid;grid-template-columns:1fr;gap:12px}
+    .section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .section-title h2{margin:0;font-size:16px}
+    .section-title span{font-size:12px;color:var(--muted)}
+    .compass-card{padding:16px 16px 14px}
+    .compass-wrap{display:grid;place-items:center;margin:6px 0 12px}
+    .compass{
+      width:256px;height:256px;max-width:100%;border-radius:50%;position:relative;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(0,0,0,.95) 0 32%, rgba(25,30,38,.98) 33%, rgba(8,12,18,1) 70%, rgba(2,4,8,1) 100%);
+      border:10px solid #9b7a3b;
+      box-shadow:inset 0 0 0 2px rgba(255,223,141,.25), inset 0 0 40px rgba(255,255,255,.05), 0 18px 28px rgba(0,0,0,.28);
+    }
+    .compass::before{
+      content:"";position:absolute;inset:18px;border-radius:50%;border:1px solid rgba(255,255,255,.12)
+    }
+    .mark{position:absolute;left:50%;top:50%;width:2px;height:14px;background:rgba(255,255,255,.6);transform-origin:50% 108px}
+    .mark.big{height:20px;width:3px;background:rgba(255,215,106,.88)}
+    .mark.t{width:3px;height:22px;background:rgba(139,231,255,.95)}
+    .deg{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff8db;opacity:.95}
+    .deg span{position:absolute;transform:translate(-50%,-50%)}
+    .needle{position:absolute;left:50%;top:50%;width:10px;height:104px;transform:translate(-50%,-92%) rotate(30deg);transform-origin:50% 90%;border-radius:999px;background:linear-gradient(180deg, #ffd1d1 0%, #ff4848 38%, #8b0000 100%);box-shadow:0 0 20px rgba(255,77,77,.25)}
+    .needle::after{content:"";position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);border-left:12px solid transparent;border-right:12px solid transparent;border-top:18px solid #efefef;filter:drop-shadow(0 3px 1px rgba(0,0,0,.2))}
+    .needle::before{content:"";position:absolute;left:50%;top:-12px;transform:translateX(-50%);border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:18px solid #ff3f3f}
+    .center-dot{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle, #fff 0 28%, #b7c0ca 29% 100%);box-shadow:0 0 0 7px rgba(255,255,255,.06)}
+    .qibla{position:absolute;left:50%;top:50%;width:4px;height:90px;transform:translate(-50%,-86%) rotate(140deg);transform-origin:50% 90%;border-radius:4px;background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.05));opacity:.95}
+    .qibla::after{content:"☾";position:absolute;left:50%;top:-20px;transform:translateX(-50%);font-size:20px;color:var(--gold);text-shadow:0 0 14px rgba(255,215,106,.4)}
+    .compass-info{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:12px}
+    .compass-info b{color:var(--text);font-size:13px}
+    .days{display:grid;gap:8px;margin-top:10px}
+    .day{display:flex;align-items:center;justify-content:space-between;padding:12px 12px;border-radius:18px}
+    .day .left{display:flex;align-items:center;gap:10px}
+    .day .ico{font-size:20px;width:24px;text-align:center}
+    .day .name{font-weight:800}
+    .day .range{color:var(--muted);font-size:13px}
+    .footer{margin:14px 4px 4px;text-align:center;color:rgba(255,255,255,.65);font-size:11px}
+    .status{padding:14px;text-align:center;color:var(--muted)}
+    @media (max-width:380px){
+      .temp{font-size:64px}
+      .compass{width:228px;height:228px}
+    }
+  </style>
 </head>
 <body>
+  <main class="phone">
+    <section class="topbar">
+      <div class="location">
+        <b id="place">بيروت، لبنان</b>
+        <span id="time">١٦:٤٥</span>
+      </div>
+      <div class="icon-btn" aria-label="settings">⚙︎</div>
+    </section>
 
-    <header>
-        <div class="logo">M<span>.Al.Boushi</span></div>
-        <div class="header-left">
-            <i class="fas fa-moon icon-btn" id="themeBtn" onclick="toggleTheme()"></i>
-            <i class="fas fa-bars icon-btn" onclick="openNav()"></i>
-        </div>
-    </header>
-
-    <div id="mySidebar" class="sidebar">
-        <button class="close-btn" onclick="closeNav()">&times;</button>
-        <div class="sidebar-header">
-            <img src="https://midomido.neocities.org/mohammadalboushi.png" alt="Profile" class="profile-img" id="sidebarProfileImg">
-            <h3 style="margin:10px 0; color:var(--text-main);">Mohammad Al Boushi</h3>
-            <p id="sidebarBio" style="color:var(--text-muted); font-size:0.8rem; padding:0 10px; line-height:1.4;">
-                جاري التحميل...
-            </p>
-        </div>
-        <div id="sidebarLinksContainer"></div>
-    </div>
-    <div id="overlay" onclick="closeNav()"></div>
-
-    <div id="imgViewer">
-        <span class="close-viewer" onclick="closeViewer()">&times;</span>
-        <img id="fullImage">
-        <a id="downloadBtn" href="#" download="image.jpg" class="get-btn" style="width: auto; padding: 8px 30px; margin-top: 20px; background: var(--primary); color: white; border: none;">⬇️ تحميل الصورة</a>
-    </div>
-
-    <div class="hero">
-        <h1>متجر التطبيقات</h1>
-        <p>وجهتك الأولى للتطبيقات المعدلة والحلول الذكية</p>
-        
-        <div class="stats">
-            <div class="stat-item">
-                <span class="stat-num" id="appCount">0</span><span class="stat-lbl">تطبيق</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-num">5K+</span><span class="stat-lbl">تنزيل</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-num">4.9</span><span class="stat-lbl">تقييم</span>
-            </div>
+    <section class="hero">
+      <article class="panel weather-main">
+        <div class="weather-header">
+          <div class="temp-wrap">
+            <div class="temp" id="temp">٣٤°م</div>
+            <div class="desc" id="desc">صافي جداً</div>
+            <div class="sub" id="feels">(الشعور الحقيقي ٤٠°)</div>
+          </div>
+          <div class="sun-art" aria-hidden="true">
+            <div class="sun-core"></div>
+            <div class="ray r1"></div><div class="ray r2"></div><div class="ray r3"></div><div class="ray r4"></div><div class="ray r5"></div><div class="ray r6"></div>
+            <div class="cloud c1"></div><div class="cloud c2"></div>
+          </div>
         </div>
 
-        <div class="search-container">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" id="searchInput" class="search-box" placeholder="ابحث عن تطبيق، لعبة، أو ملف...">
+        <div class="meta-grid">
+          <div class="mini"><div class="label">الرطوبة</div><div class="value" id="hum">٤٨٪</div></div>
+          <div class="mini"><div class="label">الهواء</div><div class="value" id="wind">٧.٧ كم/س غرب</div></div>
         </div>
-    </div>
 
-    <div class="tabs-wrapper">
-        <div class="tabs-container" id="tabsList"></div>
-    </div>
+        <div class="hours" id="hours">
+          <div class="hour"><div class="t">١٧:٠٠</div><div class="i">☀️</div><div class="v">٣٣°</div></div>
+          <div class="hour"><div class="t">١٨:٠٠</div><div class="i">🌤️</div><div class="v">٣١°</div></div>
+          <div class="hour"><div class="t">١٩:٠٠</div><div class="i">🌙</div><div class="v">٣٠°</div></div>
+        </div>
+      </article>
 
-    <div class="grid" id="container">
-        <div class="status"><i class="fas fa-circle-notch fa-spin"></i> جاري الاتصال بالسيرفر...</div>
-    </div>
+      <article class="panel compass-card">
+        <div class="section-title"><h2>البوصلة والقبلة</h2><span id="headingText">٣٠° ش ش ق</span></div>
+        <div class="compass-wrap">
+          <div class="compass" id="compass">
+            <div class="mark big" style="transform:translate(-50%,-100%) rotate(0deg)"></div>
+            <div class="mark" style="transform:translate(-50%,-100%) rotate(22.5deg)"></div>
+            <div class="mark" style="transform:translate(-50%,-100%) rotate(45deg)"></div>
+            <div class="mark" style="transform:translate(-50%,-100%) rotate(67.5deg)"></div>
+            <div class="mark" style="transform:translate(-50%,-100%) rotate(90deg)"></div>
+            <div class="mark" style="transform:translate(-50%,-100%) rotate(112.5deg)"></div>
+            <div class="mark" style="transform:translate(-50%,-100%) rotate(135deg)"></div>
+            <div class="mark" style="transform:translate(-50%,-100%) rotate(157.5deg)"></div>
+            <div class="mark big" style="transform:translate(-50%,-100%) rotate(180deg)"></div>
+            <div class="mark" style="transform:translate(-50%,-100%) rotate(202.5deg)"></div>
+            <div class="mark" style="transform:translate(-50%,-100%) rotate(225deg)"></div>
+            <div class="mark" style="transform:translate(-50%,-100%) rotate(247.5deg)"></div>
+            <div class="mark" style="transform:translate(-50%,-100%) rotate(270deg)"></div>
+            <div class="mark" style="transform:translate(-50%,-100%) rotate(292.5deg)"></div>
+            <div class="mark" style="transform:translate(-50%,-100%) rotate(315deg)"></div>
+            <div class="mark" style="transform:translate(-50%,-100%) rotate(337.5deg)"></div>
+            <div class="mark t" style="transform:translate(-50%,-100%) rotate(45deg)"></div>
+            <div class="mark t" style="transform:translate(-50%,-100%) rotate(225deg)"></div>
+            <div class="deg"><span style="top:8%;left:50%">ش</span><span style="top:50%;left:92%">ش ق</span><span style="top:92%;left:50%">ج</span><span style="top:50%;left:8%">غ</span></div>
+            <div class="qibla" id="qibla"></div>
+            <div class="needle" id="needle"></div>
+            <div class="center-dot"></div>
+          </div>
+        </div>
+        <div class="compass-info">
+          <div>الاتجاه: <b id="headingVal">٣٠° ش ش ق</b></div>
+          <div>القبلة: <b id="qiblaVal">س ١٤٠°</b></div>
+        </div>
+      </article>
 
-    <footer>&copy; 2026 M.Al.Boushi Store - جميع الحقوق محفوظة</footer>
+      <article class="panel">
+        <div class="section-title"><h2>توقعات ٥ أيام</h2><span>تحديث مباشر</span></div>
+        <div class="days" id="days">
+          <div class="day"><div class="left"><div class="ico">☀️</div><div><div class="name">الأربعاء</div><div class="range">٣٤° / ٢٦°</div></div></div><div>صحو</div></div>
+          <div class="day"><div class="left"><div class="ico">🌤️</div><div><div class="name">الخميس</div><div class="range">٣٣° / ٢٥°</div></div></div><div>خفيف</div></div>
+          <div class="day"><div class="left"><div class="ico">⛅</div><div><div class="name">الجمعة</div><div class="range">٣١° / ٢٤°</div></div></div><div>غائم</div></div>
+          <div class="day"><div class="left"><div class="ico">🌦️</div><div><div class="name">السبت</div><div class="range">٢٩° / ٢٣°</div></div></div><div>زخات</div></div>
+          <div class="day"><div class="left"><div class="ico">☀️</div><div><div class="name">الأحد</div><div class="range">٣٠° / ٢٤°</div></div></div><div>صحو</div></div>
+        </div>
+      </article>
+    </section>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    <div class="footer" id="status">جارٍ تحديد الموقع وجلب الطقس...</div>
+  </main>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBB_U4C880PW4GxZd8FALv8yBSiP2mNeBY",
-            authDomain: "malaboushi.firebaseapp.com",
-            projectId: "malaboushi",
-            storageBucket: "malaboushi.firebasestorage.app",
-            messagingSenderId: "110336819350",
-            appId: "1:110336819350:web:2b1b0488e72b811f0602b7",
-            measurementId: "G-94ZT4TQYZY",
-            databaseURL: "https://malaboushi-default-rtdb.firebaseio.com/"
-        };
+  <script>
+    const arabicDigits = (value) => String(value).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+    const compassDirs = (deg) => {
+      const dirs = ['ش','ش ش ق','ش ق','ق ش ق','ق','ج ق','ج','ج غ','غ','غ ش غ','ش غ','ش ش غ'];
+      return dirs[Math.round(((deg % 360) / 30)) % 12];
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+    function setClock(){
+      const now = new Date();
+      const time = now.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', hour12:false});
+      document.getElementById('time').textContent = time;
+    }
+    setClock();
+    setInterval(setClock, 1000);
 
-        let allAppsData = [];
-        let currentCategory = 'ALL';
-        let allCats = {};
+    const fallback = {
+      temp: 34,
+      feels: 40,
+      hum: 48,
+      wind: 7.7,
+      windDir: 'غرب',
+      desc: 'صافي جداً',
+      heading: 30,
+      qibla: 140,
+      hours: [
+        {time:'١٧:٠٠', icon:'☀️', temp:33},
+        {time:'١٨:٠٠', icon:'🌤️', temp:31},
+        {time:'١٩:٠٠', icon:'🌙', temp:30}
+      ],
+      days: [
+        ['الأربعاء','٣٤° / ٢٦°','☀️','صحو'],
+        ['الخميس','٣٣° / ٢٥°','🌤️','خفيف'],
+        ['الجمعة','٣١° / ٢٤°','⛅','غائم'],
+        ['السبت','٢٩° / ٢٣°','🌦️','زخات'],
+        ['الأحد','٣٠° / ٢٤°','☀️','صحو']
+      ]
+    };
 
-        // جلب الأقسام
-        onValue(ref(db, 'categories'), (snapshot) => {
-            const val = snapshot.val();
-            if(val) { 
-                allCats = val; 
-            } else {
-                allCats = {};
-            }
-            renderTabs(); 
-            renderApps(); 
+    function renderData(d){
+      document.getElementById('temp').textContent = arabicDigits(Math.round(d.temp)) + '°م';
+      document.getElementById('desc').textContent = d.desc;
+      document.getElementById('feels').textContent = `(الشعور الحقيقي ${arabicDigits(Math.round(d.feels))}°)`;
+      document.getElementById('hum').textContent = arabicDigits(Math.round(d.hum)) + '٪';
+      document.getElementById('wind').textContent = arabicDigits(d.wind.toFixed(1)) + ' كم/س ' + d.windDir;
+      document.getElementById('headingVal').textContent = arabicDigits(Math.round(d.heading)) + '° ' + compassDirs(d.heading);
+      document.getElementById('headingText').textContent = arabicDigits(Math.round(d.heading)) + '° ' + compassDirs(d.heading);
+      document.getElementById('qiblaVal').textContent = 'س ' + arabicDigits(Math.round(d.qibla)) + '°';
+      document.getElementById('needle').style.transform = `translate(-50%, -92%) rotate(${d.heading}deg)`;
+      document.getElementById('qibla').style.transform = `translate(-50%, -86%) rotate(${d.qibla}deg)`;
+
+      const hours = document.getElementById('hours');
+      hours.innerHTML = d.hours.map(h => `<div class="hour"><div class="t">${h.time}</div><div class="i">${h.icon}</div><div class="v">${arabicDigits(h.temp)}°</div></div>`).join('');
+
+      const days = document.getElementById('days');
+      days.innerHTML = d.days.map(day => `<div class="day"><div class="left"><div class="ico">${day[2]}</div><div><div class="name">${day[0]}</div><div class="range">${day[1]}</div></div></div><div>${day[3]}</div></div>`).join('');
+      document.getElementById('status').textContent = 'تم تحديث الطقس والبوصلة.';
+    }
+
+    async function loadWeather(lat, lon){
+      try{
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,apparent_temperature,weather_code&hourly=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const c = data.current || {};
+        const map = (code) => ({0:'صافي جداً',1:'غائم قليلًا',2:'غائم جزئياً',3:'غائم',45:'ضباب',48:'ضباب',51:'رذاذ',61:'مطر خفيف',63:'مطر',65:'مطر غزير',71:'ثلج',80:'زخات مطر',95:'عاصفة'})[code] || 'صافي جداً';
+        const windDir = ['شمال','شمال شرقي','شرق','جنوب شرقي','جنوب','جنوب غربي','غرب','شمال غربي'][Math.round((c.wind_direction_10m || 270) / 45) % 8] || 'غرب';
+        const h = (data.hourly?.time || []).slice(0,3).map((t, i) => ({
+          time: new Date(t).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', hour12:false}),
+          icon: (data.hourly.weather_code?.[i] ?? 0) === 0 ? '☀️' : '🌤️',
+          temp: Math.round(data.hourly.temperature_2m?.[i] ?? c.temperature_2m ?? 34)
+        }));
+        const d = (data.daily?.time || []).slice(0,5).map((t, i) => {
+          const name = new Date(t).toLocaleDateString('ar-EG', {weekday:'long'});
+          const max = Math.round(data.daily.temperature_2m_max?.[i] ?? 34);
+          const min = Math.round(data.daily.temperature_2m_min?.[i] ?? 26);
+          return [name, `${arabicDigits(max)}° / ${arabicDigits(min)}°`, (i===0?'☀️':i===1?'🌤️':i===2?'⛅':i===3?'🌦️':'☀️'), map(data.daily.weather_code?.[i] ?? 0)];
         });
-
-        // جلب إعدادات السايدبار
-        onValue(ref(db, 'settings'), (snapshot) => {
-            const val = snapshot.val();
-            if(val) {
-                if(val.profileImg) {
-                    const imgEl = document.getElementById('sidebarProfileImg');
-                    if(imgEl) imgEl.src = val.profileImg;
-                }
-                const bioText = val.bio || "نبني الأفكار، وننظم الفوضى التقنية.";
-                const bioEl = document.getElementById('sidebarBio');
-                if(bioEl) bioEl.innerText = bioText;
-
-                const linksContainer = document.getElementById('sidebarLinksContainer');
-                if(linksContainer) {
-                    linksContainer.innerHTML = '';
-                    if(val.links && Array.isArray(val.links)) {
-                        val.links.forEach(link => {
-                            let url = link.url;
-                            if(url && !url.startsWith('http') && !url.startsWith('tel:') && !url.startsWith('mailto:') && !url.startsWith('fb:') && !url.startsWith('intent:') && !url.startsWith('vnd.youtube:')) {
-                                 if (!url.match(/^[0-9]+$/)) url = 'https://' + url;
-                            }
-                            const a = document.createElement('a');
-                            a.className = 'sidebar-link';
-                            a.href = url;
-                            if(!url.startsWith('tel:') && !url.startsWith('fb:') && !url.startsWith('intent:') && !url.startsWith('vnd.youtube:')) {
-                                a.target = "_blank"; 
-                            }
-                            a.innerHTML = `<i class="${link.icon}"></i> ${link.name}`;
-                            linksContainer.appendChild(a);
-                        });
-                    } else {
-                        linksContainer.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8;">لا توجد روابط مضافة</div>';
-                    }
-                }
-            } else {
-                 const bioEl = document.getElementById('sidebarBio');
-                 if(bioEl) bioEl.innerText = "نبني الأفكار، وننظم الفوضى التقنية.";
-            }
+        renderData({
+          temp: c.temperature_2m ?? 34,
+          feels: c.apparent_temperature ?? 40,
+          hum: c.relative_humidity_2m ?? 48,
+          wind: c.wind_speed_10m ?? 7.7,
+          windDir,
+          desc: map(c.weather_code ?? 0),
+          heading: 30,
+          qibla: 140,
+          hours: h.length ? h : fallback.hours,
+          days: d.length ? d : fallback.days
         });
+      }catch(err){
+        renderData(fallback);
+        document.getElementById('status').textContent = 'تعذر جلب الطقس، تم عرض بيانات افتراضية.';
+      }
+    }
 
-        window.filterApps = (cat, btn) => {
-            currentCategory = cat;
-            renderTabs(); 
-            setTimeout(() => {
-                const activeBtn = document.querySelector('.tab-btn.active');
-                if(activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            }, 100);
-            renderApps();
-        };
+    function initCompass(){
+      if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', (e) => {
+          const alpha = typeof e.alpha === 'number' ? (360 - e.alpha) % 360 : null;
+          if (alpha === null) return;
+          document.getElementById('needle').style.transform = `translate(-50%, -92%) rotate(${alpha}deg)`;
+          document.getElementById('headingVal').textContent = arabicDigits(Math.round(alpha)) + '° ' + compassDirs(alpha);
+          document.getElementById('headingText').textContent = arabicDigits(Math.round(alpha)) + '° ' + compassDirs(alpha);
+        }, true);
+      }
+    }
 
-        function renderTabs() {
-            const container = document.getElementById('tabsList');
-            if(!container) return;
-            const sortedCats = Object.entries(allCats).sort(([,a], [,b]) => (a.order || 0) - (b.order || 0));
-            let html = `<button class="tab-btn ${currentCategory === 'ALL' ? 'active' : ''}" onclick="filterApps('ALL', this)">🌟 الكل</button>`;
-            sortedCats.forEach(([key, val]) => {
-                if (!val.isHidden) {
-                    html += `<button class="tab-btn ${currentCategory === key ? 'active' : ''}" onclick="filterApps('${key}', this)">${val.icon} ${val.name}</button>`;
-                }
-            });
-            container.innerHTML = html;
-        }
+    const beirut = {lat:33.8938, lon:35.5018};
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => loadWeather(pos.coords.latitude, pos.coords.longitude),
+        () => loadWeather(beirut.lat, beirut.lon),
+        {enableHighAccuracy:true, timeout:8000, maximumAge:300000}
+      );
+    } else {
+      loadWeather(beirut.lat, beirut.lon);
+    }
 
-        // جلب التطبيقات
-        onValue(ref(db, 'apps'), (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                allAppsData = Object.values(data)
-                    .filter(app => !app.isHidden)
-                    .sort((a, b) => (a.order || 0) - (b.order || 0));
-            } else {
-                allAppsData = [];
-            }
-            renderApps();
-        });
-
-        function renderApps(searchTerm = "") {
-            const container = document.getElementById('container');
-            if(!container) return;
-            container.innerHTML = '';
-            const favs = JSON.parse(localStorage.getItem('favorites')) || [];
-
-            const filtered = allAppsData.filter(app => {
-                const parentCat = allCats[app.type];
-                if (parentCat && parentCat.isHidden) return false;
-                const matchCat = (currentCategory === 'ALL') || (app.type === currentCategory);
-                const matchSearch = app.name.toLowerCase().includes(searchTerm.toLowerCase());
-                return matchCat && matchSearch;
-            });
-
-            const appCountEl = document.getElementById('appCount');
-            if(appCountEl) appCountEl.innerText = filtered.length;
-
-            if (filtered.length === 0) {
-                container.innerHTML = "<div class='status'>لا توجد نتائج</div>";
-                return;
-            }
-
-            filtered.forEach(app => {
-                let badgeTxt = "APP"; 
-                if(allCats[app.type]) badgeTxt = allCats[app.type].name;
-                const isFav = favs.includes(app.name);
-                const heartClass = isFav ? "fa-solid active" : "fa-regular";
-
-                let actionText = "تحميل";
-                let clickAction = `window.open('${app.link}', '_blank')`;
-                
-                if (app.type === 'WEBSITE') {
-                    actionText = "زيارة";
-                } else if (app.type === 'FILE') {
-                    actionText = "👁️ مشاهدة";
-                    clickAction = `viewImage('${app.img}')`; 
-                }
-
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.setAttribute('onclick', clickAction);
-                
-                card.innerHTML = `
-                    <span class="mod-badge">${badgeTxt}</span>
-                    <button class="heart-btn" onclick="toggleFavorite(event, this, '${app.name}')">
-                        <i class="${heartClass} fa-heart"></i>
-                    </button>
-                    <img src="${app.img}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/564/564619.png'" loading="lazy">
-                    <div class="card-title">${app.name}</div>
-                    <div class="get-btn ${app.type === 'FILE' ? 'secondary' : ''}">${actionText}</div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        const searchInput = document.getElementById('searchInput');
-        if(searchInput) {
-            searchInput.addEventListener('input', (e) => renderApps(e.target.value));
-        }
-
-        window.viewImage = (url) => {
-            if(window.event) window.event.stopPropagation();
-            const fullImg = document.getElementById('fullImage');
-            const dlBtn = document.getElementById('downloadBtn');
-            const imgViewer = document.getElementById('imgViewer');
-            if(fullImg) fullImg.src = url;
-            if(dlBtn) dlBtn.href = url;
-            if(imgViewer) imgViewer.style.display = 'flex';
-        };
-        
-        window.closeViewer = () => {
-            const imgViewer = document.getElementById('imgViewer');
-            if(imgViewer) imgViewer.style.display = 'none';
-        };
-
-        window.toggleTheme = () => {
-            const btn = document.getElementById('themeBtn');
-            if (document.body.hasAttribute('data-theme')) {
-                document.body.removeAttribute('data-theme');
-                if(btn) btn.classList.replace('fa-sun', 'fa-moon');
-                localStorage.setItem('theme', 'dark');
-            } else {
-                document.body.setAttribute('data-theme', 'light');
-                if(btn) btn.classList.replace('fa-moon', 'fa-sun');
-                localStorage.setItem('theme', 'light');
-            }
-        };
-        
-        if (localStorage.getItem('theme') === 'light') {
-            document.body.setAttribute('data-theme', 'light');
-            const themeBtn = document.getElementById('themeBtn');
-            if(themeBtn) themeBtn.classList.replace('fa-moon', 'fa-sun');
-        }
-
-        window.openNav = () => { 
-            document.getElementById("mySidebar").style.width = "280px"; 
-            document.getElementById("overlay").style.display = "block"; 
-            document.body.classList.add("no-scroll"); 
-        };
-        
-        window.closeNav = () => { 
-            document.getElementById("mySidebar").style.width = "0"; 
-            document.getElementById("overlay").style.display = "none"; 
-            document.body.classList.remove("no-scroll"); 
-        };
-        
-        window.toggleFavorite = (e, btn, appName) => {
-            if(e) e.stopPropagation(); 
-            let favs = JSON.parse(localStorage.getItem('favorites')) || [];
-            if (favs.includes(appName)) {
-                favs = favs.filter(i => i !== appName);
-                btn.classList.remove('active');
-                btn.classList.replace('fa-solid', 'fa-regular');
-            } else {
-                favs.push(appName);
-                btn.classList.add('active');
-                btn.classList.replace('fa-regular', 'fa-solid');
-            }
-            localStorage.setItem('favorites', JSON.stringify(favs));
-        };
-    </script>
+    document.getElementById('place').textContent = 'بيروت، لبنان';
+    initCompass();
+    renderData(fallback);
+  </script>
 </body>
 </html>
