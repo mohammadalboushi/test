@@ -1,16 +1,187 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Smart Launcher</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a0c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Smart Launcher</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<div id="app">
-<h1>Smart Launcher</h1>
-<p>قيد التطوير...</p>
-</div>
-<script src="app.js"></script>
+  <div class="bg-layer" aria-hidden="true">
+    <div class="orb o1"></div>
+    <div class="orb o2"></div>
+    <div class="orb o3"></div>
+    <div class="noise"></div>
+  </div>
+
+  <div class="shell">
+    <aside class="sidebar glass">
+      <div class="brand">
+        <div class="brand-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.2 6.8L22 10l-5 4.8L18.4 22 12 18.6 5.6 22 7 14.8 2 10l6.8-1.2z"/></svg>
+        </div>
+        <div>
+          <h1>Smart Launcher</h1>
+          <p>صفحة بداية شخصية للروابط والاختصارات</p>
+        </div>
+      </div>
+
+      <div class="profile">
+        <div class="avatar">أف</div>
+        <div class="profile-meta">
+          <strong>أبو فايز</strong>
+          <span id="profile-count">0 رابط</span>
+        </div>
+        <button class="btn btn-glass" id="btn-theme-cycle" title="تبديل المظهر">🌙</button>
+      </div>
+
+      <div class="search-wrap">
+        <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="sidebar-search" class="search" type="text" placeholder="ابحث في الروابط..." autocomplete="off" />
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-title"><span>إحصائيات</span><span id="storage-state">محلي</span></div>
+        <div class="mini-stats">
+          <div class="stat"><strong id="stat-categories">0</strong><span>أقسام</span></div>
+          <div class="stat"><strong id="stat-links">0</strong><span>روابط</span></div>
+          <div class="stat"><strong id="stat-pinned">0</strong><span>مثبتة</span></div>
+          <div class="stat"><strong id="stat-recent">0</strong><span>مفتوحة مؤخراً</span></div>
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-title"><span>الثيم</span><span id="theme-name">Dark</span></div>
+        <div class="theme-row">
+          <button class="theme-btn" data-theme="dark">Dark</button>
+          <button class="theme-btn" data-theme="light">Light</button>
+          <button class="theme-btn" data-theme="cyberpunk">Neon</button>
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-title"><span>نسخ احتياطي</span><span>JSON</span></div>
+        <div class="search-strip">
+          <button class="btn btn-primary" id="btn-export">تصدير</button>
+          <button class="btn btn-glass" id="btn-import">استيراد</button>
+          <input id="import-file" type="file" accept="application/json" hidden />
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-title"><span>إدارة البيانات</span><span>أمان</span></div>
+        <div class="search-strip">
+          <button class="btn btn-glass" id="btn-rename-section">تعديل قسم</button>
+          <button class="btn btn-danger" id="btn-clear-all">حذف الكل</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="hero glass">
+        <div class="top-line">
+          <div class="time-block">
+            <div class="clock" id="clock">00:00</div>
+            <div class="date" id="date">...</div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-glass" id="btn-add-category">قسم جديد</button>
+            <button class="btn btn-primary" id="btn-add-link">إضافة رابط</button>
+            <button class="btn btn-glass" id="btn-toggle-edit">وضع التعديل</button>
+          </div>
+        </div>
+
+        <div class="hero-panels">
+          <div class="hero-panel">
+            <h2>استخدمه كصفحة رئيسية</h2>
+            <p>أضف روابطك المهمة، ثبّت المفضلة، رتّب الأقسام، وابحث بسرعة من نفس الشاشة. كل شيء محفوظ محليًا بدون Firebase.</p>
+          </div>
+          <div class="hero-panel">
+            <h2>اختصارات سريعة</h2>
+            <p>اضغط على الرابط لفتحه، أو استخدم التعديل لتغيير الاسم، الرابط، الأيقونة، أو التثبيت.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="sections">
+        <div class="search-main-wrap">
+          <div class="topbar glass" style="padding:16px 18px; border-radius:24px;">
+            <div style="font-weight:800;font-size:1.05rem">الاختصارات</div>
+            <div class="search-main-wrap">
+              <input id="main-search" class="search" type="text" placeholder="ابحث أو اكتب رابط مثل github.com أو youtube.com" autocomplete="off" />
+              <div class="results" id="search-results"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="sections-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="modal-section">
+    <div class="modal">
+      <h3 id="section-modal-title">قسم جديد</h3>
+      <p>أنشئ قسمًا لتنظيم روابطك. لاحقًا يمكن إعادة تسميته أو حذفه من وضع التعديل.</p>
+      <div class="field">
+        <label>اسم القسم</label>
+        <input id="section-name" type="text" placeholder="مثال: الذكاء الاصطناعي" />
+      </div>
+      <div class="field">
+        <label>أيقونة القسم</label>
+        <input id="section-emoji" type="text" placeholder="🤖" maxlength="3" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-glass close-modal">إلغاء</button>
+        <button class="btn btn-primary" id="section-save">حفظ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-link">
+    <div class="modal">
+      <h3 id="link-modal-title">رابط جديد</h3>
+      <p>أضف الرابط مع الاسم والأيقونة، ثم اختر القسم المناسب له.</p>
+      <div class="field">
+        <label>القسم</label>
+        <select id="link-section"></select>
+      </div>
+      <div class="field">
+        <label>اسم الرابط</label>
+        <input id="link-name" type="text" placeholder="مثال: GitHub" />
+      </div>
+      <div class="field">
+        <label>الرابط</label>
+        <input id="link-url" type="url" placeholder="https://github.com" />
+      </div>
+      <div class="field">
+        <label>الأيقونة</label>
+        <input id="link-icon" type="text" placeholder="GH أو 🌐" maxlength="3" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-glass close-modal">إلغاء</button>
+        <button class="btn btn-primary" id="link-save">حفظ الرابط</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toast-wrap"></div>
+
+  <template id="card-template">
+    <article class="card">
+      <div class="card-tools">
+        <button class="toolbtn del" title="حذف">✕</button>
+        <button class="toolbtn pin" title="تثبيت">⭐</button>
+      </div>
+      <div class="icon"><div class="fallback">A</div></div>
+      <div class="title">اسم الرابط</div>
+      <div class="url">example.com</div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
 </body>
 </html>
