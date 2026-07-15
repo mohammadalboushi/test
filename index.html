@@ -7,24 +7,24 @@
   <title>Weather & Compass</title>
   <style>
     :root{
-      --bg0:#03111c;
-      --bg1:#071d31;
-      --bg2:#0f3554;
-      --glass:rgba(255,255,255,.11);
+      --bg0:#030f18;
+      --bg1:#08213a;
+      --bg2:#124064;
+      --glass:rgba(255,255,255,.12);
       --glass2:rgba(255,255,255,.06);
-      --line:rgba(255,255,255,.16);
-      --text:#f7fcff;
-      --muted:#bfd0dd;
-      --gold:#ffd77d;
+      --line:rgba(255,255,255,.15);
+      --text:#f8fdff;
+      --muted:#c5d5e2;
+      --gold:#ffd97a;
       --amber:#ffb84d;
       --cyan:#8feaff;
-      --shadow:0 22px 60px rgba(0,0,0,.42);
-      --radius:28px;
+      --shadow:0 22px 70px rgba(0,0,0,.42);
+      --radius:30px;
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     html,body{margin:0;height:100%}
     body{
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       color:var(--text);
       min-height:100vh;
       overflow-x:hidden;
@@ -33,19 +33,19 @@
       align-items:center;
       padding:16px;
       background:
-        radial-gradient(circle at 22% 10%, rgba(255,214,116,.18), transparent 18%),
+        radial-gradient(circle at 20% 10%, rgba(255,214,116,.18), transparent 17%),
         radial-gradient(circle at 82% 14%, rgba(143,234,255,.16), transparent 16%),
-        radial-gradient(circle at 50% 80%, rgba(0,0,0,.22), transparent 28%),
+        radial-gradient(circle at 50% 82%, rgba(0,0,0,.24), transparent 30%),
         linear-gradient(180deg, var(--bg2) 0%, var(--bg1) 45%, var(--bg0) 100%);
     }
     .phone{
-      width:min(430px, 100%);
+      width:min(430px,100%);
       min-height:calc(100vh - 32px);
       border-radius:38px;
       padding:14px;
-      background:linear-gradient(180deg, rgba(255,255,255,.11), rgba(255,255,255,.04));
+      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
       box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.18);
-      backdrop-filter:blur(24px) saturate(155%);
+      backdrop-filter:blur(24px) saturate(160%);
       border:1px solid rgba(255,255,255,.14);
       position:relative;
       overflow:hidden;
@@ -60,7 +60,7 @@
     }
     .phone::after{
       content:"";
-      position:absolute; inset:auto -10% -20% -10%; height:280px;
+      position:absolute; inset:auto -10% -18% -10%; height:300px;
       background:radial-gradient(circle, rgba(255,184,77,.10), transparent 60%);
       pointer-events:none;
     }
@@ -68,29 +68,34 @@
       background:linear-gradient(180deg, var(--glass), var(--glass2));
       border:1px solid var(--line);
       box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 12px 34px rgba(0,0,0,.18);
-      backdrop-filter:blur(16px) saturate(145%);
+      backdrop-filter:blur(18px) saturate(150%);
     }
     .topbar{
       height:58px;
-      border-radius:20px;
+      border-radius:22px;
       display:flex;
       align-items:center;
       justify-content:space-between;
       padding:0 14px;
       margin-bottom:14px;
       position:relative;
-      z-index:2;
+      z-index:3;
     }
     .location{display:flex;flex-direction:column;gap:2px;min-width:0}
     .location b{font-size:15px;font-weight:900;letter-spacing:.2px}
     .location span{font-size:12px;color:var(--muted)}
-    .icon-btn{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);font-size:18px}
+    .icon-btn{
+      width:38px;height:38px;border-radius:13px;display:grid;place-items:center;
+      background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);
+      font-size:18px;cursor:pointer;user-select:none;outline:none;
+    }
+    .icon-btn:active{transform:scale(.95)}
     .hero{display:grid;gap:12px}
     .panel{border-radius:var(--radius);padding:16px;position:relative;overflow:hidden}
-    .weather-main{min-height:250px}
+    .weather-main{min-height:255px}
     .weather-main::after{
       content:"";
-      position:absolute; inset:auto -18% -44% -18%; height:230px;
+      position:absolute; inset:auto -18% -44% -18%; height:240px;
       background:radial-gradient(circle, rgba(255,215,125,.22), transparent 64%);
       pointer-events:none;
     }
@@ -128,12 +133,8 @@
       border:10px solid #aa863d;
       box-shadow:inset 0 0 0 2px rgba(255,223,141,.20), inset 0 0 44px rgba(255,255,255,.05), 0 18px 28px rgba(0,0,0,.28);
     }
-    .compass::before{
-      content:"";position:absolute;inset:18px;border-radius:50%;border:1px solid rgba(255,255,255,.12)
-    }
-    .compass::after{
-      content:"";position:absolute;inset:34px;border-radius:50%;border:1px solid rgba(255,255,255,.06)
-    }
+    .compass::before{content:"";position:absolute;inset:18px;border-radius:50%;border:1px solid rgba(255,255,255,.12)}
+    .compass::after{content:"";position:absolute;inset:34px;border-radius:50%;border:1px solid rgba(255,255,255,.06)}
     .mark{position:absolute;left:50%;top:50%;width:2px;height:14px;background:rgba(255,255,255,.62);transform-origin:50% 110px}
     .mark.big{height:20px;width:3px;background:rgba(255,215,106,.88)}
     .mark.t{width:3px;height:22px;background:rgba(143,234,255,.96)}
@@ -165,7 +166,7 @@
         <b id="place">بيروت، لبنان</b>
         <span id="time">١٦:٤٥</span>
       </div>
-      <div class="icon-btn" aria-label="settings">⚙︎</div>
+      <button class="icon-btn" id="settingsBtn" type="button" aria-label="settings">⚙︎</button>
     </section>
 
     <section class="hero">
@@ -257,6 +258,7 @@
     }
     setClock();
     setInterval(setClock, 1000);
+
     const fallback = {
       temp: 34, feels: 40, hum: 48, wind: 7.7, windDir: 'غرب', desc: 'صافي جداً', heading: 30, qibla: 140,
       hours: [
@@ -272,6 +274,7 @@
         ['الأحد','٣٠° / ٢٤°','☀️','صحو']
       ]
     };
+
     function renderData(d){
       document.getElementById('temp').textContent = arabicDigits(Math.round(d.temp)) + '°م';
       document.getElementById('desc').textContent = d.desc;
@@ -287,6 +290,7 @@
       document.getElementById('days').innerHTML = d.days.map(day => `<div class="day"><div class="left"><div class="ico">${day[2]}</div><div><div class="name">${day[0]}</div><div class="range">${day[1]}</div></div></div><div>${day[3]}</div></div>`).join('');
       document.getElementById('status').textContent = 'تم تحديث الطقس والبوصلة.';
     }
+
     async function loadWeather(lat, lon){
       try{
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,apparent_temperature,weather_code&hourly=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto`;
@@ -323,6 +327,7 @@
         document.getElementById('status').textContent = 'تعذر جلب الطقس، تم عرض بيانات افتراضية.';
       }
     }
+
     function initCompass(){
       if (window.DeviceOrientationEvent) {
         window.addEventListener('deviceorientation', (e) => {
@@ -334,6 +339,13 @@
         }, true);
       }
     }
+
+    const settingsBtn = document.getElementById('settingsBtn');
+    settingsBtn.addEventListener('click', () => {
+      const target = document.getElementById('days');
+      if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+
     const beirut = {lat:33.8938, lon:35.5018};
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -344,6 +356,7 @@
     } else {
       loadWeather(beirut.lat, beirut.lon);
     }
+
     document.getElementById('place').textContent = 'بيروت، لبنان';
     initCompass();
     renderData(fallback);
