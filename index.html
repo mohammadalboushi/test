@@ -3,246 +3,1455 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#06131f" />
-  <title>Weather & Compass</title>
+  <meta name="theme-color" content="#07131f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Weather & Compass Premium</title>
   <style>
-    :root{
-      --bg0:#030f18;
-      --bg1:#08213a;
-      --bg2:#124064;
-      --glass:rgba(255,255,255,.12);
-      --glass2:rgba(255,255,255,.06);
-      --line:rgba(255,255,255,.15);
-      --text:#f8fdff;
-      --muted:#c5d5e2;
-      --gold:#ffd97a;
-      --amber:#ffb84d;
-      --cyan:#8feaff;
-      --shadow:0 22px 70px rgba(0,0,0,.42);
-      --radius:30px;
+    :root {
+      --bg-0: #020b12;
+      --bg-1: #071726;
+      --bg-2: #0c2840;
+      --bg-3: #103d60;
+      --panel: rgba(255,255,255,.10);
+      --panel-2: rgba(255,255,255,.06);
+      --panel-3: rgba(255,255,255,.04);
+      --line: rgba(255,255,255,.14);
+      --line-2: rgba(255,255,255,.08);
+      --text: #f8fdff;
+      --muted: #c7d6e3;
+      --muted-2: #92a7b9;
+      --gold: #ffd66c;
+      --amber: #ffb845;
+      --cyan: #89e8ff;
+      --red: #ff5959;
+      --good: #8fffbb;
+      --shadow-lg: 0 28px 90px rgba(0,0,0,.48);
+      --shadow-md: 0 16px 36px rgba(0,0,0,.24);
+      --shadow-sm: 0 8px 18px rgba(0,0,0,.16);
+      --radius-xl: 34px;
+      --radius-lg: 26px;
+      --radius-md: 20px;
+      --radius-sm: 16px;
+      --blur: 20px;
+      --glass: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
+      --glass-strong: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.05));
     }
-    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{margin:0;height:100%}
-    body{
-      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      color:var(--text);
-      min-height:100vh;
-      overflow-x:hidden;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      padding:16px;
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 14px;
       background:
-        radial-gradient(circle at 20% 10%, rgba(255,214,116,.18), transparent 17%),
-        radial-gradient(circle at 82% 14%, rgba(143,234,255,.16), transparent 16%),
-        radial-gradient(circle at 50% 82%, rgba(0,0,0,.24), transparent 30%),
-        linear-gradient(180deg, var(--bg2) 0%, var(--bg1) 45%, var(--bg0) 100%);
+        radial-gradient(circle at 20% 10%, rgba(255,214,108,.22), transparent 17%),
+        radial-gradient(circle at 80% 12%, rgba(137,232,255,.18), transparent 16%),
+        radial-gradient(circle at 50% 88%, rgba(0,0,0,.28), transparent 28%),
+        linear-gradient(180deg, var(--bg-3) 0%, var(--bg-2) 30%, var(--bg-1) 62%, var(--bg-0) 100%);
     }
-    .phone{
-      width:min(430px,100%);
-      min-height:calc(100vh - 32px);
-      border-radius:38px;
-      padding:14px;
-      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
-      box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.18);
-      backdrop-filter:blur(24px) saturate(160%);
-      border:1px solid rgba(255,255,255,.14);
-      position:relative;
-      overflow:hidden;
+
+    /* scene layers */
+    .scene {
+      width: min(460px, 100%);
+      min-height: calc(100vh - 28px);
+      position: relative;
+      border-radius: 40px;
+      overflow: hidden;
+      isolation: isolate;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+      backdrop-filter: blur(22px) saturate(140%);
     }
-    .phone::before{
-      content:"";
-      position:absolute; inset:0;
+
+    .bg-aurora,
+    .bg-noise,
+    .bg-glow,
+    .bg-water,
+    .bg-reflection,
+    .bg-sheen,
+    .bg-stars,
+    .bg-orbit,
+    .bg-fog {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .bg-aurora {
       background:
-        linear-gradient(180deg, rgba(255,255,255,.16), transparent 18%),
-        radial-gradient(circle at 50% 0%, rgba(255,255,255,.18), transparent 22%);
-      pointer-events:none;
+        radial-gradient(ellipse at 50% 18%, rgba(255,218,122,.20), transparent 22%),
+        radial-gradient(ellipse at 74% 14%, rgba(137,232,255,.16), transparent 18%),
+        radial-gradient(ellipse at 18% 20%, rgba(255,255,255,.08), transparent 20%),
+        linear-gradient(180deg, rgba(255,255,255,.05), transparent 22%);
+      mix-blend-mode: screen;
+      opacity: .96;
     }
-    .phone::after{
-      content:"";
-      position:absolute; inset:auto -10% -18% -10%; height:300px;
-      background:radial-gradient(circle, rgba(255,184,77,.10), transparent 60%);
-      pointer-events:none;
-    }
-    .topbar,.panel{
-      background:linear-gradient(180deg, var(--glass), var(--glass2));
-      border:1px solid var(--line);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 12px 34px rgba(0,0,0,.18);
-      backdrop-filter:blur(18px) saturate(150%);
-    }
-    .topbar{
-      height:58px;
-      border-radius:22px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:0 14px;
-      margin-bottom:14px;
-      position:relative;
-      z-index:3;
-    }
-    .location{display:flex;flex-direction:column;gap:2px;min-width:0}
-    .location b{font-size:15px;font-weight:900;letter-spacing:.2px}
-    .location span{font-size:12px;color:var(--muted)}
-    .icon-btn{
-      width:38px;height:38px;border-radius:13px;display:grid;place-items:center;
-      background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);
-      font-size:18px;cursor:pointer;user-select:none;outline:none;
-    }
-    .icon-btn:active{transform:scale(.95)}
-    .hero{display:grid;gap:12px}
-    .panel{border-radius:var(--radius);padding:16px;position:relative;overflow:hidden}
-    .weather-main{min-height:255px}
-    .weather-main::after{
-      content:"";
-      position:absolute; inset:auto -18% -44% -18%; height:240px;
-      background:radial-gradient(circle, rgba(255,215,125,.22), transparent 64%);
-      pointer-events:none;
-    }
-    .weather-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-    .temp-wrap{display:flex;flex-direction:column;gap:4px}
-    .temp{font-size:72px;line-height:.92;font-weight:950;letter-spacing:-2px;text-shadow:0 10px 28px rgba(0,0,0,.18)}
-    .desc{font-size:15px;color:#f3f9ff;font-weight:800}
-    .sub{font-size:12px;color:var(--muted)}
-    .sun-art{width:112px;height:112px;flex:0 0 auto;position:relative;margin-top:8px;filter:drop-shadow(0 12px 22px rgba(255,199,87,.26))}
-    .sun-core{position:absolute;inset:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%, #fff8d0 0%, #ffd86f 30%, #ffb648 62%, #ff8d2b 100%);box-shadow:0 0 30px rgba(255,208,94,.55), inset 0 0 10px rgba(255,255,255,.24)}
-    .ray{position:absolute;left:50%;top:50%;width:10px;height:36px;margin-left:-5px;margin-top:-18px;border-radius:10px;background:linear-gradient(180deg, rgba(255,246,200,.98), rgba(255,198,85,.0));transform-origin:center 54px;opacity:.9}
-    .r1{transform:translateY(-52px) rotate(0deg)} .r2{transform:translateY(-52px) rotate(45deg)} .r3{transform:translateY(-52px) rotate(90deg)} .r4{transform:translateY(-52px) rotate(135deg)} .r5{transform:translateY(-52px) rotate(22deg)} .r6{transform:translateY(-52px) rotate(67deg)}
-    .cloud{position:absolute;width:44px;height:22px;border-radius:999px;background:rgba(255,255,255,.92);box-shadow:14px 0 0 -2px rgba(255,255,255,.92), 28px 4px 0 -8px rgba(255,255,255,.92);opacity:.64;filter:blur(.2px)}
-    .cloud.c1{left:12px;top:16px;transform:scale(.84)}
-    .cloud.c2{right:18px;bottom:16px;transform:scale(.72)}
-    .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
-    .mini{border-radius:18px;padding:12px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)}
-    .mini .label{font-size:12px;color:var(--muted);margin-bottom:6px}
-    .mini .value{font-size:15px;font-weight:850}
-    .hours{display:flex;gap:10px;overflow:auto;padding-bottom:2px;margin-top:14px;scrollbar-width:none}
-    .hours::-webkit-scrollbar{display:none}
-    .hour{min-width:88px;border-radius:18px;padding:12px 10px;text-align:center;flex:0 0 auto;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
-    .hour .t{font-size:13px;color:var(--muted)}
-    .hour .i{font-size:20px;margin:6px 0}
-    .hour .v{font-size:16px;font-weight:850}
-    .section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-    .section-title h2{margin:0;font-size:16px}
-    .section-title span{font-size:12px;color:var(--muted)}
-    .compass-card{padding:16px 16px 14px}
-    .compass-wrap{display:grid;place-items:center;margin:6px 0 12px}
-    .compass{
-      width:260px;height:260px;max-width:100%;border-radius:50%;position:relative;
+
+    .bg-glow {
       background:
-        radial-gradient(circle at 50% 48%, rgba(0,0,0,.96) 0 30%, rgba(27,33,42,.98) 33%, rgba(8,12,18,1) 68%, rgba(0,0,0,1) 100%);
-      border:10px solid #aa863d;
-      box-shadow:inset 0 0 0 2px rgba(255,223,141,.20), inset 0 0 44px rgba(255,255,255,.05), 0 18px 28px rgba(0,0,0,.28);
+        radial-gradient(circle at 50% 12%, rgba(255,216,102,.28), transparent 18%),
+        radial-gradient(circle at 50% 110%, rgba(15,85,122,.45), transparent 24%),
+        radial-gradient(circle at 10% 45%, rgba(137,232,255,.08), transparent 20%),
+        radial-gradient(circle at 90% 35%, rgba(255,185,69,.08), transparent 18%);
+      filter: blur(2px);
     }
-    .compass::before{content:"";position:absolute;inset:18px;border-radius:50%;border:1px solid rgba(255,255,255,.12)}
-    .compass::after{content:"";position:absolute;inset:34px;border-radius:50%;border:1px solid rgba(255,255,255,.06)}
-    .mark{position:absolute;left:50%;top:50%;width:2px;height:14px;background:rgba(255,255,255,.62);transform-origin:50% 110px}
-    .mark.big{height:20px;width:3px;background:rgba(255,215,106,.88)}
-    .mark.t{width:3px;height:22px;background:rgba(143,234,255,.96)}
-    .deg{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-weight:850;color:#fff8db;opacity:.95}
-    .deg span{position:absolute;transform:translate(-50%,-50%)}
-    .needle{position:absolute;left:50%;top:50%;width:10px;height:108px;transform:translate(-50%,-92%) rotate(30deg);transform-origin:50% 90%;border-radius:999px;background:linear-gradient(180deg, #ffd6d6 0%, #ff5353 38%, #8b0000 100%);box-shadow:0 0 20px rgba(255,77,77,.28)}
-    .needle::after{content:"";position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);border-left:12px solid transparent;border-right:12px solid transparent;border-top:18px solid #f0f0f0;filter:drop-shadow(0 3px 1px rgba(0,0,0,.22))}
-    .needle::before{content:"";position:absolute;left:50%;top:-12px;transform:translateX(-50%);border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:18px solid #ff4242}
-    .center-dot{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle, #fff 0 28%, #b7c0ca 29% 100%);box-shadow:0 0 0 7px rgba(255,255,255,.06)}
-    .qibla{position:absolute;left:50%;top:50%;width:4px;height:92px;transform:translate(-50%,-86%) rotate(140deg);transform-origin:50% 90%;border-radius:4px;background:linear-gradient(180deg, rgba(255,255,255,.60), rgba(255,255,255,.05));opacity:.96}
-    .qibla::after{content:"☾";position:absolute;left:50%;top:-20px;transform:translateX(-50%);font-size:20px;color:var(--gold);text-shadow:0 0 14px rgba(255,215,106,.38)}
-    .compass-info{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:12px}
-    .compass-info b{color:var(--text);font-size:13px}
-    .days{display:grid;gap:8px;margin-top:10px}
-    .day{display:flex;align-items:center;justify-content:space-between;padding:12px 12px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
-    .day .left{display:flex;align-items:center;gap:10px}
-    .day .ico{font-size:20px;width:24px;text-align:center}
-    .day .name{font-weight:850}
-    .day .range{color:var(--muted);font-size:13px}
-    .footer{margin:14px 4px 4px;text-align:center;color:rgba(255,255,255,.68);font-size:11px}
-    .status{padding:14px;text-align:center;color:var(--muted)}
-    @media (max-width:380px){.temp{font-size:64px}.compass{width:228px;height:228px}}
+
+    .bg-water {
+      position: absolute;
+      left: -15%; right: -15%; bottom: -18%; height: 46%;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,.10), transparent 18%),
+        radial-gradient(circle at 70% 40%, rgba(255,255,255,.06), transparent 16%),
+        linear-gradient(180deg, rgba(6, 33, 53, .0), rgba(6, 33, 53, .85) 16%, rgba(5, 21, 40, .98) 100%);
+      clip-path: polygon(0 18%, 8% 14%, 16% 18%, 24% 13%, 33% 17%, 41% 12%, 50% 17%, 58% 13%, 67% 18%, 76% 12%, 85% 16%, 92% 11%, 100% 14%, 100% 100%, 0 100%);
+      filter: drop-shadow(0 -10px 24px rgba(0,0,0,.35));
+      opacity: .92;
+    }
+
+    .bg-reflection {
+      inset: auto 0 0 0;
+      height: 38%;
+      background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,.03) 36%, rgba(255,255,255,.08) 100%);
+      mix-blend-mode: screen;
+      opacity: .48;
+    }
+
+    .bg-sheen {
+      background:
+        linear-gradient(115deg, transparent 0%, rgba(255,255,255,.08) 14%, transparent 24%, transparent 100%),
+        linear-gradient(295deg, transparent 0%, rgba(255,255,255,.04) 10%, transparent 20%, transparent 100%);
+      transform: translateX(-18%) skewX(-10deg);
+      opacity: .35;
+    }
+
+    .bg-stars {
+      background-image:
+        radial-gradient(circle at 12% 15%, rgba(255,255,255,.95) 0 1px, transparent 1.8px),
+        radial-gradient(circle at 26% 10%, rgba(255,255,255,.8) 0 1px, transparent 1.8px),
+        radial-gradient(circle at 68% 8%, rgba(255,255,255,.8) 0 1px, transparent 1.8px),
+        radial-gradient(circle at 84% 16%, rgba(255,255,255,.85) 0 1px, transparent 1.8px),
+        radial-gradient(circle at 35% 24%, rgba(255,255,255,.8) 0 1px, transparent 1.8px),
+        radial-gradient(circle at 58% 20%, rgba(255,255,255,.75) 0 1px, transparent 1.8px),
+        radial-gradient(circle at 44% 9%, rgba(255,255,255,.85) 0 1px, transparent 1.8px),
+        radial-gradient(circle at 90% 8%, rgba(255,255,255,.9) 0 1px, transparent 1.8px);
+      opacity: .55;
+    }
+
+    .bg-orbit::before,
+    .bg-orbit::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.06);
+      inset: 10% 14%;
+    }
+    .bg-orbit::after {
+      inset: 16% 22%;
+      border-color: rgba(255,214,108,.08);
+      transform: rotate(8deg);
+    }
+
+    .bg-fog {
+      background:
+        radial-gradient(circle at 50% 52%, rgba(255,255,255,.12), transparent 22%),
+        radial-gradient(circle at 20% 60%, rgba(255,255,255,.07), transparent 20%),
+        radial-gradient(circle at 80% 58%, rgba(255,255,255,.08), transparent 21%);
+      filter: blur(12px);
+      opacity: .75;
+    }
+
+    .bg-noise {
+      opacity: .06;
+      background-image:
+        linear-gradient(0deg, rgba(255,255,255,.45) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.35) 1px, transparent 1px);
+      background-size: 9px 9px;
+      mix-blend-mode: overlay;
+    }
+
+    /* top status strip */
+    .status-strip {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px 0;
+      color: rgba(255,255,255,.92);
+      font-size: 12px;
+      font-weight: 700;
+      text-shadow: 0 1px 2px rgba(0,0,0,.25);
+    }
+
+    .status-left,
+    .status-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .chip {
+      height: 24px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.12);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(10px);
+    }
+
+    .chip strong { font-size: 11px; letter-spacing: .2px; }
+
+    .icon-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 10px rgba(255,214,108,.55);
+    }
+
+    /* app shell */
+    .shell {
+      position: relative;
+      z-index: 3;
+      height: 100%;
+      padding: 8px 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* header */
+    .topbar {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 13px 14px;
+      border-radius: 22px;
+      background: var(--glass);
+      border: 1px solid var(--line);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.14), var(--shadow-sm);
+      backdrop-filter: blur(var(--blur)) saturate(150%);
+    }
+
+    .place-box {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .place-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .place-subtitle {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: .2px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .action-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+      cursor: pointer;
+      user-select: none;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+    .action-btn:active { transform: scale(.96); }
+    .action-btn:hover { background: rgba(255,255,255,.11); }
+    .action-btn[aria-expanded="true"] {
+      border-color: rgba(255,214,108,.25);
+      box-shadow: 0 0 0 1px rgba(255,214,108,.12), inset 0 1px 0 rgba(255,255,255,.10);
+    }
+
+    /* hero card */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .panel {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius-xl);
+      background: var(--glass);
+      border: 1px solid var(--line);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12), var(--shadow-md);
+      backdrop-filter: blur(var(--blur)) saturate(150%);
+    }
+
+    .weather-card {
+      padding: 16px;
+      min-height: 294px;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 14px;
+    }
+
+    .weather-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.08), transparent 26%),
+        radial-gradient(circle at 20% 14%, rgba(255,214,108,.14), transparent 18%),
+        radial-gradient(circle at 84% 16%, rgba(137,232,255,.10), transparent 18%);
+      pointer-events: none;
+    }
+
+    .sky-veil {
+      position: absolute;
+      inset: auto -10% 58% -10%;
+      height: 34%;
+      background:
+        radial-gradient(circle at 20% 50%, rgba(255,255,255,.12), transparent 20%),
+        radial-gradient(circle at 50% 30%, rgba(255,214,108,.08), transparent 32%),
+        linear-gradient(180deg, rgba(255,255,255,.06), transparent 100%);
+      filter: blur(8px);
+      opacity: .9;
+      pointer-events: none;
+    }
+
+    .weather-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .weather-copy {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .temperature {
+      font-size: 74px;
+      line-height: .9;
+      font-weight: 950;
+      letter-spacing: -2.8px;
+      text-shadow: 0 16px 34px rgba(0,0,0,.22);
+    }
+
+    .condition {
+      font-size: 16px;
+      font-weight: 850;
+      color: #f6fbff;
+      text-shadow: 0 1px 0 rgba(0,0,0,.10);
+    }
+
+    .feels {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 2px;
+    }
+
+    .hero-badge {
+      min-height: 28px;
+      padding: 0 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.10);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .hero-badge strong { color: var(--text); font-weight: 850; }
+
+    .weather-art {
+      width: 120px;
+      height: 120px;
+      flex: 0 0 auto;
+      position: relative;
+      margin-inline-start: 6px;
+      margin-top: 2px;
+      filter: drop-shadow(0 18px 18px rgba(255,190,74,.18));
+    }
+
+    .sun {
+      position: absolute;
+      inset: 18px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 35%, #fff6d0 0%, #ffd96e 26%, #ffb94b 58%, #ff9032 100%);
+      box-shadow:
+        0 0 34px rgba(255,214,108,.55),
+        inset 0 0 12px rgba(255,255,255,.22);
+    }
+
+    .sun-ray {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 11px;
+      height: 40px;
+      margin-left: -5.5px;
+      margin-top: -20px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,246,189,.98), rgba(255,198,85,0));
+      transform-origin: center 55px;
+      opacity: .88;
+    }
+
+    .r-a { transform: translateY(-55px) rotate(0deg); }
+    .r-b { transform: translateY(-55px) rotate(45deg); }
+    .r-c { transform: translateY(-55px) rotate(90deg); }
+    .r-d { transform: translateY(-55px) rotate(135deg); }
+    .r-e { transform: translateY(-55px) rotate(22deg); }
+    .r-f { transform: translateY(-55px) rotate(67deg); }
+
+    .cloud {
+      position: absolute;
+      width: 52px;
+      height: 24px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.94);
+      box-shadow: 16px 0 0 -2px rgba(255,255,255,.94), 30px 4px 0 -8px rgba(255,255,255,.94);
+      opacity: .62;
+      filter: blur(.15px);
+    }
+    .cloud.c-1 { left: 14px; top: 14px; transform: scale(.82); }
+    .cloud.c-2 { right: 16px; bottom: 16px; transform: scale(.70); }
+    .cloud.c-3 { left: 24px; bottom: 26px; transform: scale(.58); opacity: .46; }
+
+    .weather-metrics {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .metric-card {
+      min-height: 74px;
+      padding: 12px 12px 10px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .metric-value {
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: .15px;
+    }
+
+    .hourly-wrap {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .section-head h2,
+    .section-head h3 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: .1px;
+    }
+
+    .section-head .hint {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .hourly-strip {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+      scroll-snap-type: x proximity;
+    }
+    .hourly-strip::-webkit-scrollbar { display: none; }
+
+    .hour-card {
+      min-width: 88px;
+      padding: 12px 10px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      text-align: center;
+      flex: 0 0 auto;
+      scroll-snap-align: start;
+    }
+
+    .hour-card .t { font-size: 12px; color: var(--muted); }
+    .hour-card .i { font-size: 21px; margin: 7px 0 5px; }
+    .hour-card .v { font-size: 16px; font-weight: 900; }
+
+    /* quick stats */
+    .quick-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .quick-card {
+      padding: 12px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .quick-ico {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.10);
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .quick-title { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+    .quick-val { font-size: 14px; font-weight: 900; line-height: 1.3; }
+
+    /* compass */
+    .compass-panel {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .compass-frame {
+      position: relative;
+      display: grid;
+      place-items: center;
+      padding: 8px 0 6px;
+    }
+
+    .compass-shell {
+      width: 274px;
+      max-width: 100%;
+      aspect-ratio: 1;
+      position: relative;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 48%, rgba(0,0,0,.96) 0 30%, rgba(24,31,40,.99) 31%, rgba(7,10,15,1) 68%, rgba(0,0,0,1) 100%);
+      border: 10px solid #aa873d;
+      box-shadow:
+        inset 0 0 0 2px rgba(255,223,141,.22),
+        inset 0 0 44px rgba(255,255,255,.05),
+        0 20px 36px rgba(0,0,0,.30);
+    }
+
+    .compass-shell::before {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.12);
+    }
+
+    .compass-shell::after {
+      content: "";
+      position: absolute;
+      inset: 34px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.06);
+    }
+
+    .compass-mark {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 2px;
+      height: 14px;
+      background: rgba(255,255,255,.62);
+      transform-origin: 50% 118px;
+      border-radius: 999px;
+    }
+    .compass-mark.big { height: 20px; width: 3px; background: rgba(255,215,106,.92); }
+    .compass-mark.blue { height: 22px; width: 3px; background: rgba(143,232,255,.95); }
+    .compass-mark.gold { height: 20px; width: 3px; background: rgba(255,214,108,.95); }
+
+    .compass-labels {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 900;
+      color: #fff6d0;
+      opacity: .96;
+    }
+
+    .compass-labels span {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      text-shadow: 0 1px 0 rgba(0,0,0,.20);
+    }
+
+    .needle {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 10px;
+      height: 114px;
+      transform: translate(-50%, -92%) rotate(30deg);
+      transform-origin: 50% 90%;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #ffe3e3 0%, #ff5454 38%, #8b0000 100%);
+      box-shadow: 0 0 20px rgba(255,77,77,.30);
+      transition: transform .15s linear;
+    }
+    .needle::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -13px;
+      transform: translateX(-50%);
+      border-left: 13px solid transparent;
+      border-right: 13px solid transparent;
+      border-bottom: 20px solid #ff4040;
+    }
+    .needle::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -11px;
+      transform: translateX(-50%);
+      border-left: 13px solid transparent;
+      border-right: 13px solid transparent;
+      border-top: 20px solid #f1f1f1;
+      filter: drop-shadow(0 3px 1px rgba(0,0,0,.18));
+    }
+
+    .qibla-needle {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 4px;
+      height: 96px;
+      transform: translate(-50%, -86%) rotate(140deg);
+      transform-origin: 50% 90%;
+      border-radius: 4px;
+      background: linear-gradient(180deg, rgba(255,255,255,.60), rgba(255,255,255,.05));
+      opacity: .96;
+    }
+    .qibla-needle::after {
+      content: "☾";
+      position: absolute;
+      left: 50%;
+      top: -20px;
+      transform: translateX(-50%);
+      font-size: 20px;
+      color: var(--gold);
+      text-shadow: 0 0 14px rgba(255,215,106,.35);
+    }
+
+    .center-dot {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 18px;
+      height: 18px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle, #fff 0 28%, #b7c0ca 29% 100%);
+      box-shadow: 0 0 0 7px rgba(255,255,255,.06);
+    }
+
+    .compass-info {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .compass-info b {
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    /* forecast blocks */
+    .forecast-panel {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .forecast-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .forecast-row {
+      border-radius: 18px;
+      padding: 12px 12px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .forecast-day {
+      font-weight: 900;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .forecast-details {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .forecast-state {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .forecast-range {
+      font-size: 13px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    /* moon / sunrise */
+    .solar-panel {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .astro-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .astro-card {
+      padding: 12px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .astro-card .k {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .astro-card .v {
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .moon-face {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff 0%, #f2f3f8 38%, #b9bfcc 100%);
+      box-shadow: 0 0 24px rgba(255,255,255,.16);
+      position: relative;
+      overflow: hidden;
+    }
+    .moon-face::before,
+    .moon-face::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(0,0,0,.18);
+    }
+    .moon-face::before { width: 12px; height: 12px; left: 13px; top: 14px; }
+    .moon-face::after { width: 9px; height: 9px; right: 12px; bottom: 15px; opacity: .62; }
+
+    .sunline {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .sunline strong { color: var(--text); }
+
+    /* drawer */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.46);
+      backdrop-filter: blur(4px);
+      z-index: 30;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+
+    .drawer-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: min(330px, 92vw);
+      z-index: 31;
+      transform: translateX(105%);
+      transition: transform .24s ease;
+      background: linear-gradient(180deg, rgba(7,19,31,.98), rgba(9,22,36,.98));
+      border-left: 1px solid rgba(255,255,255,.12);
+      box-shadow: -12px 0 36px rgba(0,0,0,.35);
+      backdrop-filter: blur(18px) saturate(150%);
+      display: flex;
+      flex-direction: column;
+      padding: 14px;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .drawer.open { transform: translateX(0); }
+
+    .drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 6px 2px 2px;
+    }
+
+    .drawer-title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .drawer-title strong { font-size: 16px; }
+    .drawer-title span { font-size: 11px; color: var(--muted); }
+
+    .drawer-close {
+      width: 38px;
+      height: 38px;
+      border-radius: 13px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+    }
+
+    .drawer-section {
+      padding: 12px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .drawer-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .drawer-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.06);
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .drawer-item .di-ico {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.08);
+      font-size: 16px;
+    }
+
+    .drawer-item small {
+      color: var(--muted);
+      display: block;
+      margin-top: 2px;
+    }
+
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .toggle-row:last-child { border-bottom: 0; }
+    .toggle-row .label { font-size: 13px; font-weight: 850; }
+    .toggle-row .desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .switch {
+      width: 52px;
+      height: 30px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.10);
+      position: relative;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+    .switch::after {
+      content: "";
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      position: absolute;
+      top: 2px;
+      right: 3px;
+      background: linear-gradient(180deg, #fff, #cfd8e4);
+      box-shadow: 0 4px 10px rgba(0,0,0,.18);
+      transition: transform .18s ease;
+    }
+    .switch.on {
+      background: rgba(137,232,255,.18);
+      border-color: rgba(137,232,255,.22);
+    }
+    .switch.on::after { transform: translateX(-22px); }
+
+    /* footer and tiny text */
+    .app-foot {
+      text-align: center;
+      font-size: 11px;
+      color: rgba(255,255,255,.64);
+      padding: 4px 8px 2px;
+    }
+
+    .tiny-note {
+      font-size: 10px;
+      color: rgba(255,255,255,.48);
+      line-height: 1.4;
+    }
+
+    /* extra rich sections */
+    .feature-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .feature-pill {
+      padding: 11px 10px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      text-align: center;
+    }
+    .feature-pill .f1 { font-size: 18px; margin-bottom: 4px; }
+    .feature-pill .f2 { font-size: 11px; color: var(--muted); }
+
+    .map-card {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .radar {
+      position: relative;
+      aspect-ratio: 1.9 / 1;
+      border-radius: 26px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 80%, rgba(255,214,108,.16), transparent 12%),
+        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .radar::before,
+    .radar::after {
+      content: "";
+      position: absolute;
+      inset: 10%;
+      border-radius: 50%;
+      border: 1px dashed rgba(255,255,255,.08);
+    }
+
+    .radar::after {
+      inset: 20% 24%;
+      border-style: solid;
+      opacity: .7;
+    }
+
+    .radar-dot {
+      position: absolute;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 18px rgba(255,214,108,.45);
+      left: 72%;
+      top: 24%;
+    }
+
+    .radar-pin {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      background: rgba(255,90,90,.95);
+      left: 36%;
+      top: 54%;
+      box-shadow: 0 0 18px rgba(255,90,90,.35);
+    }
+
+    .radar-pin::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #fff;
+      transform: translate(-50%, -50%);
+    }
+
+    .radar-label {
+      position: absolute;
+      font-size: 11px;
+      color: rgba(255,255,255,.72);
+      background: rgba(0,0,0,.24);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 999px;
+      padding: 5px 8px;
+      backdrop-filter: blur(6px);
+    }
+
+    .radar-label.one { left: 12%; top: 16%; }
+    .radar-label.two { right: 12%; bottom: 16%; }
+
+    /* responsive */
+    @media (max-width: 420px) {
+      .scene { border-radius: 34px; }
+      .shell { padding: 8px 10px 12px; }
+      .topbar { border-radius: 20px; }
+      .weather-card { min-height: 286px; }
+      .temperature { font-size: 66px; }
+      .weather-art { width: 106px; height: 106px; }
+      .compass-shell { width: 246px; }
+      .feature-strip { grid-template-columns: 1fr 1fr 1fr; }
+    }
+
+    @media (max-width: 360px) {
+      .weather-top { gap: 10px; }
+      .temperature { font-size: 60px; }
+      .metric-card { min-height: 70px; padding: 10px; }
+      .hour-card { min-width: 82px; }
+      .compass-shell { width: 224px; }
+      .weather-card { min-height: 274px; }
+      .feature-strip { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* motion */
+    .floaty {
+      animation: floaty 8s ease-in-out infinite;
+    }
+    .floaty-slow { animation-duration: 12s; }
+    .floaty-fast { animation-duration: 6s; }
+    @keyframes floaty {
+      0%,100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .pulse {
+      animation: pulse 4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { filter: drop-shadow(0 12px 22px rgba(255,199,87,.26)); }
+      50% { filter: drop-shadow(0 14px 30px rgba(255,199,87,.38)); }
+    }
+
+    .shine {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.09) 14%, transparent 28%, transparent 100%);
+      transform: translateX(-35%) skewX(-18deg);
+      animation: sheen 10s linear infinite;
+      pointer-events: none;
+      opacity: .45;
+    }
+    @keyframes sheen {
+      0% { transform: translateX(-35%) skewX(-18deg); }
+      100% { transform: translateX(130%) skewX(-18deg); }
+    }
+
+    .fade-in {
+      animation: fadeIn .42s ease both;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
-  <main class="phone">
-    <section class="topbar">
-      <div class="location">
-        <b id="place">بيروت، لبنان</b>
-        <span id="time">١٦:٤٥</span>
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div class="drawer-title">
+        <strong>الخيارات</strong>
+        <span>إعدادات العرض والطقس</span>
       </div>
-      <button class="icon-btn" id="settingsBtn" type="button" aria-label="settings">⚙︎</button>
-    </section>
+      <button class="drawer-close" id="drawerClose" type="button" aria-label="إغلاق">✕</button>
+    </div>
 
-    <section class="hero">
-      <article class="panel weather-main">
-        <div class="weather-header">
-          <div class="temp-wrap">
-            <div class="temp" id="temp">٣٤°م</div>
-            <div class="desc" id="desc">صافي جداً</div>
-            <div class="sub" id="feels">(الشعور الحقيقي ٤٠°)</div>
+    <div class="drawer-section">
+      <div class="toggle-row">
+        <div>
+          <div class="label">الوضع الفاخر</div>
+          <div class="desc">تفعيل الطبقات الزجاجية والمؤثرات</div>
+        </div>
+        <div class="switch on" id="luxuryToggle" role="switch" aria-checked="true"></div>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="label">الاهتزاز البصري</div>
+          <div class="desc">حركات ناعمة للواجهة</div>
+        </div>
+        <div class="switch on" id="motionToggle" role="switch" aria-checked="true"></div>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="label">خلفية ساحلية</div>
+          <div class="desc">تدرجات البحر والضباب</div>
+        </div>
+        <div class="switch on" id="coastToggle" role="switch" aria-checked="true"></div>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-list">
+        <div class="drawer-item"><div class="di-ico">☀️</div><div>تحديث الطقس<small>Open-Meteo مباشر</small></div><div>●</div></div>
+        <div class="drawer-item"><div class="di-ico">🧭</div><div>المستشعر<small>توجيه البوصلة</small></div><div>●</div></div>
+        <div class="drawer-item"><div class="di-ico">🕌</div><div>القبلة<small>اتجاه الصلاة</small></div><div>●</div></div>
+        <div class="drawer-item"><div class="di-ico">🌙</div><div>التبديل الليلي<small>حسب الإضاءة</small></div><div>●</div></div>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <div class="toggle-row">
+        <div>
+          <div class="label">الموقع الحالي</div>
+          <div class="desc" id="drawerLocation">بيروت، لبنان</div>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="label">آخر تحديث</div>
+          <div class="desc" id="drawerUpdated">الآن</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="scene">
+    <div class="bg-aurora"></div>
+    <div class="bg-glow"></div>
+    <div class="bg-stars"></div>
+    <div class="bg-orbit"></div>
+    <div class="bg-fog"></div>
+    <div class="bg-sheen"></div>
+    <div class="bg-water"></div>
+    <div class="bg-reflection"></div>
+    <div class="bg-noise"></div>
+
+    <div class="status-strip">
+      <div class="status-left">
+        <div class="chip"><span class="icon-dot"></span><strong id="headerClock">١٦:٤٥</strong></div>
+        <div class="chip"><strong id="headerDate">السبت</strong></div>
+      </div>
+      <div class="status-right">
+        <div class="chip"><strong id="miniTemp">٣٤°م</strong></div>
+        <div class="chip"><strong id="miniState">صحو</strong></div>
+      </div>
+    </div>
+
+    <div class="shell">
+      <header class="topbar">
+        <div class="place-box">
+          <div class="place-title">
+            <span id="placeName">بيروت، لبنان</span>
           </div>
-          <div class="sun-art" aria-hidden="true">
-            <div class="sun-core"></div>
-            <div class="ray r1"></div><div class="ray r2"></div><div class="ray r3"></div><div class="ray r4"></div><div class="ray r5"></div><div class="ray r6"></div>
-            <div class="cloud c1"></div><div class="cloud c2"></div>
+          <div class="place-subtitle" id="placeMeta">مؤشر مباشر • جودة زجاجية عالية</div>
+        </div>
+        <div class="top-actions">
+          <button class="action-btn" id="settingsBtn" type="button" aria-label="الإعدادات" aria-expanded="false">⚙︎</button>
+        </div>
+      </header>
+
+      <section class="hero">
+        <article class="panel weather-card fade-in">
+          <div class="shine"></div>
+          <div class="sky-veil"></div>
+          <div class="weather-top">
+            <div class="weather-copy">
+              <div class="temperature floaty" id="tempMain">٣٤°م</div>
+              <div class="condition" id="condMain">صافي جداً</div>
+              <div class="feels" id="feelsMain">(الشعور الحقيقي ٤٠°)</div>
+              <div class="hero-badges">
+                <div class="hero-badge"><strong id="uvVal">UV ٩</strong></div>
+                <div class="hero-badge"><strong id="pressureVal">١٠١٣</strong> hPa</div>
+                <div class="hero-badge"><strong id="visibilityVal">١٠</strong> km</div>
+              </div>
+            </div>
+            <div class="weather-art pulse floaty-fast" aria-hidden="true">
+              <div class="sun"></div>
+              <div class="sun-ray r-a"></div>
+              <div class="sun-ray r-b"></div>
+              <div class="sun-ray r-c"></div>
+              <div class="sun-ray r-d"></div>
+              <div class="sun-ray r-e"></div>
+              <div class="sun-ray r-f"></div>
+              <div class="cloud c-1"></div>
+              <div class="cloud c-2"></div>
+              <div class="cloud c-3"></div>
+            </div>
           </div>
-        </div>
 
-        <div class="meta-grid">
-          <div class="mini"><div class="label">الرطوبة</div><div class="value" id="hum">٤٨٪</div></div>
-          <div class="mini"><div class="label">الهواء</div><div class="value" id="wind">٧.٧ كم/س غرب</div></div>
-        </div>
-
-        <div class="hours" id="hours">
-          <div class="hour"><div class="t">١٧:٠٠</div><div class="i">☀️</div><div class="v">٣٣°</div></div>
-          <div class="hour"><div class="t">١٨:٠٠</div><div class="i">🌤️</div><div class="v">٣١°</div></div>
-          <div class="hour"><div class="t">١٩:٠٠</div><div class="i">🌙</div><div class="v">٣٠°</div></div>
-        </div>
-      </article>
-
-      <article class="panel compass-card">
-        <div class="section-title"><h2>البوصلة والقبلة</h2><span id="headingText">٣٠° ش ش ق</span></div>
-        <div class="compass-wrap">
-          <div class="compass" id="compass">
-            <div class="mark big" style="transform:translate(-50%,-100%) rotate(0deg)"></div>
-            <div class="mark" style="transform:translate(-50%,-100%) rotate(22.5deg)"></div>
-            <div class="mark" style="transform:translate(-50%,-100%) rotate(45deg)"></div>
-            <div class="mark" style="transform:translate(-50%,-100%) rotate(67.5deg)"></div>
-            <div class="mark" style="transform:translate(-50%,-100%) rotate(90deg)"></div>
-            <div class="mark" style="transform:translate(-50%,-100%) rotate(112.5deg)"></div>
-            <div class="mark" style="transform:translate(-50%,-100%) rotate(135deg)"></div>
-            <div class="mark" style="transform:translate(-50%,-100%) rotate(157.5deg)"></div>
-            <div class="mark big" style="transform:translate(-50%,-100%) rotate(180deg)"></div>
-            <div class="mark" style="transform:translate(-50%,-100%) rotate(202.5deg)"></div>
-            <div class="mark" style="transform:translate(-50%,-100%) rotate(225deg)"></div>
-            <div class="mark" style="transform:translate(-50%,-100%) rotate(247.5deg)"></div>
-            <div class="mark" style="transform:translate(-50%,-100%) rotate(270deg)"></div>
-            <div class="mark" style="transform:translate(-50%,-100%) rotate(292.5deg)"></div>
-            <div class="mark" style="transform:translate(-50%,-100%) rotate(315deg)"></div>
-            <div class="mark" style="transform:translate(-50%,-100%) rotate(337.5deg)"></div>
-            <div class="mark t" style="transform:translate(-50%,-100%) rotate(45deg)"></div>
-            <div class="mark t" style="transform:translate(-50%,-100%) rotate(225deg)"></div>
-            <div class="deg"><span style="top:8%;left:50%">ش</span><span style="top:50%;left:92%">ش ق</span><span style="top:92%;left:50%">ج</span><span style="top:50%;left:8%">غ</span></div>
-            <div class="qibla" id="qibla"></div>
-            <div class="needle" id="needle"></div>
-            <div class="center-dot"></div>
+          <div class="weather-metrics">
+            <div class="metric-card">
+              <div class="metric-label">الرطوبة</div>
+              <div class="metric-value" id="humVal">٤٨٪</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">الهواء</div>
+              <div class="metric-value" id="windVal">٧.٧ كم/س غرب</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">الغبار</div>
+              <div class="metric-value" id="aqiVal">منخفض</div>
+            </div>
           </div>
-        </div>
-        <div class="compass-info">
-          <div>الاتجاه: <b id="headingVal">٣٠° ش ش ق</b></div>
-          <div>القبلة: <b id="qiblaVal">س ١٤٠°</b></div>
-        </div>
-      </article>
 
-      <article class="panel">
-        <div class="section-title"><h2>توقعات ٥ أيام</h2><span>تحديث مباشر</span></div>
-        <div class="days" id="days">
-          <div class="day"><div class="left"><div class="ico">☀️</div><div><div class="name">الأربعاء</div><div class="range">٣٤° / ٢٦°</div></div></div><div>صحو</div></div>
-          <div class="day"><div class="left"><div class="ico">🌤️</div><div><div class="name">الخميس</div><div class="range">٣٣° / ٢٥°</div></div></div><div>خفيف</div></div>
-          <div class="day"><div class="left"><div class="ico">⛅</div><div><div class="name">الجمعة</div><div class="range">٣١° / ٢٤°</div></div></div><div>غائم</div></div>
-          <div class="day"><div class="left"><div class="ico">🌦️</div><div><div class="name">السبت</div><div class="range">٢٩° / ٢٣°</div></div></div><div>زخات</div></div>
-          <div class="day"><div class="left"><div class="ico">☀️</div><div><div class="name">الأحد</div><div class="range">٣٠° / ٢٤°</div></div></div><div>صحو</div></div>
-        </div>
-      </article>
-    </section>
+          <div class="hourly-wrap">
+            <div class="section-head">
+              <h3>ساعات اليوم</h3>
+              <div class="hint">تم التحديث الآن</div>
+            </div>
+            <div class="hourly-strip" id="hoursStrip"></div>
+          </div>
+        </article>
 
-    <div class="footer" id="status">جارٍ تحديد الموقع وجلب الطقس...</div>
+        <article class="panel compass-panel fade-in">
+          <div class="section-head">
+            <h2>البوصلة والقبلة</h2>
+            <div class="hint" id="headingText">٣٠° ش ش ق</div>
+          </div>
+
+          <div class="compass-frame">
+            <div class="compass-shell" id="compassShell">
+              <div class="compass-mark big" style="transform:translate(-50%,-100%) rotate(0deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(11.25deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(22.5deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(33.75deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(45deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(56.25deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(67.5deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(78.75deg)"></div>
+              <div class="compass-mark big" style="transform:translate(-50%,-100%) rotate(90deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(101.25deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(112.5deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(123.75deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(135deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(146.25deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(157.5deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(168.75deg)"></div>
+              <div class="compass-mark big" style="transform:translate(-50%,-100%) rotate(180deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(191.25deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(202.5deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(213.75deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(225deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(236.25deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(247.5deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(258.75deg)"></div>
+              <div class="compass-mark big" style="transform:translate(-50%,-100%) rotate(270deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(281.25deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(292.5deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(303.75deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(315deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(326.25deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(337.5deg)"></div>
+              <div class="compass-mark" style="transform:translate(-50%,-100%) rotate(348.75deg)"></div>
+              <div class="compass-mark blue" style="transform:translate(-50%,-100%) rotate(45deg)"></div>
+              <div class="compass-mark blue" style="transform:translate(-50%,-100%) rotate(225deg)"></div>
+              <div class="compass-mark gold" style="transform:translate(-50%,-100%) rotate(30deg)"></div>
+              <div class="compass-labels">
+                <span style="top:9%;left:50%">ش</span>
+                <span style="top:50%;left:92%">ش ق</span>
+                <span style="top:91%;left:50%">ج</span>
+                <span style="top:50%;left:8%">غ</span>
+              </div>
+              <div class="qibla-needle" id="qiblaNeedle"></div>
+              <div class="needle" id="compassNeedle"></div>
+              <div class="center-dot"></div>
+            </div>
+          </div>
+
+          <div class="compass-info">
+            <div>الاتجاه: <b id="headingVal">٣٠° ش ش ق</b></div>
+            <div>القبلة: <b id="qiblaVal">س ١٤٠°</b></div>
+          </div>
+
+          <div class="feature-strip">
+            <div class="feature-pill"><div class="f1">🧭</div><div class="f2">بوصلة</div></div>
+            <div class="feature-pill"><div class="f1">🕌</div><div class="f2">قبلة</div></div>
+            <div class="feature-pill"><div class="f1">🌬️</div><div class="f2">رياح</div></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="hero">
+        <article class="panel forecast-panel fade-in">
+          <div class="section-head">
+            <h2>توقعات ٥ أيام</h2>
+            <div class="hint">تحديث مباشر</div>
+          </div>
+          <div class="forecast-list" id="daysList"></div>
+        </article>
+
+        <article class="panel solar-panel fade-in">
+          <div class="section-head">
+            <h2>الشروق والغروب</h2>
+            <div class="hint">مع التفاصيل الجوية</div>
+          </div>
+          <div class="astro-grid">
+            <div class="astro-card">
+              <div class="k">شروق الشمس</div>
+              <div class="v" id="sunriseVal">٠٥:٥٤</div>
+            </div>
+            <div class="astro-card">
+              <div class="k">غروب الشمس</div>
+              <div class="v" id="sunsetVal">١٩:١٢</div>
+            </div>
+            <div class="astro-card">
+              <div class="k">القمر</div>
+              <div class="v">اكتمل جزئياً</div>
+            </div>
+            <div class="astro-card">
+              <div class="k">الإضاءة</div>
+              <div class="v">مثالية الآن</div>
+            </div>
+          </div>
+          <div class="sunline">
+            <span>النهار: <strong id="daylightVal">١٣ ساعة</strong></span>
+            <span>الليل: <strong id="nightVal">١١ ساعة</strong></span>
+          </div>
+        </article>
+
+        <article class="panel map-card fade-in">
+          <div class="section-head">
+            <h2>المؤشر البصري</h2>
+            <div class="hint">اتجاه تقريبي للموقع</div>
+          </div>
+          <div class="radar">
+            <div class="radar-label one">الموقع الحالي</div>
+            <div class="radar-label two">البوصلة</div>
+            <div class="radar-dot"></div>
+            <div class="radar-pin"></div>
+          </div>
+        </article>
+      </section>
+
+      <div class="app-foot">
+        <div id="statusText">جارٍ تحديد الموقع وجلب الطقس...</div>
+        <div class="tiny-note">ملف واحد فقط • واجهة Premium • دعم RTL • بدون مكتبات UI جاهزة</div>
+      </div>
+    </div>
   </main>
 
   <script>
@@ -251,20 +1460,87 @@
       const dirs = ['ش','ش ش ق','ش ق','ق ش ق','ق','ج ق','ج','ج غ','غ','غ ش غ','ش غ','ش ش غ'];
       return dirs[Math.round(((deg % 360) / 30)) % 12];
     };
-    function setClock(){
-      const now = new Date();
-      const time = now.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', hour12:false});
-      document.getElementById('time').textContent = time;
-    }
-    setClock();
-    setInterval(setClock, 1000);
+    const wCode = (code) => ({
+      0:'صافي جداً',1:'صافي',2:'غائم جزئياً',3:'غائم',45:'ضباب',48:'ضباب',51:'رذاذ',53:'رذاذ',55:'رذاذ',61:'مطر خفيف',63:'مطر',65:'مطر غزير',71:'ثلج',80:'زخات',81:'زخات قوية',95:'عاصفة'
+    })[code] || 'صافي جداً';
+    const wIcon = (code) => ({
+      0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌦️',61:'🌧️',63:'🌧️',65:'🌧️',71:'❄️',80:'🌦️',81:'🌧️',95:'⛈️'
+    })[code] || '☀️';
+
+    const state = {
+      motion: true,
+      luxury: true,
+      coast: true,
+      heading: 30,
+      qibla: 140,
+      lastUpdated: 'الآن'
+    };
+
+    const beirut = { lat: 33.8938, lon: 35.5018, name: 'بيروت، لبنان' };
+
+    const els = {
+      headerClock: document.getElementById('headerClock'),
+      headerDate: document.getElementById('headerDate'),
+      miniTemp: document.getElementById('miniTemp'),
+      miniState: document.getElementById('miniState'),
+      placeName: document.getElementById('placeName'),
+      placeMeta: document.getElementById('placeMeta'),
+      tempMain: document.getElementById('tempMain'),
+      condMain: document.getElementById('condMain'),
+      feelsMain: document.getElementById('feelsMain'),
+      uvVal: document.getElementById('uvVal'),
+      pressureVal: document.getElementById('pressureVal'),
+      visibilityVal: document.getElementById('visibilityVal'),
+      humVal: document.getElementById('humVal'),
+      windVal: document.getElementById('windVal'),
+      aqiVal: document.getElementById('aqiVal'),
+      hoursStrip: document.getElementById('hoursStrip'),
+      daysList: document.getElementById('daysList'),
+      sunriseVal: document.getElementById('sunriseVal'),
+      sunsetVal: document.getElementById('sunsetVal'),
+      daylightVal: document.getElementById('daylightVal'),
+      nightVal: document.getElementById('nightVal'),
+      statusText: document.getElementById('statusText'),
+      compassNeedle: document.getElementById('compassNeedle'),
+      qiblaNeedle: document.getElementById('qiblaNeedle'),
+      headingVal: document.getElementById('headingVal'),
+      headingText: document.getElementById('headingText'),
+      qiblaVal: document.getElementById('qiblaVal'),
+      drawer: document.getElementById('drawer'),
+      drawerOverlay: document.getElementById('drawerOverlay'),
+      settingsBtn: document.getElementById('settingsBtn'),
+      drawerClose: document.getElementById('drawerClose'),
+      luxuryToggle: document.getElementById('luxuryToggle'),
+      motionToggle: document.getElementById('motionToggle'),
+      coastToggle: document.getElementById('coastToggle'),
+      drawerLocation: document.getElementById('drawerLocation'),
+      drawerUpdated: document.getElementById('drawerUpdated'),
+      compassShell: document.getElementById('compassShell')
+    };
 
     const fallback = {
-      temp: 34, feels: 40, hum: 48, wind: 7.7, windDir: 'غرب', desc: 'صافي جداً', heading: 30, qibla: 140,
+      temp: 34,
+      feels: 40,
+      hum: 48,
+      wind: 7.7,
+      windDir: 'غرب',
+      aqi: 'منخفض',
+      pressure: 1013,
+      visibility: 10,
+      uv: 9,
+      desc: 'صافي جداً',
+      sunrise: '05:54',
+      sunset: '19:12',
+      daylight: '13 ساعة',
+      night: '11 ساعة',
+      heading: 30,
+      qibla: 140,
       hours: [
-        {time:'١٧:٠٠', icon:'☀️', temp:33},
-        {time:'١٨:٠٠', icon:'🌤️', temp:31},
-        {time:'١٩:٠٠', icon:'🌙', temp:30}
+        { time: '١٧:٠٠', icon: '☀️', temp: 33 },
+        { time: '١٨:٠٠', icon: '🌤️', temp: 31 },
+        { time: '١٩:٠٠', icon: '🌙', temp: 30 },
+        { time: '٢٠:٠٠', icon: '🌙', temp: 29 },
+        { time: '٢١:٠٠', icon: '🌙', temp: 28 }
       ],
       days: [
         ['الأربعاء','٣٤° / ٢٦°','☀️','صحو'],
@@ -275,91 +1551,260 @@
       ]
     };
 
-    function renderData(d){
-      document.getElementById('temp').textContent = arabicDigits(Math.round(d.temp)) + '°م';
-      document.getElementById('desc').textContent = d.desc;
-      document.getElementById('feels').textContent = `(الشعور الحقيقي ${arabicDigits(Math.round(d.feels))}°)`;
-      document.getElementById('hum').textContent = arabicDigits(Math.round(d.hum)) + '٪';
-      document.getElementById('wind').textContent = arabicDigits(d.wind.toFixed(1)) + ' كم/س ' + d.windDir;
-      document.getElementById('headingVal').textContent = arabicDigits(Math.round(d.heading)) + '° ' + compassDirs(d.heading);
-      document.getElementById('headingText').textContent = arabicDigits(Math.round(d.heading)) + '° ' + compassDirs(d.heading);
-      document.getElementById('qiblaVal').textContent = 'س ' + arabicDigits(Math.round(d.qibla)) + '°';
-      document.getElementById('needle').style.transform = `translate(-50%, -92%) rotate(${d.heading}deg)`;
-      document.getElementById('qibla').style.transform = `translate(-50%, -86%) rotate(${d.qibla}deg)`;
-      document.getElementById('hours').innerHTML = d.hours.map(h => `<div class="hour"><div class="t">${h.time}</div><div class="i">${h.icon}</div><div class="v">${arabicDigits(h.temp)}°</div></div>`).join('');
-      document.getElementById('days').innerHTML = d.days.map(day => `<div class="day"><div class="left"><div class="ico">${day[2]}</div><div><div class="name">${day[0]}</div><div class="range">${day[1]}</div></div></div><div>${day[3]}</div></div>`).join('');
-      document.getElementById('status').textContent = 'تم تحديث الطقس والبوصلة.';
+    function nowClock() {
+      const now = new Date();
+      const time = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const date = now.toLocaleDateString('ar-EG', { weekday: 'long' });
+      els.headerClock.textContent = time;
+      els.headerDate.textContent = date;
     }
 
-    async function loadWeather(lat, lon){
-      try{
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,apparent_temperature,weather_code&hourly=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto`;
-        const res = await fetch(url);
+    function renderFallback() {
+      renderData(fallback, true);
+    }
+
+    function renderData(d, isFallback=false) {
+      els.miniTemp.textContent = arabicDigits(Math.round(d.temp)) + '°م';
+      els.miniState.textContent = d.desc;
+      els.tempMain.textContent = arabicDigits(Math.round(d.temp)) + '°م';
+      els.condMain.textContent = d.desc;
+      els.feelsMain.textContent = `(الشعور الحقيقي ${arabicDigits(Math.round(d.feels))}°)`;
+      els.uvVal.textContent = `UV ${arabicDigits(Math.round(d.uv ?? 9))}`;
+      els.pressureVal.textContent = arabicDigits(Math.round(d.pressure ?? 1013));
+      els.visibilityVal.textContent = arabicDigits(Math.round(d.visibility ?? 10));
+      els.humVal.textContent = arabicDigits(Math.round(d.hum)) + '٪';
+      els.windVal.textContent = arabicDigits((d.wind ?? 7.7).toFixed(1)) + ' كم/س ' + (d.windDir || 'غرب');
+      els.aqiVal.textContent = d.aqi || 'منخفض';
+      els.sunriseVal.textContent = arabicDigits(d.sunrise || '05:54');
+      els.sunsetVal.textContent = arabicDigits(d.sunset || '19:12');
+      els.daylightVal.textContent = arabicDigits(d.daylight || '13 ساعة');
+      els.nightVal.textContent = arabicDigits(d.night || '11 ساعة');
+
+      els.headingVal.textContent = arabicDigits(Math.round(d.heading)) + '° ' + compassDirs(d.heading);
+      els.headingText.textContent = arabicDigits(Math.round(d.heading)) + '° ' + compassDirs(d.heading);
+      els.qiblaVal.textContent = 'س ' + arabicDigits(Math.round(d.qibla)) + '°';
+      els.compassNeedle.style.transform = `translate(-50%, -92%) rotate(${d.heading}deg)`;
+      els.qiblaNeedle.style.transform = `translate(-50%, -86%) rotate(${d.qibla}deg)`;
+
+      els.hoursStrip.innerHTML = d.hours.map((h, i) => `
+        <div class="hour-card">
+          <div class="t">${h.time}</div>
+          <div class="i">${h.icon}</div>
+          <div class="v">${arabicDigits(h.temp)}°</div>
+        </div>
+      `).join('');
+
+      els.daysList.innerHTML = d.days.map((day, idx) => `
+        <div class="forecast-row">
+          <div class="forecast-day">${day[0]}</div>
+          <div class="forecast-details">
+            <div class="forecast-state">${day[3]}</div>
+            <div class="forecast-range">${day[1]}</div>
+          </div>
+          <div style="font-size:20px">${day[2]}</div>
+        </div>
+      `).join('');
+
+      els.statusText.textContent = isFallback ? 'تعذر جلب الطقس، تم عرض بيانات افتراضية.' : 'تم تحديث الطقس والبوصلة.';
+      els.drawerUpdated.textContent = isFallback ? 'البيانات الافتراضية' : 'الآن';
+    }
+
+    async function loadWeather(lat, lon) {
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,apparent_temperature,weather_code,pressure_msl,visibility,uv_index&hourly=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset&timezone=auto`;
+        const res = await fetch(url, { cache: 'no-store' });
         const data = await res.json();
         const c = data.current || {};
-        const map = (code) => ({0:'صافي جداً',1:'غائم قليلًا',2:'غائم جزئياً',3:'غائم',45:'ضباب',48:'ضباب',51:'رذاذ',61:'مطر خفيف',63:'مطر',65:'مطر غزير',71:'ثلج',80:'زخات مطر',95:'عاصفة'})[code] || 'صافي جداً';
-        const windDir = ['شمال','شمال شرقي','شرق','جنوب شرقي','جنوب','جنوب غربي','غرب','شمال غربي'][Math.round((c.wind_direction_10m || 270) / 45) % 8] || 'غرب';
-        const hours = (data.hourly?.time || []).slice(0,3).map((t, i) => ({
-          time: new Date(t).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', hour12:false}),
-          icon: (data.hourly.weather_code?.[i] ?? 0) === 0 ? '☀️' : '🌤️',
-          temp: Math.round(data.hourly.temperature_2m?.[i] ?? c.temperature_2m ?? 34)
-        }));
-        const days = (data.daily?.time || []).slice(0,5).map((t, i) => {
-          const name = new Date(t).toLocaleDateString('ar-EG', {weekday:'long'});
-          const max = Math.round(data.daily.temperature_2m_max?.[i] ?? 34);
-          const min = Math.round(data.daily.temperature_2m_min?.[i] ?? 26);
-          return [name, `${arabicDigits(max)}° / ${arabicDigits(min)}°`, (i===0?'☀️':i===1?'🌤️':i===2?'⛅':i===3?'🌦️':'☀️'), map(data.daily.weather_code?.[i] ?? 0)];
+        const daily = data.daily || {};
+        const hourly = data.hourly || {};
+        const desc = wCode(c.weather_code ?? 0);
+        const windDir = ['شمال','شمال شرقي','شرق','جنوب شرقي','جنوب','جنوب غربي','غرب','شمال غربي'][Math.round(((c.wind_direction_10m || 270) / 45)) % 8] || 'غرب';
+
+        const hours = (hourly.time || []).slice(0, 5).map((t, i) => {
+          const dt = new Date(t);
+          const time = dt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: false });
+          return {
+            time,
+            icon: wIcon(hourly.weather_code?.[i] ?? 0),
+            temp: Math.round(hourly.temperature_2m?.[i] ?? c.temperature_2m ?? 34)
+          };
         });
+
+        const days = (daily.time || []).slice(0, 5).map((t, i) => {
+          const name = new Date(t).toLocaleDateString('ar-EG', { weekday: 'long' });
+          const max = Math.round(daily.temperature_2m_max?.[i] ?? 34);
+          const min = Math.round(daily.temperature_2m_min?.[i] ?? 26);
+          return [name, `${arabicDigits(max)}° / ${arabicDigits(min)}°`, wIcon(daily.weather_code?.[i] ?? 0), wCode(daily.weather_code?.[i] ?? 0)];
+        });
+
+        const sunrise = (daily.sunrise?.[0] || '').slice(11,16);
+        const sunset = (daily.sunset?.[0] || '').slice(11,16);
+        const daylight = sunrise && sunset ? computeDaylight(sunrise, sunset) : '13 ساعة';
+        const night = sunrise && sunset ? computeNight(sunrise, sunset) : '11 ساعة';
+
         renderData({
           temp: c.temperature_2m ?? 34,
           feels: c.apparent_temperature ?? 40,
           hum: c.relative_humidity_2m ?? 48,
           wind: c.wind_speed_10m ?? 7.7,
           windDir,
-          desc: map(c.weather_code ?? 0),
-          heading: 30,
-          qibla: 140,
+          aqi: 'منخفض',
+          pressure: c.pressure_msl ?? 1013,
+          visibility: (c.visibility ?? 10000) / 1000,
+          uv: c.uv_index ?? 9,
+          desc,
+          sunrise: sunrise || '05:54',
+          sunset: sunset || '19:12',
+          daylight,
+          night,
+          heading: state.heading,
+          qibla: state.qibla,
           hours: hours.length ? hours : fallback.hours,
           days: days.length ? days : fallback.days
         });
-      }catch(err){
-        renderData(fallback);
-        document.getElementById('status').textContent = 'تعذر جلب الطقس، تم عرض بيانات افتراضية.';
+        els.drawerLocation.textContent = beirut.name;
+      } catch (err) {
+        renderFallback();
       }
     }
 
-    function initCompass(){
-      if (window.DeviceOrientationEvent) {
+    function computeDaylight(sunrise, sunset) {
+      const [sh, sm] = sunrise.split(':').map(Number);
+      const [eh, em] = sunset.split(':').map(Number);
+      const mins = (eh * 60 + em) - (sh * 60 + sm);
+      return `${Math.floor(mins/60)} ساعة`;
+    }
+
+    function computeNight(sunrise, sunset) {
+      const [sh, sm] = sunrise.split(':').map(Number);
+      const [eh, em] = sunset.split(':').map(Number);
+      const mins = 24*60 - ((eh * 60 + em) - (sh * 60 + sm));
+      return `${Math.floor(mins/60)} ساعة`;
+    }
+
+    function initCompass() {
+      if ('DeviceOrientationEvent' in window) {
         window.addEventListener('deviceorientation', (e) => {
           const alpha = typeof e.alpha === 'number' ? (360 - e.alpha) % 360 : null;
           if (alpha === null) return;
-          document.getElementById('needle').style.transform = `translate(-50%, -92%) rotate(${alpha}deg)`;
-          document.getElementById('headingVal').textContent = arabicDigits(Math.round(alpha)) + '° ' + compassDirs(alpha);
-          document.getElementById('headingText').textContent = arabicDigits(Math.round(alpha)) + '° ' + compassDirs(alpha);
+          state.heading = alpha;
+          els.compassNeedle.style.transform = `translate(-50%, -92%) rotate(${alpha}deg)`;
+          els.headingVal.textContent = arabicDigits(Math.round(alpha)) + '° ' + compassDirs(alpha);
+          els.headingText.textContent = arabicDigits(Math.round(alpha)) + '° ' + compassDirs(alpha);
         }, true);
       }
     }
 
-    const settingsBtn = document.getElementById('settingsBtn');
-    settingsBtn.addEventListener('click', () => {
-      const target = document.getElementById('days');
-      if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
-    });
+    function openDrawer() {
+      els.drawer.classList.add('open');
+      els.drawerOverlay.classList.add('open');
+      els.drawer.setAttribute('aria-hidden', 'false');
+      els.settingsBtn.setAttribute('aria-expanded', 'true');
+    }
 
-    const beirut = {lat:33.8938, lon:35.5018};
+    function closeDrawer() {
+      els.drawer.classList.remove('open');
+      els.drawerOverlay.classList.remove('open');
+      els.drawer.setAttribute('aria-hidden', 'true');
+      els.settingsBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    function bindToggles() {
+      const bindSwitch = (el, key, initial = true) => {
+        el.classList.toggle('on', initial);
+        el.setAttribute('aria-checked', String(initial));
+        el.addEventListener('click', () => {
+          const on = !el.classList.contains('on');
+          el.classList.toggle('on', on);
+          el.setAttribute('aria-checked', String(on));
+          state[key] = on;
+          document.body.classList.toggle(`mode-${key}`, on);
+          if (key === 'motion') {
+            document.querySelectorAll('.floaty, .floaty-slow, .floaty-fast, .pulse, .shine, .fade-in').forEach(node => {
+              node.style.animationPlayState = on ? 'running' : 'paused';
+            });
+          }
+          if (key === 'coast') {
+            document.querySelectorAll('.bg-aurora, .bg-glow, .bg-water, .bg-reflection, .bg-sheen, .bg-stars, .bg-fog').forEach(node => {
+              node.style.opacity = on ? '' : '0';
+            });
+          }
+          if (key === 'luxury') {
+            document.querySelectorAll('.panel, .topbar, .drawer').forEach(node => {
+              node.style.backdropFilter = on ? 'blur(18px) saturate(150%)' : 'none';
+              node.style.boxShadow = on ? '' : 'none';
+            });
+          }
+        });
+      };
+      bindSwitch(els.luxuryToggle, 'luxury', true);
+      bindSwitch(els.motionToggle, 'motion', true);
+      bindSwitch(els.coastToggle, 'coast', true);
+    }
+
+    function startClock() {
+      nowClock();
+      setInterval(nowClock, 1000);
+    }
+
+    function wireDrawer() {
+      els.settingsBtn.addEventListener('click', openDrawer);
+      els.drawerClose.addEventListener('click', closeDrawer);
+      els.drawerOverlay.addEventListener('click', closeDrawer);
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeDrawer();
+      });
+    }
+
+    function applyMotionGuard() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.querySelectorAll('.floaty, .floaty-slow, .floaty-fast, .pulse, .shine, .fade-in').forEach(node => {
+          node.style.animation = 'none';
+        });
+        state.motion = false;
+        els.motionToggle.classList.remove('on');
+        els.motionToggle.setAttribute('aria-checked', 'false');
+      }
+    }
+
+    function enhanceDragScroll() {
+      const strip = els.hoursStrip;
+      let isDown = false, startX = 0, scrollLeft = 0;
+      strip.addEventListener('pointerdown', (e) => {
+        isDown = true;
+        startX = e.clientX;
+        scrollLeft = strip.scrollLeft;
+        strip.setPointerCapture?.(e.pointerId);
+      });
+      strip.addEventListener('pointermove', (e) => {
+        if (!isDown) return;
+        const dx = e.clientX - startX;
+        strip.scrollLeft = scrollLeft - dx;
+      });
+      strip.addEventListener('pointerup', () => { isDown = false; });
+      strip.addEventListener('pointercancel', () => { isDown = false; });
+    }
+
+    startClock();
+    bindToggles();
+    wireDrawer();
+    applyMotionGuard();
+    enhanceDragScroll();
+    initCompass();
+    renderFallback();
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => loadWeather(pos.coords.latitude, pos.coords.longitude),
         () => loadWeather(beirut.lat, beirut.lon),
-        {enableHighAccuracy:true, timeout:8000, maximumAge:300000}
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 }
       );
     } else {
       loadWeather(beirut.lat, beirut.lon);
     }
 
-    document.getElementById('place').textContent = 'بيروت، لبنان';
-    initCompass();
-    renderData(fallback);
+    els.placeName.textContent = beirut.name;
+    els.drawerLocation.textContent = beirut.name;
   </script>
 </body>
 </html>
