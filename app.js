@@ -1,0 +1,1 @@
+document.addEventListener('DOMContentLoaded',()=>{const app=document.getElementById('app');const now=new Date();app.insertAdjacentHTML('beforeend',`<p>🚀 Smart Launcher بدأ العمل.</p><p>${now.toLocaleString('ar-SY')}</p>`);console.log('Smart Launcher Ready');});
