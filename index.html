@@ -7,18 +7,18 @@
   <title>Weather & Compass</title>
   <style>
     :root{
-      --bg0:#04111d;
-      --bg1:#071b2c;
-      --bg2:#0e2a43;
-      --glass:rgba(255,255,255,.10);
+      --bg0:#03111c;
+      --bg1:#071d31;
+      --bg2:#0f3554;
+      --glass:rgba(255,255,255,.11);
       --glass2:rgba(255,255,255,.06);
-      --line:rgba(255,255,255,.14);
-      --text:#f4fbff;
-      --muted:#b6c8d7;
-      --amber:#ffcc72;
-      --gold:#ffd76a;
-      --cyan:#8be7ff;
-      --shadow:0 18px 50px rgba(0,0,0,.35);
+      --line:rgba(255,255,255,.16);
+      --text:#f7fcff;
+      --muted:#bfd0dd;
+      --gold:#ffd77d;
+      --amber:#ffb84d;
+      --cyan:#8feaff;
+      --shadow:0 22px 60px rgba(0,0,0,.42);
       --radius:28px;
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -26,25 +26,26 @@
     body{
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color:var(--text);
-      background:
-        radial-gradient(circle at 20% 10%, rgba(255,211,114,.22), transparent 22%),
-        radial-gradient(circle at 80% 18%, rgba(139,231,255,.18), transparent 20%),
-        linear-gradient(180deg, var(--bg2) 0%, var(--bg1) 42%, var(--bg0) 100%);
       min-height:100vh;
       overflow-x:hidden;
       display:flex;
       justify-content:center;
       align-items:center;
       padding:16px;
+      background:
+        radial-gradient(circle at 22% 10%, rgba(255,214,116,.18), transparent 18%),
+        radial-gradient(circle at 82% 14%, rgba(143,234,255,.16), transparent 16%),
+        radial-gradient(circle at 50% 80%, rgba(0,0,0,.22), transparent 28%),
+        linear-gradient(180deg, var(--bg2) 0%, var(--bg1) 45%, var(--bg0) 100%);
     }
     .phone{
       width:min(430px, 100%);
       min-height:calc(100vh - 32px);
       border-radius:38px;
       padding:14px;
-      background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      background:linear-gradient(180deg, rgba(255,255,255,.11), rgba(255,255,255,.04));
       box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.18);
-      backdrop-filter:blur(22px) saturate(150%);
+      backdrop-filter:blur(24px) saturate(155%);
       border:1px solid rgba(255,255,255,.14);
       position:relative;
       overflow:hidden;
@@ -53,18 +54,24 @@
       content:"";
       position:absolute; inset:0;
       background:
-        radial-gradient(circle at 50% 0%, rgba(255,255,255,.20), transparent 24%),
-        linear-gradient(180deg, rgba(255,255,255,.06), transparent 30%);
+        linear-gradient(180deg, rgba(255,255,255,.16), transparent 18%),
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,.18), transparent 22%);
       pointer-events:none;
     }
-    .topbar,.panel,.forecast-row,.list-item{
+    .phone::after{
+      content:"";
+      position:absolute; inset:auto -10% -20% -10%; height:280px;
+      background:radial-gradient(circle, rgba(255,184,77,.10), transparent 60%);
+      pointer-events:none;
+    }
+    .topbar,.panel{
       background:linear-gradient(180deg, var(--glass), var(--glass2));
       border:1px solid var(--line);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 10px 30px rgba(0,0,0,.16);
-      backdrop-filter:blur(16px) saturate(140%);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 12px 34px rgba(0,0,0,.18);
+      backdrop-filter:blur(16px) saturate(145%);
     }
     .topbar{
-      height:56px;
+      height:58px;
       border-radius:20px;
       display:flex;
       align-items:center;
@@ -74,8 +81,8 @@
       position:relative;
       z-index:2;
     }
-    .location{display:flex;flex-direction:column;gap:2px}
-    .location b{font-size:15px;font-weight:800;letter-spacing:.2px}
+    .location{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .location b{font-size:15px;font-weight:900;letter-spacing:.2px}
     .location span{font-size:12px;color:var(--muted)}
     .icon-btn{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);font-size:18px}
     .hero{display:grid;gap:12px}
@@ -83,76 +90,72 @@
     .weather-main{min-height:250px}
     .weather-main::after{
       content:"";
-      position:absolute; inset:auto -20% -40% -20%; height:220px;
-      background:radial-gradient(circle, rgba(255,215,106,.22), transparent 62%);
+      position:absolute; inset:auto -18% -44% -18%; height:230px;
+      background:radial-gradient(circle, rgba(255,215,125,.22), transparent 64%);
       pointer-events:none;
     }
     .weather-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
     .temp-wrap{display:flex;flex-direction:column;gap:4px}
-    .temp{font-size:72px;line-height:.92;font-weight:900;letter-spacing:-2px}
-    .desc{font-size:15px;color:#eef7ff;font-weight:700}
+    .temp{font-size:72px;line-height:.92;font-weight:950;letter-spacing:-2px;text-shadow:0 10px 28px rgba(0,0,0,.18)}
+    .desc{font-size:15px;color:#f3f9ff;font-weight:800}
     .sub{font-size:12px;color:var(--muted)}
-    .sun-art{
-      width:110px;height:110px;flex:0 0 auto;position:relative;margin-top:8px;
-      filter:drop-shadow(0 10px 18px rgba(255,199,87,.24));
-    }
-    .sun-core{position:absolute;inset:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%, #fff7c8 0%, #ffd76a 28%, #ffb546 60%, #ff8f2d 100%);box-shadow:0 0 28px rgba(255,208,94,.55), inset 0 0 10px rgba(255,255,255,.24)}
-    .ray{position:absolute;left:50%;top:50%;width:10px;height:36px;margin-left:-5px;margin-top:-18px;border-radius:10px;background:linear-gradient(180deg, rgba(255,244,184,.95), rgba(255,198,85,.0));transform-origin:center 54px;opacity:.85}
+    .sun-art{width:112px;height:112px;flex:0 0 auto;position:relative;margin-top:8px;filter:drop-shadow(0 12px 22px rgba(255,199,87,.26))}
+    .sun-core{position:absolute;inset:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%, #fff8d0 0%, #ffd86f 30%, #ffb648 62%, #ff8d2b 100%);box-shadow:0 0 30px rgba(255,208,94,.55), inset 0 0 10px rgba(255,255,255,.24)}
+    .ray{position:absolute;left:50%;top:50%;width:10px;height:36px;margin-left:-5px;margin-top:-18px;border-radius:10px;background:linear-gradient(180deg, rgba(255,246,200,.98), rgba(255,198,85,.0));transform-origin:center 54px;opacity:.9}
     .r1{transform:translateY(-52px) rotate(0deg)} .r2{transform:translateY(-52px) rotate(45deg)} .r3{transform:translateY(-52px) rotate(90deg)} .r4{transform:translateY(-52px) rotate(135deg)} .r5{transform:translateY(-52px) rotate(22deg)} .r6{transform:translateY(-52px) rotate(67deg)}
-    .cloud{position:absolute;width:44px;height:22px;border-radius:999px;background:rgba(255,255,255,.92);box-shadow:14px 0 0 -2px rgba(255,255,255,.92), 28px 4px 0 -8px rgba(255,255,255,.92);opacity:.62}
-    .cloud.c1{left:12px;top:16px;transform:scale(.85)}
-    .cloud.c2{right:18px;bottom:16px;transform:scale(.7)}
+    .cloud{position:absolute;width:44px;height:22px;border-radius:999px;background:rgba(255,255,255,.92);box-shadow:14px 0 0 -2px rgba(255,255,255,.92), 28px 4px 0 -8px rgba(255,255,255,.92);opacity:.64;filter:blur(.2px)}
+    .cloud.c1{left:12px;top:16px;transform:scale(.84)}
+    .cloud.c2{right:18px;bottom:16px;transform:scale(.72)}
     .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
     .mini{border-radius:18px;padding:12px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)}
     .mini .label{font-size:12px;color:var(--muted);margin-bottom:6px}
-    .mini .value{font-size:15px;font-weight:800}
+    .mini .value{font-size:15px;font-weight:850}
     .hours{display:flex;gap:10px;overflow:auto;padding-bottom:2px;margin-top:14px;scrollbar-width:none}
     .hours::-webkit-scrollbar{display:none}
-    .hour{min-width:88px;border-radius:18px;padding:12px 10px;text-align:center;flex:0 0 auto}
+    .hour{min-width:88px;border-radius:18px;padding:12px 10px;text-align:center;flex:0 0 auto;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
     .hour .t{font-size:13px;color:var(--muted)}
     .hour .i{font-size:20px;margin:6px 0}
-    .hour .v{font-size:16px;font-weight:800}
-    .tools{display:grid;grid-template-columns:1fr;gap:12px}
+    .hour .v{font-size:16px;font-weight:850}
     .section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
     .section-title h2{margin:0;font-size:16px}
     .section-title span{font-size:12px;color:var(--muted)}
     .compass-card{padding:16px 16px 14px}
     .compass-wrap{display:grid;place-items:center;margin:6px 0 12px}
     .compass{
-      width:256px;height:256px;max-width:100%;border-radius:50%;position:relative;
+      width:260px;height:260px;max-width:100%;border-radius:50%;position:relative;
       background:
-        radial-gradient(circle at 50% 50%, rgba(0,0,0,.95) 0 32%, rgba(25,30,38,.98) 33%, rgba(8,12,18,1) 70%, rgba(2,4,8,1) 100%);
-      border:10px solid #9b7a3b;
-      box-shadow:inset 0 0 0 2px rgba(255,223,141,.25), inset 0 0 40px rgba(255,255,255,.05), 0 18px 28px rgba(0,0,0,.28);
+        radial-gradient(circle at 50% 48%, rgba(0,0,0,.96) 0 30%, rgba(27,33,42,.98) 33%, rgba(8,12,18,1) 68%, rgba(0,0,0,1) 100%);
+      border:10px solid #aa863d;
+      box-shadow:inset 0 0 0 2px rgba(255,223,141,.20), inset 0 0 44px rgba(255,255,255,.05), 0 18px 28px rgba(0,0,0,.28);
     }
     .compass::before{
       content:"";position:absolute;inset:18px;border-radius:50%;border:1px solid rgba(255,255,255,.12)
     }
-    .mark{position:absolute;left:50%;top:50%;width:2px;height:14px;background:rgba(255,255,255,.6);transform-origin:50% 108px}
+    .compass::after{
+      content:"";position:absolute;inset:34px;border-radius:50%;border:1px solid rgba(255,255,255,.06)
+    }
+    .mark{position:absolute;left:50%;top:50%;width:2px;height:14px;background:rgba(255,255,255,.62);transform-origin:50% 110px}
     .mark.big{height:20px;width:3px;background:rgba(255,215,106,.88)}
-    .mark.t{width:3px;height:22px;background:rgba(139,231,255,.95)}
-    .deg{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff8db;opacity:.95}
+    .mark.t{width:3px;height:22px;background:rgba(143,234,255,.96)}
+    .deg{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-weight:850;color:#fff8db;opacity:.95}
     .deg span{position:absolute;transform:translate(-50%,-50%)}
-    .needle{position:absolute;left:50%;top:50%;width:10px;height:104px;transform:translate(-50%,-92%) rotate(30deg);transform-origin:50% 90%;border-radius:999px;background:linear-gradient(180deg, #ffd1d1 0%, #ff4848 38%, #8b0000 100%);box-shadow:0 0 20px rgba(255,77,77,.25)}
-    .needle::after{content:"";position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);border-left:12px solid transparent;border-right:12px solid transparent;border-top:18px solid #efefef;filter:drop-shadow(0 3px 1px rgba(0,0,0,.2))}
-    .needle::before{content:"";position:absolute;left:50%;top:-12px;transform:translateX(-50%);border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:18px solid #ff3f3f}
+    .needle{position:absolute;left:50%;top:50%;width:10px;height:108px;transform:translate(-50%,-92%) rotate(30deg);transform-origin:50% 90%;border-radius:999px;background:linear-gradient(180deg, #ffd6d6 0%, #ff5353 38%, #8b0000 100%);box-shadow:0 0 20px rgba(255,77,77,.28)}
+    .needle::after{content:"";position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);border-left:12px solid transparent;border-right:12px solid transparent;border-top:18px solid #f0f0f0;filter:drop-shadow(0 3px 1px rgba(0,0,0,.22))}
+    .needle::before{content:"";position:absolute;left:50%;top:-12px;transform:translateX(-50%);border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:18px solid #ff4242}
     .center-dot{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle, #fff 0 28%, #b7c0ca 29% 100%);box-shadow:0 0 0 7px rgba(255,255,255,.06)}
-    .qibla{position:absolute;left:50%;top:50%;width:4px;height:90px;transform:translate(-50%,-86%) rotate(140deg);transform-origin:50% 90%;border-radius:4px;background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.05));opacity:.95}
-    .qibla::after{content:"☾";position:absolute;left:50%;top:-20px;transform:translateX(-50%);font-size:20px;color:var(--gold);text-shadow:0 0 14px rgba(255,215,106,.4)}
+    .qibla{position:absolute;left:50%;top:50%;width:4px;height:92px;transform:translate(-50%,-86%) rotate(140deg);transform-origin:50% 90%;border-radius:4px;background:linear-gradient(180deg, rgba(255,255,255,.60), rgba(255,255,255,.05));opacity:.96}
+    .qibla::after{content:"☾";position:absolute;left:50%;top:-20px;transform:translateX(-50%);font-size:20px;color:var(--gold);text-shadow:0 0 14px rgba(255,215,106,.38)}
     .compass-info{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:12px}
     .compass-info b{color:var(--text);font-size:13px}
     .days{display:grid;gap:8px;margin-top:10px}
-    .day{display:flex;align-items:center;justify-content:space-between;padding:12px 12px;border-radius:18px}
+    .day{display:flex;align-items:center;justify-content:space-between;padding:12px 12px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
     .day .left{display:flex;align-items:center;gap:10px}
     .day .ico{font-size:20px;width:24px;text-align:center}
-    .day .name{font-weight:800}
+    .day .name{font-weight:850}
     .day .range{color:var(--muted);font-size:13px}
-    .footer{margin:14px 4px 4px;text-align:center;color:rgba(255,255,255,.65);font-size:11px}
+    .footer{margin:14px 4px 4px;text-align:center;color:rgba(255,255,255,.68);font-size:11px}
     .status{padding:14px;text-align:center;color:var(--muted)}
-    @media (max-width:380px){
-      .temp{font-size:64px}
-      .compass{width:228px;height:228px}
-    }
+    @media (max-width:380px){.temp{font-size:64px}.compass{width:228px;height:228px}}
   </style>
 </head>
 <body>
@@ -247,7 +250,6 @@
       const dirs = ['ش','ش ش ق','ش ق','ق ش ق','ق','ج ق','ج','ج غ','غ','غ ش غ','ش غ','ش ش غ'];
       return dirs[Math.round(((deg % 360) / 30)) % 12];
     };
-
     function setClock(){
       const now = new Date();
       const time = now.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', hour12:false});
@@ -255,16 +257,8 @@
     }
     setClock();
     setInterval(setClock, 1000);
-
     const fallback = {
-      temp: 34,
-      feels: 40,
-      hum: 48,
-      wind: 7.7,
-      windDir: 'غرب',
-      desc: 'صافي جداً',
-      heading: 30,
-      qibla: 140,
+      temp: 34, feels: 40, hum: 48, wind: 7.7, windDir: 'غرب', desc: 'صافي جداً', heading: 30, qibla: 140,
       hours: [
         {time:'١٧:٠٠', icon:'☀️', temp:33},
         {time:'١٨:٠٠', icon:'🌤️', temp:31},
@@ -278,7 +272,6 @@
         ['الأحد','٣٠° / ٢٤°','☀️','صحو']
       ]
     };
-
     function renderData(d){
       document.getElementById('temp').textContent = arabicDigits(Math.round(d.temp)) + '°م';
       document.getElementById('desc').textContent = d.desc;
@@ -290,15 +283,10 @@
       document.getElementById('qiblaVal').textContent = 'س ' + arabicDigits(Math.round(d.qibla)) + '°';
       document.getElementById('needle').style.transform = `translate(-50%, -92%) rotate(${d.heading}deg)`;
       document.getElementById('qibla').style.transform = `translate(-50%, -86%) rotate(${d.qibla}deg)`;
-
-      const hours = document.getElementById('hours');
-      hours.innerHTML = d.hours.map(h => `<div class="hour"><div class="t">${h.time}</div><div class="i">${h.icon}</div><div class="v">${arabicDigits(h.temp)}°</div></div>`).join('');
-
-      const days = document.getElementById('days');
-      days.innerHTML = d.days.map(day => `<div class="day"><div class="left"><div class="ico">${day[2]}</div><div><div class="name">${day[0]}</div><div class="range">${day[1]}</div></div></div><div>${day[3]}</div></div>`).join('');
+      document.getElementById('hours').innerHTML = d.hours.map(h => `<div class="hour"><div class="t">${h.time}</div><div class="i">${h.icon}</div><div class="v">${arabicDigits(h.temp)}°</div></div>`).join('');
+      document.getElementById('days').innerHTML = d.days.map(day => `<div class="day"><div class="left"><div class="ico">${day[2]}</div><div><div class="name">${day[0]}</div><div class="range">${day[1]}</div></div></div><div>${day[3]}</div></div>`).join('');
       document.getElementById('status').textContent = 'تم تحديث الطقس والبوصلة.';
     }
-
     async function loadWeather(lat, lon){
       try{
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,apparent_temperature,weather_code&hourly=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto`;
@@ -307,12 +295,12 @@
         const c = data.current || {};
         const map = (code) => ({0:'صافي جداً',1:'غائم قليلًا',2:'غائم جزئياً',3:'غائم',45:'ضباب',48:'ضباب',51:'رذاذ',61:'مطر خفيف',63:'مطر',65:'مطر غزير',71:'ثلج',80:'زخات مطر',95:'عاصفة'})[code] || 'صافي جداً';
         const windDir = ['شمال','شمال شرقي','شرق','جنوب شرقي','جنوب','جنوب غربي','غرب','شمال غربي'][Math.round((c.wind_direction_10m || 270) / 45) % 8] || 'غرب';
-        const h = (data.hourly?.time || []).slice(0,3).map((t, i) => ({
+        const hours = (data.hourly?.time || []).slice(0,3).map((t, i) => ({
           time: new Date(t).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', hour12:false}),
           icon: (data.hourly.weather_code?.[i] ?? 0) === 0 ? '☀️' : '🌤️',
           temp: Math.round(data.hourly.temperature_2m?.[i] ?? c.temperature_2m ?? 34)
         }));
-        const d = (data.daily?.time || []).slice(0,5).map((t, i) => {
+        const days = (data.daily?.time || []).slice(0,5).map((t, i) => {
           const name = new Date(t).toLocaleDateString('ar-EG', {weekday:'long'});
           const max = Math.round(data.daily.temperature_2m_max?.[i] ?? 34);
           const min = Math.round(data.daily.temperature_2m_min?.[i] ?? 26);
@@ -327,15 +315,14 @@
           desc: map(c.weather_code ?? 0),
           heading: 30,
           qibla: 140,
-          hours: h.length ? h : fallback.hours,
-          days: d.length ? d : fallback.days
+          hours: hours.length ? hours : fallback.hours,
+          days: days.length ? days : fallback.days
         });
       }catch(err){
         renderData(fallback);
         document.getElementById('status').textContent = 'تعذر جلب الطقس، تم عرض بيانات افتراضية.';
       }
     }
-
     function initCompass(){
       if (window.DeviceOrientationEvent) {
         window.addEventListener('deviceorientation', (e) => {
@@ -347,7 +334,6 @@
         }, true);
       }
     }
-
     const beirut = {lat:33.8938, lon:35.5018};
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -358,7 +344,6 @@
     } else {
       loadWeather(beirut.lat, beirut.lon);
     }
-
     document.getElementById('place').textContent = 'بيروت، لبنان';
     initCompass();
     renderData(fallback);
