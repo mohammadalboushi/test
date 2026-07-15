@@ -6,6 +6,10 @@
   <meta name="theme-color" content="#0a0a0c" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Smart Launcher" />
+  <meta name="description" content="Smart Launcher - صفحة بداية شخصية فاخرة للروابط والاختصارات." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='44' fill='%230a0a0c'/%3E%3Cpath d='M96 28l19 39 43 6-31 30 7 43-38-20-38 20 7-43-31-30 43-6 19-39z' fill='%233b82f6'/%3E%3C/svg%3E" />
   <title>Smart Launcher</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -183,5 +187,10 @@
   </template>
 
   <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    }
+  </script>
 </body>
 </html>
