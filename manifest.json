@@ -1,18 +1,27 @@
 {
-  "name": "Smart Launcher",
-  "short_name": "Launcher",
-  "start_url": ".",
-  "scope": ".",
+  "name": "Mohammad Al Boushi — NeonChat",
+  "short_name": "NeonChat",
+  "description": "تم بناؤه بواسطة Mohammad Al Boushi",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0a0a0c",
-  "theme_color": "#0a0a0c",
-  "dir": "rtl",
-  "lang": "ar",
+  "background_color": "#000000",
+  "theme_color": "#ffffff",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='44' fill='%230a0a0c'/%3E%3Cpath d='M96 28l19 39 43 6-31 30 7 43-38-20-38 20 7-43-31-30 43-6 19-39z' fill='%233b82f6'/%3E%3C/svg%3E",
+      "src": "./icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
+  ],
+  "categories": [
+    "utilities",
+    "productivity"
   ]
 }
