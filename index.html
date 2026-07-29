@@ -1,62 +1,471 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#8b0000" />
-  <meta name="description" content="ميدو ملك البسترما - طلب ذكي للسندويشات واللحوم مع مساعد محلي وطلب صوتي وسلة متقدمة" />
-  <title>ميدو ملك البسترما</title>
-  <link rel="manifest" href="manifest.json" />
-  <style>
-    :root{--bg:#120807;--bg2:#1a0d0a;--card:rgba(31,16,12,.9);--line:rgba(212,175,55,.18);--accent:#d4af37;--accent2:#ff4d4d;--text:#fff7ea;--muted:#d7c7b0;--shadow:0 16px 40px rgba(0,0,0,.35);--r:22px;--r2:16px;--font:'Tajawal','Segoe UI',Tahoma,sans-serif}
-    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;font-family:var(--font);background:radial-gradient(circle at top,rgba(255,77,77,.13),transparent 28%),radial-gradient(circle at bottom left,rgba(212,175,55,.12),transparent 25%),linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text);min-height:100vh;overflow-x:hidden} a{color:inherit;text-decoration:none} button,input,textarea,select{font:inherit} .app{max-width:1400px;margin:0 auto;padding:16px}
-    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:var(--r);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));box-shadow:var(--shadow);backdrop-filter:blur(14px);position:sticky;top:10px;z-index:50}
-    .brand{display:flex;align-items:center;gap:12px;min-width:0}.logo{width:52px;height:52px;border-radius:18px;background:radial-gradient(circle at 30% 30%,#fff2bf,#d4af37 35%,#8f6300 100%);box-shadow:0 0 0 1px rgba(255,255,255,.12),0 10px 20px rgba(0,0,0,.25);display:grid;place-items:center;font-size:26px}.brand h1{margin:0;font-size:18px;line-height:1.2}.brand p{margin:4px 0 0;color:var(--muted);font-size:13px}.header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}.pill{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:999px;padding:10px 14px;cursor:pointer;transition:transform .18s ease,background .18s ease,border-color .18s ease;display:inline-flex;align-items:center;gap:8px}.pill:hover{transform:translateY(-1px);border-color:rgba(212,175,55,.45)}.pill.primary{background:linear-gradient(135deg,rgba(212,175,55,.22),rgba(255,77,77,.18))}
-    .layout{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin-top:16px}.panel{border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}.panel-head{padding:16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.panel-head h2{margin:0;font-size:17px}.panel-head small{color:var(--muted)}.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:16px}.category{background:linear-gradient(180deg,var(--card),rgba(28,14,11,.88));border:1px solid var(--line);border-radius:var(--r);padding:14px;position:relative;overflow:hidden}.category::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top right,rgba(212,175,55,.12),transparent 32%);pointer-events:none}.cat-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px;position:relative;z-index:1}.cat-title h3{margin:0;font-size:16px}.cat-title span{color:var(--muted);font-size:12px}.item{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:12px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);margin-bottom:10px;position:relative;z-index:1}.item:last-child{margin-bottom:0}.item h4{margin:0 0 4px;font-size:15px}.meta{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:12px}.price{color:#ffe08a;font-weight:700;font-size:15px;white-space:nowrap}.btn{border:none;border-radius:14px;background:linear-gradient(135deg,var(--accent),#b8860b);color:#251502;font-weight:700;padding:10px 14px;cursor:pointer;transition:transform .18s ease,filter .18s ease;min-width:92px}.btn:hover{transform:translateY(-1px);filter:brightness(1.05)}.btn.secondary{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--line)}
-    .cart{display:flex;flex-direction:column;min-height:100%}.cart-body{padding:16px;display:flex;flex-direction:column;gap:14px}.cart-list{display:flex;flex-direction:column;gap:10px;max-height:430px;overflow:auto;padding-right:4px}.cart-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:12px}.cart-row{display:flex;justify-content:space-between;gap:10px;align-items:start}.cart-row h4{margin:0 0 4px;font-size:14px}.cart-row p{margin:0;color:var(--muted);font-size:12px;line-height:1.6}.qty-actions{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}.mini{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:12px;padding:7px 10px;cursor:pointer}.summary{background:linear-gradient(180deg,rgba(212,175,55,.10),rgba(255,255,255,.03));border:1px solid rgba(212,175,55,.18);border-radius:18px;padding:14px}.summary .row{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;color:var(--muted)}.summary .row strong{color:var(--text)}.total{font-size:18px;color:#ffe08a;font-weight:800}.controls{display:grid;gap:10px}.field{display:grid;gap:7px}.field label{font-size:13px;color:var(--muted)}.field input,.field textarea,.field select{width:100%;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);padding:12px 14px;outline:none}.field textarea{min-height:96px;resize:vertical}.chip-row{display:flex;gap:8px;flex-wrap:wrap}.chip{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:999px;padding:8px 12px;cursor:pointer;font-size:13px}
-    .chat{display:grid;grid-template-rows:auto 1fr auto;height:100%;min-height:620px}.chat-box{padding:16px;display:flex;flex-direction:column;gap:10px;overflow:auto;max-height:500px}.bubble{max-width:90%;padding:12px 14px;border-radius:16px;line-height:1.7;font-size:14px;white-space:pre-wrap}.bubble.ai{background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.18);margin-inline-start:auto}.bubble.user{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);margin-inline-end:auto}.chat-input{border-top:1px solid var(--line);padding:14px;display:flex;gap:8px;background:rgba(0,0,0,.08)}.chat-input input{flex:1;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);padding:12px 14px;outline:none}.suggestions{display:flex;flex-wrap:wrap;gap:8px}.suggestion-card{border:1px solid rgba(212,175,55,.18);background:rgba(255,255,255,.04);padding:10px 12px;border-radius:14px;cursor:pointer;font-size:13px}.footer-note{color:var(--muted);padding:10px 16px 16px;font-size:12px;line-height:1.7}.voice-live{color:#ffe08a;font-size:13px;min-height:18px}
-    @media (max-width:980px){.layout{grid-template-columns:1fr}.menu-grid{grid-template-columns:1fr}.chat{min-height:560px}}@media (max-width:560px){.topbar{padding:12px}.brand h1{font-size:16px}.brand p{font-size:12px}.header-actions{width:100%;justify-content:stretch}.header-actions .pill{flex:1;justify-content:center}.menu-grid,.cart-body,.chat-box{padding:12px}.item{grid-template-columns:1fr}.btn{width:100%}.bubble{max-width:100%}}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4776E6">
+    <meta name="description" content="ستوديو الكاريوكي الاحترافي لعزل الموسيقى والصوت بواجهة أنيقة وسهلة الاستخدام" />
+    <title>ستوديو الكاريوكي الاحترافي</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #4776E6;
+            --secondary: #8E54E9;
+            --bg-color: #f0f2f5;
+            --text-main: #333;
+            --text-muted: #6c757d;
+            --card: rgba(255, 255, 255, 0.95);
+            --border: rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-main);
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 420px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            padding: 28px 20px 22px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .app-header i {
+            font-size: 3rem;
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            margin: 0 0 18px;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .custom-file-upload {
+            background: #e9ecef;
+            border: 2px dashed #adb5bd;
+            border-radius: 16px;
+            padding: 20px;
+            color: #495057;
+            font-weight: 600;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .custom-file-upload i {
+            font-size: 2rem;
+            color: var(--primary);
+        }
+
+        .file-upload-wrapper:hover .custom-file-upload {
+            background: #e2e6ea;
+            border-color: var(--primary);
+        }
+
+        .btn-process, .btn-download {
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+        }
+
+        .btn-process {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: #fff;
+            padding: 14px 24px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 20px rgba(71, 118, 230, 0.35);
+        }
+
+        .btn-process:active {
+            transform: scale(0.96);
+        }
+
+        .btn-process:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #statusMessage {
+            margin-top: 16px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            min-height: 24px;
+        }
+
+        .progress-wrap {
+            margin-top: 14px;
+            display: none;
+            gap: 8px;
+            text-align: right;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            border-radius: 999px;
+            background: rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .progress-bar > span {
+            display: block;
+            height: 100%;
+            width: 0%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.25s ease;
+        }
+
+        .progress-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .result-box {
+            margin-top: 24px;
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            animation: fadeIn 0.35s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .audio-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid #eaeaea;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .audio-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+        }
+
+        .audio-card h3 {
+            margin: 0 0 12px;
+            font-size: 1.05rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .audio-card h3 i {
+            color: var(--secondary);
+        }
+
+        audio {
+            width: 100%;
+            height: 40px;
+            margin-bottom: 12px;
+            outline: none;
+        }
+
+        .btn-download {
+            background: #28a745;
+            color: white;
+            padding: 10px 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-download:hover {
+            background: #218838;
+        }
+
+        .btn-secondary {
+            margin-top: 10px;
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 14px;
+            border: 1px solid rgba(0,0,0,0.08);
+            background: #fff;
+            color: var(--text-main);
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9fa;
+        }
+
+        .fa-spin {
+            animation: fa-spin 1.2s infinite linear;
+        }
+    </style>
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
-      <div class="brand"><div class="logo">👑</div><div><h1>ميدو ملك البسترما</h1><p>طلب ذكي للسندويشات واللحوم مع مساعد صوتي وذكاء محلي</p></div></div>
-      <div class="header-actions"><button class="pill primary" id="btnVoice">🎤 طلب صوتي</button><button class="pill" id="btnAi">🤖 مساعد ذكي</button><button class="pill" id="btnPwa">⬇️ تثبيت</button></div>
-    </header>
-    <main class="layout">
-      <section class="panel"><div class="panel-head"><div><h2>المنيو</h2><small>أضف إلى السلة أو اسأل المساعد باللهجة اللي بدك ياها</small></div><div class="chip-row"><button class="chip" data-filter="all">الكل</button><button class="chip" data-filter="sandwich">سندويشات</button><button class="chip" data-filter="kilo">كيلو</button><button class="chip" data-filter="drink">مشروبات</button></div></div><div class="menu-grid" id="menuGrid"></div></section>
-      <aside class="panel cart"><div class="panel-head"><div><h2>السلة والملخص</h2><small>تعديل الكميات، التخصيص، والعملة</small></div><button class="pill" id="clearCart">🧹 تفريغ</button></div><div class="cart-body"><div class="controls"><div class="field"><label>اسم الزبون</label><input id="customerName" placeholder="مثلاً: أبو فايز" /></div><div class="field"><label>رقم الهاتف</label><input id="customerPhone" placeholder="مثلاً: 70xxxxxx" inputmode="tel" /></div><div class="field"><label>العملة</label><select id="currencyMode"><option value="lbp">ليرة لبنانية</option><option value="usd">دولار</option><option value="both">الاثنين</option></select></div><div class="field"><label>سعر الصرف (LBP مقابل 1 USD)</label><input id="exchangeRate" type="number" value="90000" min="1" /></div></div><div class="summary"><div class="row"><span>عدد الأصناف</span><strong id="itemsCount">0</strong></div><div class="row"><span>المجموع</span><strong class="total" id="orderTotal">0</strong></div><div class="row"><span>ملاحظات</span><strong id="orderNote">لا يوجد</strong></div></div><div class="cart-list" id="cartList"></div><div class="controls"><div class="field"><label>ملاحظات إضافية</label><textarea id="orderNotes" placeholder="مثلاً: بلا مايونيز، خبز محمّص، الإرسال سريع"></textarea></div><div class="chip-row"><button class="btn secondary" id="btnRecommend">اقتراحات ذكية</button><button class="btn secondary" id="btnSendWhatsApp">إرسال واتساب</button></div></div></div></aside>
-    </main>
-    <section class="panel chat" style="margin-top:16px;"><div class="panel-head"><div><h2>المساعد الذكي</h2><small>يفهم العامية ويحوّل الكلام إلى طلب</small></div><div class="voice-live" id="voiceStatus">جاهز</div></div><div class="chat-box" id="chatBox"></div><div class="chat-input"><input id="chatInput" placeholder="مثلاً: بدي سندويش بسترما بلا مايونيز ومعه بيبسي" /><button class="btn" id="sendChat">إرسال</button></div></section>
-    <section class="panel" style="margin-top:16px;"><div class="panel-head"><div><h2>قد يعجبك أيضاً</h2><small>اقتراحات محسوبة حسب السلة الحالية</small></div></div><div class="menu-grid" id="recommendationGrid"></div></section>
-    <div class="footer-note">هذا ملف صفحة واحدة جاهز كبداية. المفتاح السري للـAPI غير مستخدم هنا، وكل الذكاء محلي. والناس طبعاً بتحب تطلب من موقع صغير وكأنه فرع للأمن القومي.</div>
-  </div>
-  <script>
-    const MENU=[{id:'basterma-sand',name:'سندويش بسترما',category:'sandwich',priceLBP:450000,tags:['لحمة','مميز']},{id:'rosto-sand',name:'سندويش روستو',category:'sandwich',priceLBP:450000,tags:['لحمة','خفيف']},{id:'sujuk-sand',name:'سندويش سجق',category:'sandwich',priceLBP:400000,tags:['حار','سريع']},{id:'maqaneq-sand',name:'سندويش مقانق',category:'sandwich',priceLBP:400000,tags:['مقرمش']},{id:'hotdog-sand',name:'هوت دوغ',category:'sandwich',priceLBP:350000,tags:['صغير']},{id:'rosto-cheese',name:'روستو مع جبنة',category:'sandwich',priceLBP:500000,tags:['جبنة','مميز']},{id:'basterma-kilo',name:'بسترما كيلو',category:'kilo',priceLBP:2700000,tags:['وزن','فاخر']},{id:'rosto-kilo',name:'روستو كيلو',category:'kilo',priceLBP:2700000,tags:['وزن']},{id:'sujuk-kilo',name:'سجق كيلو',category:'kilo',priceLBP:1400000,tags:['وزن','حار']},{id:'maqaneq-kilo',name:'مقانق كيلو',category:'kilo',priceLBP:1400000,tags:['وزن']},{id:'pepsi',name:'بيبسي',category:'drink',priceLBP:100000,tags:['بارد']},{id:'laban',name:'لبن',category:'drink',priceLBP:80000,tags:['منعش']},{id:'water',name:'ماء صغير',category:'drink',priceLBP:30000,tags:['أساسي']}];
-    const state={cart:[],filter:'all',currencyMode:'lbp',exchangeRate:90000,recognition:null,aiEnabled:true}; const el=id=>document.getElementById(id);
-    const fmtLBP=n=>new Intl.NumberFormat('ar-LB').format(Math.round(n))+' ل.ل'; const fmtUSD=n=>'$'+(n/state.exchangeRate).toFixed(2); const itemPriceText=i=>state.currencyMode==='usd'?fmtUSD(i.priceLBP):state.currencyMode==='both'?`${fmtLBP(i.priceLBP)} | ${fmtUSD(i.priceLBP)}`:fmtLBP(i.priceLBP); const cartTotalLBP=()=>state.cart.reduce((s,x)=>s+x.priceLBP*x.qty,0);
-    function saveCart(){localStorage.setItem('mido_cart_v1',JSON.stringify(state.cart));localStorage.setItem('mido_notes_v1',el('orderNotes').value||'');localStorage.setItem('mido_currency_v1',state.currencyMode);localStorage.setItem('mido_rate_v1',state.exchangeRate)}
-    function loadState(){try{const cart=JSON.parse(localStorage.getItem('mido_cart_v1')||'[]');state.cart=Array.isArray(cart)?cart:[]}catch{} el('orderNotes').value=localStorage.getItem('mido_notes_v1')||'';state.currencyMode=localStorage.getItem('mido_currency_v1')||'lbp';state.exchangeRate=Number(localStorage.getItem('mido_rate_v1')||90000);el('currencyMode').value=state.currencyMode;el('exchangeRate').value=state.exchangeRate}
-    function renderMenu(){const grid=el('menuGrid');const filtered=MENU.filter(i=>state.filter==='all'?true:i.category===state.filter);grid.innerHTML=filtered.map(i=>`<article class="category"><div class="cat-title"><h3>${i.name}</h3><span>${i.category==='kilo'?'كيلو':i.category==='sandwich'?'سندويشات':'مشروبات'}</span></div><div class="item"><div><h4>${i.name}</h4><div class="meta">${i.tags.map(t=>`<span>• ${t}</span>`).join('')}</div></div><div style="text-align:end;"><div class="price">${itemPriceText(i)}</div><button class="btn" onclick="addToCart('${i.id}')">إضافة</button></div></div></article>`).join('')}
-    function renderRecommendations(){const grid=el('recommendationGrid');const names=state.cart.map(x=>x.name).join(' ');let recs=[];if(names.includes('بسترما'))recs=[MENU.find(x=>x.id==='pepsi'),MENU.find(x=>x.id==='rosto-cheese'),MENU.find(x=>x.id==='laban')];else if(names.includes('سجق'))recs=[MENU.find(x=>x.id==='pepsi'),MENU.find(x=>x.id==='hotdog-sand'),MENU.find(x=>x.id==='water')];else recs=[MENU.find(x=>x.id==='pepsi'),MENU.find(x=>x.id==='laban'),MENU.find(x=>x.id==='basterma-sand')];recs=recs.filter(Boolean);grid.innerHTML=recs.map(i=>`<article class="category"><div class="cat-title"><h3>${i.name}</h3><span>اقتراح ذكي</span></div><div class="item"><div><h4>${i.name}</h4><div class="meta">${i.tags.map(t=>`<span>• ${t}</span>`).join('')}</div></div><div style="text-align:end;"><div class="price">${itemPriceText(i)}</div><button class="btn" onclick="addToCart('${i.id}')">إضافة</button></div></div></article>`).join('')}
-    function renderCart(){const list=el('cartList');list.innerHTML=!state.cart.length?'<div class="cart-item">السلة فارغة حالياً.</div>':state.cart.map((item,idx)=>`<div class="cart-item"><div class="cart-row"><div><h4>${item.name}</h4><p>${item.customization||'بدون تخصيص'}<br>${item.priceLBP.toLocaleString('en-US')} LBP × ${item.qty}</p></div><strong>${itemPriceText(item)}</strong></div><div class="qty-actions"><button class="mini" onclick="changeQty(${idx},-1)">−</button><span>${item.qty}</span><button class="mini" onclick="changeQty(${idx},1)">+</button><button class="mini" onclick="removeItem(${idx})">حذف</button></div></div>`).join('');const total=cartTotalLBP();el('itemsCount').textContent=state.cart.reduce((s,x)=>s+x.qty,0);el('orderTotal').textContent=state.currencyMode==='usd'?fmtUSD(total):state.currencyMode==='both'?`${fmtLBP(total)} | ${fmtUSD(total)}`:fmtLBP(total);el('orderNote').textContent=state.cart.length?'جاهز للإرسال':'لا يوجد';renderRecommendations();saveCart()}
-    function pushChat(text,who='ai'){const box=el('chatBox');const node=document.createElement('div');node.className=`bubble ${who}`;node.textContent=text;box.appendChild(node);box.scrollTop=box.scrollHeight}
-    function normalizeText(s){return(s||'').toLowerCase().replaceAll('أ','ا').replaceAll('إ','ا').replaceAll('آ','ا').replaceAll('ة','ه').replaceAll('ى','ي').replace(/[^\u0600-\u06FFa-zA-Z0-9\s]/g,' ').replace(/\s+/g,' ').trim()}
-    function parseOrderFromText(text){const items=[];MENU.forEach(item=>{const n=normalizeText(text);const matched=n.includes(normalizeText(item.name))||(item.id.includes('pepsi')&&(n.includes('بيبسي')||n.includes('كازوز')))||(item.id.includes('water')&&n.includes('ماء'))||(item.id.includes('laban')&&n.includes('لبن'));if(matched)items.push(item)});return items}
-    function detectCustomization(text){const parts=[];['بلا مايونيز','بدون مايونيز','بلا ثوم','بدون ثوم','بلا جبنة','بدون جبنة','بلا بندورة','بدون بندورة','بلا خيار','بدون خيار','بلا بطاطا','بدون بطاطا'].forEach(p=>{if(normalizeText(text).includes(normalizeText(p)))parts.push(p)});return parts.join('، ')}
-    function addToCart(itemId,customization=''){const item=MENU.find(x=>x.id===itemId);if(!item)return;const existing=state.cart.find(x=>x.id===itemId&&x.customization===customization);if(existing)existing.qty+=1;else state.cart.push({id:item.id,name:item.name,priceLBP:item.priceLBP,qty:1,customization});renderCart();pushChat(`تمت إضافة ${item.name} إلى السلة${customization?` مع تخصيص: ${customization}`:''}.`,'ai')}
-    function changeQty(index,delta){const item=state.cart[index];if(!item)return;item.qty+=delta;if(item.qty<=0)state.cart.splice(index,1);renderCart()}
-    function removeItem(index){state.cart.splice(index,1);renderCart()}
-    function clearCart(){state.cart=[];renderCart()}
-    function handleChat(text){pushChat(text,'user');const items=parseOrderFromText(text);const customization=detectCustomization(text);if(items.length)items.forEach(item=>addToCart(item.id,customization));pushChat(items.length?`تمام، فهمت طلبك. أضفت ${items.map(x=>x.name).join(' و ')} إلى السلة${customization?` مع ${customization}`:''}.`:`فهمت عليك، بس فيني ساعدك أحسن إذا كتبت اسم الصنف بشكل أوضح.`,'ai');if(!state.aiEnabled)return}
-    function sendToWhatsApp(){const name=el('customerName').value.trim()||'بدون اسم';const phone=el('customerPhone').value.trim()||'بدون رقم';const notes=el('orderNotes').value.trim()||'لا يوجد';const total=cartTotalLBP();const lines=[`طلب جديد من ميدو ملك البسترما`,`الاسم: ${name}`,`الهاتف: ${phone}`,`---`,...state.cart.map(x=>`• ${x.name} | ${x.qty} x ${fmtLBP(x.priceLBP)}${x.customization?` | ${x.customization}`:''}`),`---`,`المجموع: ${fmtLBP(total)} / ${fmtUSD(total)}`,`ملاحظات: ${notes}`];const msg=encodeURIComponent(lines.join('\n'));const phoneNumber='YOUR_WHATSAPP_NUMBER';window.open(`https://wa.me/${phoneNumber}?text=${msg}`,'_blank')}
-    function initVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){el('voiceStatus').textContent='المتصفح لا يدعم الصوت';return} state.recognition=new SR();state.recognition.lang='ar-LB';state.recognition.interimResults=false;state.recognition.continuous=false;state.recognition.onstart=()=>el('voiceStatus').textContent='عم يسمع...';state.recognition.onerror=()=>el('voiceStatus').textContent='صار خطأ بالصوت';state.recognition.onend=()=>{if(el('voiceStatus').textContent==='عم يسمع...')el('voiceStatus').textContent='جاهز'};state.recognition.onresult=e=>{const text=e.results[0][0].transcript;el('voiceStatus').textContent=`تم التعرف: ${text}`;handleChat(text)}}
-    function installPWA(){pushChat('جاهز للتثبيت على الشاشة الرئيسية.','ai')}
-    function bindUI(){el('currencyMode').addEventListener('change',e=>{state.currencyMode=e.target.value;renderMenu();renderCart()});el('exchangeRate').addEventListener('input',e=>{state.exchangeRate=Number(e.target.value||90000);renderMenu();renderCart()});el('sendChat').addEventListener('click',()=>{const text=el('chatInput').value.trim();if(!text)return;el('chatInput').value='';handleChat(text)});el('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')el('sendChat').click()});el('btnVoice').addEventListener('click',()=>{if(!state.recognition)initVoice();if(state.recognition)state.recognition.start()});el('btnAi').addEventListener('click',()=>{state.aiEnabled=!state.aiEnabled;pushChat(state.aiEnabled?'تم تفعيل المساعد المحلي.':'تم إيقاف المساعد المحلي.','ai')});el('btnPwa').addEventListener('click',installPWA);el('btnSendWhatsApp').addEventListener('click',sendToWhatsApp);el('clearCart').addEventListener('click',clearCart);el('btnRecommend').addEventListener('click',renderRecommendations);document.querySelectorAll('[data-filter]').forEach(btn=>btn.addEventListener('click',()=>{state.filter=btn.dataset.filter;renderMenu()}))}
-    function registerSW(){if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}}
-    function start(){loadState();bindUI();renderMenu();renderCart();registerSW();pushChat('أهلاً فيك 👑\nاكتب طلبك باللهجة اللي بتحبها، وأنا بحسبه وبحطه بالسلة.','ai');pushChat('مثال: بدي سندويش بسترما بلا مايونيز ومعه بيبسي.','ai')}
-    window.addToCart=addToCart;window.changeQty=changeQty;window.removeItem=removeItem;start();
-  </script>
+    <div class="app-container">
+        <div class="app-header">
+            <i class="fa-solid fa-headphones-simple"></i>
+            <h2>عزل الكاريوكي الاحترافي</h2>
+        </div>
+
+        <div class="file-upload-wrapper">
+            <input type="file" id="audioFile" accept="audio/*" onchange="updateFileName(this)">
+            <div class="custom-file-upload">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span id="fileNameDisplay">اختر الأغنية أو اسحبها هنا</span>
+            </div>
+        </div>
+
+        <button class="btn-process" id="processBtn" onclick="processAudio()">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            ابدأ العزل الآن
+        </button>
+
+        <button class="btn-secondary" id="resetBtn" onclick="resetApp()">ملف جديد</button>
+
+        <div class="progress-wrap" id="progressWrap">
+            <div class="progress-text">
+                <span id="progressLabel">جاري التحضير...</span>
+                <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar"><span id="progressFill"></span></div>
+        </div>
+
+        <div id="statusMessage"></div>
+
+        <div class="result-box" id="resultContainer">
+            <div class="audio-card">
+                <h3><i class="fa-solid fa-music"></i> الموسيقى مع الكورال</h3>
+                <audio id="instrumentalChoirAudio" controls></audio>
+                <button class="btn-download" onclick="downloadFile('instrumentalChoirAudio', 'Instrumental_Choir.wav')">
+                    <i class="fa-solid fa-download"></i> تنزيل المقطع
+                </button>
+            </div>
+
+            <div class="audio-card">
+                <h3><i class="fa-solid fa-microphone-lines"></i> صوت المطرب فقط</h3>
+                <audio id="vocalAudio" controls></audio>
+                <button class="btn-download" onclick="downloadFile('vocalAudio', 'Vocals_Only.wav')">
+                    <i class="fa-solid fa-download"></i> تنزيل المقطع
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { Client } from "https://esm.sh/@gradio/client";
+
+        let progressTimer = null;
+
+        function setProgress(percent, label) {
+            const wrap = document.getElementById('progressWrap');
+            const fill = document.getElementById('progressFill');
+            const progressLabel = document.getElementById('progressLabel');
+            const progressPercent = document.getElementById('progressPercent');
+            wrap.style.display = 'grid';
+            fill.style.width = Math.max(0, Math.min(100, percent)) + '%';
+            progressLabel.textContent = label;
+            progressPercent.textContent = Math.max(0, Math.min(100, percent)) + '%';
+        }
+
+        function startFakeProgress() {
+            let p = 0;
+            setProgress(0, 'جاري رفع الملف...');
+            progressTimer = setInterval(() => {
+                p = Math.min(92, p + Math.max(2, Math.round(Math.random() * 9)));
+                if (p < 35) setProgress(p, 'جاري رفع الملف...');
+                else if (p < 70) setProgress(p, 'السيرفر يعالج الصوت...');
+                else setProgress(p, 'تقريباً انتهينا...');
+            }, 900);
+        }
+
+        function stopFakeProgress(done = false) {
+            if (progressTimer) clearInterval(progressTimer);
+            progressTimer = null;
+            if (done) setProgress(100, 'تمت المعالجة بنجاح');
+            else document.getElementById('progressWrap').style.display = 'none';
+        }
+
+        window.updateFileName = function(input) {
+            const display = document.getElementById('fileNameDisplay');
+            if (input.files && input.files.length > 0) {
+                display.textContent = input.files[0].name;
+                display.style.color = '#4776E6';
+            } else {
+                display.textContent = 'اختر الأغنية أو اسحبها هنا';
+                display.style.color = '#495057';
+            }
+        }
+
+        window.resetApp = function() {
+            const fileInput = document.getElementById('audioFile');
+            const statusMessage = document.getElementById('statusMessage');
+            const resultContainer = document.getElementById('resultContainer');
+            const progressWrap = document.getElementById('progressWrap');
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+            const processBtn = document.getElementById('processBtn');
+
+            fileInput.value = '';
+            fileInput.disabled = false;
+            fileNameDisplay.textContent = 'اختر الأغنية أو اسحبها هنا';
+            fileNameDisplay.style.color = '#495057';
+            statusMessage.textContent = '';
+            resultContainer.style.display = 'none';
+            progressWrap.style.display = 'none';
+            processBtn.disabled = false;
+            processBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> ابدأ العزل الآن';
+        }
+
+        window.processAudio = async function() {
+            const fileInput = document.getElementById('audioFile');
+            const statusMessage = document.getElementById('statusMessage');
+            const resultContainer = document.getElementById('resultContainer');
+            const processBtn = document.getElementById('processBtn');
+            const instrumentalChoirAudio = document.getElementById('instrumentalChoirAudio');
+            const vocalAudio = document.getElementById('vocalAudio');
+
+            if (fileInput.files.length === 0) {
+                statusMessage.textContent = 'يرجى اختيار الأغنية أولاً يا غالي!';
+                statusMessage.style.color = '#dc3545';
+                return;
+            }
+
+            const audioFile = fileInput.files[0];
+            processBtn.disabled = true;
+            fileInput.disabled = true;
+            processBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري المعالجة السحرية...';
+            statusMessage.textContent = 'الرجاء الانتظار، السيرفر يقوم بتحليل المقامات الصوتية...';
+            statusMessage.style.color = '#4776E6';
+            resultContainer.style.display = 'none';
+            startFakeProgress();
+
+            try {
+                const client = await Client.connect('TheStinger/UVR5_UI');
+                const result = await client.predict('/vrarch_separator', {
+                    audio: audioFile,
+                    model: '6_HP-Karaoke-UVR.pth',
+                    out_format: 'wav',
+                    window_size: 320,
+                    aggression: 1,
+                    tta: true,
+                    post_process: true,
+                    post_process_threshold: 0.1,
+                    high_end_process: true,
+                    batch_size: 1,
+                    norm_thresh: 0.1,
+                    amp_thresh: 0.1,
+                    single_stem: '(None)'
+                });
+
+                if (!result.data || result.data.length === 0) {
+                    throw new Error('لا توجد استجابة من السيرفر.');
+                }
+
+                const getAudioUrl = (item) => {
+                    if (typeof item === 'string') return item;
+                    if (item && item.url) return item.url;
+                    if (item && item.path) return 'https://thestinger-uvr5-ui.hf.space/file=' + item.path;
+                    return '';
+                };
+
+                instrumentalChoirAudio.src = getAudioUrl(result.data[0]);
+                vocalAudio.src = getAudioUrl(result.data[1]);
+
+                stopFakeProgress(true);
+                statusMessage.textContent = '✅ انتهت المعالجة بنجاح. يمكنك الآن الاستماع أو تنزيل الملفات.';
+                statusMessage.style.color = '#28a745';
+                resultContainer.style.display = 'flex';
+            } catch (error) {
+                console.error(error);
+                stopFakeProgress(false);
+                statusMessage.textContent = 'رسالة السيرفر: ' + (error.message || error);
+                statusMessage.style.color = '#dc3545';
+            } finally {
+                processBtn.disabled = false;
+                fileInput.disabled = false;
+                processBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> ابدأ العزل الآن';
+            }
+        }
+
+        window.downloadFile = async function(audioElementId, defaultFilename) {
+            const audioElement = document.getElementById(audioElementId);
+            const url = audioElement.src;
+            if (!url) return;
+
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = defaultFilename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(blobUrl);
+            } catch (error) {
+                console.error('خطأ في التحميل المباشر:', error);
+                window.open(url, '_blank');
+            }
+        }
+    </script>
 </body>
 </html>
