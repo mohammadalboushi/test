@@ -14,11 +14,11 @@
         :root {
             --primary: #4776E6;
             --secondary: #8E54E9;
-            --bg-color: #f0f2f5;
             --text-main: #333;
             --text-muted: #6c757d;
             --card: rgba(255, 255, 255, 0.95);
             --border: rgba(0, 0, 0, 0.08);
+            --drop: rgba(71, 118, 230, 0.16);
         }
 
         * {
@@ -44,7 +44,7 @@
 
         .app-container {
             width: 100%;
-            max-width: 420px;
+            max-width: 430px;
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 24px;
@@ -69,6 +69,15 @@
         .file-upload-wrapper {
             position: relative;
             margin-bottom: 16px;
+            border-radius: 18px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .file-upload-wrapper.dragover .custom-file-upload {
+            background: var(--drop);
+            border-color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 25px rgba(71, 118, 230, 0.12);
         }
 
         .file-upload-wrapper input[type="file"] {
@@ -84,7 +93,7 @@
             background: #e9ecef;
             border: 2px dashed #adb5bd;
             border-radius: 16px;
-            padding: 20px;
+            padding: 22px 18px;
             color: #495057;
             font-weight: 600;
             display: flex;
@@ -92,6 +101,8 @@
             align-items: center;
             gap: 10px;
             transition: all 0.3s ease;
+            min-height: 112px;
+            justify-content: center;
         }
 
         .custom-file-upload i {
@@ -104,11 +115,11 @@
             border-color: var(--primary);
         }
 
-        .btn-process, .btn-download {
+        .btn-process, .btn-download, .btn-secondary {
             border: none;
             border-radius: 50px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s, opacity 0.2s;
         }
 
         .btn-process {
@@ -125,7 +136,9 @@
             box-shadow: 0 8px 20px rgba(71, 118, 230, 0.35);
         }
 
-        .btn-process:active {
+        .btn-process:active,
+        .btn-download:active,
+        .btn-secondary:active {
             transform: scale(0.96);
         }
 
@@ -133,6 +146,20 @@
             opacity: 0.7;
             cursor: not-allowed;
             transform: none;
+        }
+
+        .btn-secondary {
+            margin-top: 10px;
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(0,0,0,0.08);
+            background: #fff;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9fa;
         }
 
         #statusMessage {
@@ -237,22 +264,6 @@
             background: #218838;
         }
 
-        .btn-secondary {
-            margin-top: 10px;
-            width: 100%;
-            padding: 12px 16px;
-            border-radius: 14px;
-            border: 1px solid rgba(0,0,0,0.08);
-            background: #fff;
-            color: var(--text-main);
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .btn-secondary:hover {
-            background: #f8f9fa;
-        }
-
         .fa-spin {
             animation: fa-spin 1.2s infinite linear;
         }
@@ -265,7 +276,7 @@
             <h2>عزل الكاريوكي الاحترافي</h2>
         </div>
 
-        <div class="file-upload-wrapper">
+        <div class="file-upload-wrapper" id="dropZone">
             <input type="file" id="audioFile" accept="audio/*" onchange="updateFileName(this)">
             <div class="custom-file-upload">
                 <i class="fa-solid fa-cloud-arrow-up"></i>
@@ -313,14 +324,22 @@
         import { Client } from "https://esm.sh/@gradio/client";
 
         let progressTimer = null;
+        let selectedFile = null;
+
+        const fileInput = document.getElementById('audioFile');
+        const dropZone = document.getElementById('dropZone');
+        const display = document.getElementById('fileNameDisplay');
+        const statusMessage = document.getElementById('statusMessage');
+        const resultContainer = document.getElementById('resultContainer');
+        const processBtn = document.getElementById('processBtn');
+        const progressWrap = document.getElementById('progressWrap');
+        const progressFill = document.getElementById('progressFill');
+        const progressLabel = document.getElementById('progressLabel');
+        const progressPercent = document.getElementById('progressPercent');
 
         function setProgress(percent, label) {
-            const wrap = document.getElementById('progressWrap');
-            const fill = document.getElementById('progressFill');
-            const progressLabel = document.getElementById('progressLabel');
-            const progressPercent = document.getElementById('progressPercent');
-            wrap.style.display = 'grid';
-            fill.style.width = Math.max(0, Math.min(100, percent)) + '%';
+            progressWrap.style.display = 'grid';
+            progressFill.style.width = Math.max(0, Math.min(100, percent)) + '%';
             progressLabel.textContent = label;
             progressPercent.textContent = Math.max(0, Math.min(100, percent)) + '%';
         }
@@ -340,13 +359,13 @@
             if (progressTimer) clearInterval(progressTimer);
             progressTimer = null;
             if (done) setProgress(100, 'تمت المعالجة بنجاح');
-            else document.getElementById('progressWrap').style.display = 'none';
+            else progressWrap.style.display = 'none';
         }
 
-        window.updateFileName = function(input) {
-            const display = document.getElementById('fileNameDisplay');
-            if (input.files && input.files.length > 0) {
-                display.textContent = input.files[0].name;
+        function setSelectedFile(file) {
+            selectedFile = file;
+            if (file) {
+                display.textContent = file.name;
                 display.style.color = '#4776E6';
             } else {
                 display.textContent = 'اختر الأغنية أو اسحبها هنا';
@@ -354,18 +373,37 @@
             }
         }
 
-        window.resetApp = function() {
-            const fileInput = document.getElementById('audioFile');
-            const statusMessage = document.getElementById('statusMessage');
-            const resultContainer = document.getElementById('resultContainer');
-            const progressWrap = document.getElementById('progressWrap');
-            const fileNameDisplay = document.getElementById('fileNameDisplay');
-            const processBtn = document.getElementById('processBtn');
+        window.updateFileName = function(input) {
+            if (input.files && input.files.length > 0) {
+                setSelectedFile(input.files[0]);
+            } else {
+                setSelectedFile(null);
+            }
+        }
 
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) {
+                fileInput.files = files;
+                setSelectedFile(files[0]);
+            }
+        });
+
+        window.resetApp = function() {
             fileInput.value = '';
             fileInput.disabled = false;
-            fileNameDisplay.textContent = 'اختر الأغنية أو اسحبها هنا';
-            fileNameDisplay.style.color = '#495057';
+            setSelectedFile(null);
             statusMessage.textContent = '';
             resultContainer.style.display = 'none';
             progressWrap.style.display = 'none';
@@ -374,13 +412,6 @@
         }
 
         window.processAudio = async function() {
-            const fileInput = document.getElementById('audioFile');
-            const statusMessage = document.getElementById('statusMessage');
-            const resultContainer = document.getElementById('resultContainer');
-            const processBtn = document.getElementById('processBtn');
-            const instrumentalChoirAudio = document.getElementById('instrumentalChoirAudio');
-            const vocalAudio = document.getElementById('vocalAudio');
-
             if (fileInput.files.length === 0) {
                 statusMessage.textContent = 'يرجى اختيار الأغنية أولاً يا غالي!';
                 statusMessage.style.color = '#dc3545';
@@ -388,6 +419,9 @@
             }
 
             const audioFile = fileInput.files[0];
+            const instrumentalChoirAudio = document.getElementById('instrumentalChoirAudio');
+            const vocalAudio = document.getElementById('vocalAudio');
+
             processBtn.disabled = true;
             fileInput.disabled = true;
             processBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري المعالجة السحرية...';
