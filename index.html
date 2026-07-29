@@ -19,6 +19,20 @@
             --card: rgba(255, 255, 255, 0.95);
             --border: rgba(0, 0, 0, 0.08);
             --drop: rgba(71, 118, 230, 0.16);
+            --page-bg: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            --surface: #fff;
+            --surface-2: #e9ecef;
+        }
+
+        [data-theme="dark"] {
+            --text-main: #f3f4f6;
+            --text-muted: #b7c0cf;
+            --card: rgba(18, 22, 33, 0.96);
+            --border: rgba(255, 255, 255, 0.08);
+            --drop: rgba(71, 118, 230, 0.22);
+            --page-bg: radial-gradient(circle at top, rgba(142,84,233,0.35), transparent 26%), linear-gradient(135deg, #0f172a 0%, #111827 100%);
+            --surface: #111827;
+            --surface-2: #1f2937;
         }
 
         * {
@@ -33,13 +47,14 @@
         }
 
         body {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            background: var(--page-bg);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
             color: var(--text-main);
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
         .app-container {
@@ -52,6 +67,27 @@
             padding: 28px 20px 22px;
             text-align: center;
             backdrop-filter: blur(10px);
+        }
+
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+
+        .theme-toggle {
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-main);
+            border-radius: 999px;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .app-header i {
@@ -90,11 +126,11 @@
         }
 
         .custom-file-upload {
-            background: #e9ecef;
+            background: var(--surface-2);
             border: 2px dashed #adb5bd;
             border-radius: 16px;
             padding: 22px 18px;
-            color: #495057;
+            color: var(--text-main);
             font-weight: 600;
             display: flex;
             flex-direction: column;
@@ -111,8 +147,20 @@
         }
 
         .file-upload-wrapper:hover .custom-file-upload {
-            background: #e2e6ea;
+            background: color-mix(in srgb, var(--surface-2) 92%, var(--primary) 8%);
             border-color: var(--primary);
+        }
+
+        .file-meta {
+            margin-top: 10px;
+            text-align: right;
+            display: none;
+            background: color-mix(in srgb, var(--surface) 92%, transparent 8%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 12px 14px;
+            line-height: 1.8;
+            font-size: 0.92rem;
         }
 
         .btn-process, .btn-download, .btn-secondary {
@@ -138,7 +186,8 @@
 
         .btn-process:active,
         .btn-download:active,
-        .btn-secondary:active {
+        .btn-secondary:active,
+        .theme-toggle:active {
             transform: scale(0.96);
         }
 
@@ -152,14 +201,14 @@
             margin-top: 10px;
             width: 100%;
             padding: 12px 16px;
-            border: 1px solid rgba(0,0,0,0.08);
-            background: #fff;
+            border: 1px solid var(--border);
+            background: var(--surface);
             color: var(--text-main);
             font-weight: 700;
         }
 
         .btn-secondary:hover {
-            background: #f8f9fa;
+            background: color-mix(in srgb, var(--surface) 92%, var(--primary) 8%);
         }
 
         #statusMessage {
@@ -215,11 +264,11 @@
         }
 
         .audio-card {
-            background: #fff;
+            background: var(--surface);
             border-radius: 16px;
             padding: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            border: 1px solid #eaeaea;
+            border: 1px solid var(--border);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
@@ -264,6 +313,34 @@
             background: #218838;
         }
 
+        .history-box {
+            margin-top: 18px;
+            text-align: right;
+            background: color-mix(in srgb, var(--surface) 94%, transparent 6%);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 14px;
+        }
+
+        .history-box h3 {
+            margin: 0 0 10px;
+            font-size: 1rem;
+        }
+
+        .history-list {
+            display: grid;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .history-item {
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: color-mix(in srgb, var(--surface) 88%, transparent 12%);
+            border: 1px solid var(--border);
+        }
+
         .fa-spin {
             animation: fa-spin 1.2s infinite linear;
         }
@@ -271,6 +348,14 @@
 </head>
 <body>
     <div class="app-container">
+        <div class="top-row">
+            <div></div>
+            <button class="theme-toggle" id="themeToggle" type="button">
+                <i class="fa-solid fa-moon"></i>
+                <span id="themeLabel">الوضع الليلي</span>
+            </button>
+        </div>
+
         <div class="app-header">
             <i class="fa-solid fa-headphones-simple"></i>
             <h2>عزل الكاريوكي الاحترافي</h2>
@@ -283,6 +368,8 @@
                 <span id="fileNameDisplay">اختر الأغنية أو اسحبها هنا</span>
             </div>
         </div>
+
+        <div class="file-meta" id="fileMeta"></div>
 
         <button class="btn-process" id="processBtn" onclick="processAudio()">
             <i class="fa-solid fa-wand-magic-sparkles"></i>
@@ -318,6 +405,11 @@
                 </button>
             </div>
         </div>
+
+        <div class="history-box">
+            <h3>آخر الملفات</h3>
+            <div class="history-list" id="historyList"></div>
+        </div>
     </div>
 
     <script type="module">
@@ -325,10 +417,13 @@
 
         let progressTimer = null;
         let selectedFile = null;
+        const HISTORY_KEY = 'karaoke_recent_files_v1';
+        const THEME_KEY = 'karaoke_theme_v1';
 
         const fileInput = document.getElementById('audioFile');
         const dropZone = document.getElementById('dropZone');
         const display = document.getElementById('fileNameDisplay');
+        const fileMeta = document.getElementById('fileMeta');
         const statusMessage = document.getElementById('statusMessage');
         const resultContainer = document.getElementById('resultContainer');
         const processBtn = document.getElementById('processBtn');
@@ -336,6 +431,51 @@
         const progressFill = document.getElementById('progressFill');
         const progressLabel = document.getElementById('progressLabel');
         const progressPercent = document.getElementById('progressPercent');
+        const historyList = document.getElementById('historyList');
+        const themeToggle = document.getElementById('themeToggle');
+        const themeLabel = document.getElementById('themeLabel');
+
+        function formatBytes(bytes) {
+            if (!bytes && bytes !== 0) return '-';
+            const units = ['B', 'KB', 'MB', 'GB'];
+            let size = bytes;
+            let unit = 0;
+            while (size >= 1024 && unit < units.length - 1) {
+                size /= 1024;
+                unit++;
+            }
+            return `${size.toFixed(size >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`;
+        }
+
+        function addToHistory(file) {
+            if (!file) return;
+            const item = {
+                name: file.name,
+                size: file.size,
+                type: file.type || 'audio/*',
+                time: new Date().toLocaleString('ar-EG')
+            };
+            const current = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            const next = [item, ...current.filter(x => x.name !== item.name)].slice(0, 5);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const items = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            historyList.innerHTML = items.length
+                ? items.map(item => `<div class="history-item">${item.name}<br><small>${formatBytes(item.size)} • ${item.type} • ${item.time}</small></div>`).join('')
+                : '<div class="history-item">ما في ملفات بعد</div>';
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem(THEME_KEY, theme);
+            const isDark = theme === 'dark';
+            themeToggle.innerHTML = isDark
+                ? '<i class="fa-solid fa-sun"></i><span id="themeLabel">الوضع النهاري</span>'
+                : '<i class="fa-solid fa-moon"></i><span id="themeLabel">الوضع الليلي</span>';
+        }
 
         function setProgress(percent, label) {
             progressWrap.style.display = 'grid';
@@ -364,12 +504,16 @@
 
         function setSelectedFile(file) {
             selectedFile = file;
+            fileMeta.style.display = file ? 'block' : 'none';
             if (file) {
                 display.textContent = file.name;
                 display.style.color = '#4776E6';
+                fileMeta.innerHTML = `🎵 <strong>${file.name}</strong><br>📦 الحجم: ${formatBytes(file.size)}<br>🎼 النوع: ${file.type || 'audio/*'}`;
+                addToHistory(file);
             } else {
                 display.textContent = 'اختر الأغنية أو اسحبها هنا';
                 display.style.color = '#495057';
+                fileMeta.innerHTML = '';
             }
         }
 
@@ -398,6 +542,11 @@
                 fileInput.files = files;
                 setSelectedFile(files[0]);
             }
+        });
+
+        themeToggle.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme') || 'light';
+            applyTheme(current === 'dark' ? 'light' : 'dark');
         });
 
         window.resetApp = function() {
@@ -500,6 +649,10 @@
                 window.open(url, '_blank');
             }
         }
+
+        const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+        applyTheme(savedTheme);
+        renderHistory();
     </script>
 </body>
 </html>
