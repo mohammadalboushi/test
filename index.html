@@ -1,658 +1,500 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#4776E6">
-    <meta name="description" content="ستوديو الكاريوكي الاحترافي لعزل الموسيقى والصوت بواجهة أنيقة وسهلة الاستخدام" />
-    <title>ستوديو الكاريوكي الاحترافي</title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MohaMmAD_WaSSouF - Studio</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
             --primary: #4776E6;
             --secondary: #8E54E9;
-            --text-main: #333;
-            --text-muted: #6c757d;
-            --card: rgba(255, 255, 255, 0.95);
-            --border: rgba(0, 0, 0, 0.08);
-            --drop: rgba(71, 118, 230, 0.16);
-            --page-bg: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            --surface: #fff;
-            --surface-2: #e9ecef;
-        }
-
-        [data-theme="dark"] {
-            --text-main: #f3f4f6;
-            --text-muted: #b7c0cf;
-            --card: rgba(18, 22, 33, 0.96);
-            --border: rgba(255, 255, 255, 0.08);
-            --drop: rgba(71, 118, 230, 0.22);
-            --page-bg: radial-gradient(circle at top, rgba(142,84,233,0.35), transparent 26%), linear-gradient(135deg, #0f172a 0%, #111827 100%);
-            --surface: #111827;
-            --surface-2: #1f2937;
+            --accent-vocal: #ff4757;
+            --accent-inst: #1e90ff;
+            --bg-base: #f4f5f7;
+            --glass-bg: #ffffff;
+            --glass-border: rgba(0, 0, 0, 0.06);
+            --text-main: #2d3436;
+            --text-muted: #636e72;
+            --success: #00b894;
+            --shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
         }
 
         * {
             box-sizing: border-box;
             font-family: 'Cairo', sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        html, body {
+        /* شاشة ثابتة بدون أي تمرير */
+        body {
             margin: 0;
             padding: 0;
-            min-height: 100%;
-        }
-
-        body {
-            background: var(--page-bg);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            color: var(--text-main);
-            transition: background 0.3s ease, color 0.3s ease;
-        }
-
-        .app-container {
-            width: 100%;
-            max-width: 430px;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-            padding: 28px 20px 22px;
-            text-align: center;
-            backdrop-filter: blur(10px);
-        }
-
-        .top-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 6px;
-        }
-
-        .theme-toggle {
-            border: 1px solid var(--border);
-            background: var(--surface);
-            color: var(--text-main);
-            border-radius: 999px;
-            padding: 10px 14px;
-            cursor: pointer;
-            font-weight: 700;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .app-header i {
-            font-size: 3rem;
-            color: var(--secondary);
-            margin-bottom: 10px;
-        }
-
-        h2 {
-            margin: 0 0 18px;
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .file-upload-wrapper {
-            position: relative;
-            margin-bottom: 16px;
-            border-radius: 18px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-        }
-
-        .file-upload-wrapper.dragover .custom-file-upload {
-            background: var(--drop);
-            border-color: var(--primary);
-            transform: translateY(-1px);
-            box-shadow: 0 10px 25px rgba(71, 118, 230, 0.12);
-        }
-
-        .file-upload-wrapper input[type="file"] {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-
-        .custom-file-upload {
-            background: var(--surface-2);
-            border: 2px dashed #adb5bd;
-            border-radius: 16px;
-            padding: 22px 18px;
-            color: var(--text-main);
-            font-weight: 600;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.3s ease;
-            min-height: 112px;
-            justify-content: center;
-        }
-
-        .custom-file-upload i {
-            font-size: 2rem;
-            color: var(--primary);
-        }
-
-        .file-upload-wrapper:hover .custom-file-upload {
-            background: color-mix(in srgb, var(--surface-2) 92%, var(--primary) 8%);
-            border-color: var(--primary);
-        }
-
-        .file-meta {
-            margin-top: 10px;
-            text-align: right;
-            display: none;
-            background: color-mix(in srgb, var(--surface) 92%, transparent 8%);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 12px 14px;
-            line-height: 1.8;
-            font-size: 0.92rem;
-        }
-
-        .btn-process, .btn-download, .btn-secondary {
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s, background 0.2s, opacity 0.2s;
-        }
-
-        .btn-process {
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            color: #fff;
-            padding: 14px 24px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 8px 20px rgba(71, 118, 230, 0.35);
-        }
-
-        .btn-process:active,
-        .btn-download:active,
-        .btn-secondary:active,
-        .theme-toggle:active {
-            transform: scale(0.96);
-        }
-
-        .btn-process:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-secondary {
-            margin-top: 10px;
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid var(--border);
-            background: var(--surface);
-            color: var(--text-main);
-            font-weight: 700;
-        }
-
-        .btn-secondary:hover {
-            background: color-mix(in srgb, var(--surface) 92%, var(--primary) 8%);
-        }
-
-        #statusMessage {
-            margin-top: 16px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            min-height: 24px;
-        }
-
-        .progress-wrap {
-            margin-top: 14px;
-            display: none;
-            gap: 8px;
-            text-align: right;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 12px;
-            border-radius: 999px;
-            background: rgba(0,0,0,0.08);
+            width: 100vw;
+            height: 100vh;
             overflow: hidden;
-        }
-
-        .progress-bar > span {
-            display: block;
-            height: 100%;
-            width: 0%;
-            border-radius: inherit;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            transition: width 0.25s ease;
-        }
-
-        .progress-text {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .result-box {
-            margin-top: 24px;
-            display: none;
-            flex-direction: column;
-            gap: 16px;
-            animation: fadeIn 0.35s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .audio-card {
-            background: var(--surface);
-            border-radius: 16px;
-            padding: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            border: 1px solid var(--border);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .audio-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 22px rgba(0,0,0,0.08);
-        }
-
-        .audio-card h3 {
-            margin: 0 0 12px;
-            font-size: 1.05rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .audio-card h3 i {
-            color: var(--secondary);
-        }
-
-        audio {
-            width: 100%;
-            height: 40px;
-            margin-bottom: 12px;
-            outline: none;
-        }
-
-        .btn-download {
-            background: #28a745;
-            color: white;
-            padding: 10px 15px;
-            font-size: 1rem;
-            font-weight: 600;
-            width: 100%;
+            background-color: var(--bg-base);
+            color: var(--text-main);
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 8px;
         }
 
-        .btn-download:hover {
-            background: #218838;
+        /* تصغير الحاوية وجعلها أكثر اندماجاً */
+        .app-container {
+            width: 88%;
+            height: 88%;
+            max-width: 400px; /* تم تصغير العرض الأقصى */
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            padding: 20px 15px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
         }
 
-        .history-box {
-            margin-top: 18px;
-            text-align: right;
-            background: color-mix(in srgb, var(--surface) 94%, transparent 6%);
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 14px;
+        /* الأزرار العلوية */
+        .top-controls { position: absolute; top: 15px; right: 15px; left: 15px; display: flex; justify-content: space-between; z-index: 10; }
+        .icon-btn {
+            background: var(--bg-base); border: 1px solid var(--glass-border); color: var(--text-main);
+            width: 36px; height: 36px; border-radius: 10px; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.03); transition: transform 0.2s; font-size: 0.9rem;
         }
+        .icon-btn:active { transform: scale(0.9); }
 
-        .history-box h3 {
-            margin: 0 0 10px;
-            font-size: 1rem;
+        /* قسم البروفايل (الجديد) */
+        .profile-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            text-align: center;
         }
-
-        .history-list {
-            display: grid;
-            gap: 8px;
-            font-size: 0.9rem;
+        .profile-avatar {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #ffffff;
+            box-shadow: 0 4px 15px rgba(71, 118, 230, 0.35);
+            margin-bottom: 8px;
+            background-color: var(--bg-base);
+        }
+        .profile-name {
+            font-size: 1.1rem;
+            font-weight: 900;
+            margin: 0;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
+        }
+        .profile-title {
+            font-size: 0.75rem;
             color: var(--text-muted);
+            margin: 2px 0 0 0;
+            font-weight: 600;
         }
 
-        .history-item {
-            padding: 10px 12px;
-            border-radius: 14px;
-            background: color-mix(in srgb, var(--surface) 88%, transparent 12%);
-            border: 1px solid var(--border);
+        /* منطقة الرفع */
+        .drop-zone {
+            flex: 1;
+            background: var(--bg-base);
+            border: 2px dashed var(--glass-border);
+            border-radius: 16px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            cursor: pointer; transition: all 0.3s; margin: 10px 0;
         }
+        .drop-zone i.main-icon { font-size: 2.5rem; color: var(--primary); margin-bottom: 8px; }
+        
+        .file-details { display: none; flex-direction: column; gap: 5px; align-items: center; margin-top: 10px; }
+        .badge { background: var(--glass-bg); border: 1px solid var(--glass-border); padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
 
-        .fa-spin {
-            animation: fa-spin 1.2s infinite linear;
+        /* شريط التقدم */
+        .progress-wrapper { display: none; flex: 1; flex-direction: column; justify-content: center; margin: 10px 0; }
+        .progress-header { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; }
+        .progress-track { background: var(--glass-border); height: 10px; border-radius: 10px; overflow: hidden; }
+        .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width 0.3s; }
+
+        /* قسم النتائج المدمج */
+        .results-container { display: none; flex: 1; flex-direction: column; justify-content: space-evenly; margin: 5px 0; }
+        .result-card { background: var(--bg-base); border: 1px solid var(--glass-border); border-radius: 14px; padding: 12px; }
+        .result-card.vocal { border-right: 4px solid var(--accent-vocal); margin-bottom: 10px; }
+        .result-card.inst { border-right: 4px solid var(--accent-inst); }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .card-header h3 { margin: 0; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; }
+        .vocal h3 i { color: var(--accent-vocal); }
+        .inst h3 i { color: var(--accent-inst); }
+
+        /* مشغل الصوت */
+        .custom-player { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .play-btn { width: 35px; height: 35px; min-width: 35px; border-radius: 50%; border: none; background: var(--text-main); color: var(--glass-bg); display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 0.85rem;}
+        .timeline-wrapper { flex: 1; display: flex; flex-direction: column; }
+        .time-display { display: flex; justify-content: space-between; font-size: 0.65rem; font-weight: 700; color: var(--text-muted); margin-bottom: 3px; }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; height: 4px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: var(--glass-border); border-radius: 5px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%; background: var(--primary); margin-top: -4px; }
+
+        .btn-download-custom { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); width: 100%; padding: 6px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; gap: 6px; font-size: 0.8rem; }
+
+        /* زر المعالجة السفلي */
+        .btn-process {
+            background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white;
+            border: none; width: 100%; padding: 14px; border-radius: 14px; font-size: 1rem; font-weight: 800;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(71, 118, 230, 0.25); display: flex; justify-content: center; align-items: center; gap: 8px;
         }
+        .btn-process:active { transform: scale(0.98); }
+        .btn-process:disabled { opacity: 0.7; pointer-events: none; }
+
+        /* نافذة الإعدادات */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4);
+            z-index: 1000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.2s;
+        }
+        .modal-content {
+            background: var(--glass-bg); border: 1px solid var(--glass-border); width: 92%; max-width: 380px;
+            border-radius: 20px; padding: 18px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; align-items: end;
+        }
+        .modal-header { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 8px; margin-bottom: 5px; }
+        .modal-header h2 { margin: 0; font-size: 1rem; color: var(--text-main); }
+        .close-modal { background: none; border: none; font-size: 1.1rem; color: var(--text-muted); cursor: pointer; padding: 0; }
+        
+        .form-group { display: flex; flex-direction: column; }
+        .form-group.full-width { grid-column: span 2; }
+        .form-group label { font-size: 0.7rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted); }
+        .form-group select, .form-group input[type="number"] { width: 100%; padding: 6px; border-radius: 8px; background: var(--bg-base); border: 1px solid var(--glass-border); font-size: 0.75rem; font-weight: 600; color: var(--text-main); }
+        .form-group input[type="range"] { margin: 4px 0; }
+        
+        .switch-wrapper { display: flex; justify-content: space-between; align-items: center; background: var(--bg-base); border: 1px solid var(--glass-border); padding: 6px 8px; border-radius: 8px; }
+        .switch-wrapper span { font-size: 0.7rem; font-weight: 700; }
+        .switch { position: relative; display: inline-block; width: 30px; height: 18px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(12px); }
+
+        /* Toasts */
+        .toast-container { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 9999; }
+        .toast { background: #2d3436; color: white; padding: 8px 16px; border-radius: 30px; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; gap: 8px; opacity: 1; transition: opacity 0.3s; }
     </style>
 </head>
 <body>
+
+    <div class="toast-container" id="toastContainer"></div>
+
     <div class="app-container">
-        <div class="top-row">
-            <div></div>
-            <button class="theme-toggle" id="themeToggle" type="button">
-                <i class="fa-solid fa-moon"></i>
-                <span id="themeLabel">الوضع الليلي</span>
-            </button>
+        
+        <div class="top-controls">
+            <button class="icon-btn" onclick="openModal()"><i class="fa-solid fa-sliders"></i></button>
+            <button class="icon-btn" onclick="location.reload()"><i class="fa-solid fa-rotate-right"></i></button>
         </div>
 
-        <div class="app-header">
-            <i class="fa-solid fa-headphones-simple"></i>
-            <h2>عزل الكاريوكي الاحترافي</h2>
+        <!-- قسم البروفايل -->
+        <div class="profile-wrapper">
+            <img src="https://midomido.neocities.org/Imageme/file_00000000b0e471f4bb14b679b943d519.png" alt="MohaMmAD_WaSSouF Profile" class="profile-avatar">
+            <h1 class="profile-name">MohaMmAD_WaSSouF</h1>
+            <p class="profile-title">استوديو العزل الذكي</p>
         </div>
 
-        <div class="file-upload-wrapper" id="dropZone">
-            <input type="file" id="audioFile" accept="audio/*" onchange="updateFileName(this)">
-            <div class="custom-file-upload">
-                <i class="fa-solid fa-cloud-arrow-up"></i>
-                <span id="fileNameDisplay">اختر الأغنية أو اسحبها هنا</span>
+        <!-- منطقة الرفع -->
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('audioFile').click()">
+            <input type="file" id="audioFile" style="display: none;" accept="audio/*">
+            <i class="fa-solid fa-cloud-arrow-up main-icon" id="dropIcon"></i>
+            <h3 style="margin: 0; font-size: 0.95rem;" id="dropTitle">انقر لاختيار الأغنية</h3>
+            <div class="file-details" id="fileDetails">
+                <span class="badge"><i class="fa-solid fa-music"></i> <span id="lblFName">الملف</span></span>
+                <span class="badge"><i class="fa-solid fa-weight-scale"></i> <span id="lblFSize">0MB</span></span>
             </div>
         </div>
 
-        <div class="file-meta" id="fileMeta"></div>
+        <!-- شريط التقدم -->
+        <div class="progress-wrapper" id="progressWrapper">
+            <div class="progress-header">
+                <span id="progStatus">جاري التحليل...</span>
+                <span id="progPercent" style="color: var(--primary);">0%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-bar" id="progBar"></div>
+            </div>
+        </div>
 
-        <button class="btn-process" id="processBtn" onclick="processAudio()">
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-            ابدأ العزل الآن
+        <!-- النتائج -->
+        <div class="results-container" id="resultsContainer">
+            <div class="result-card vocal">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-microphone-lines"></i> المطرب</h3>
+                </div>
+                <div class="custom-player">
+                    <button class="play-btn" onclick="togglePlay('vocalAudio', this)"><i class="fa-solid fa-play"></i></button>
+                    <div class="timeline-wrapper">
+                        <div class="time-display"><span id="vocalCurrent">0:00</span><span id="vocalTotal">0:00</span></div>
+                        <input type="range" id="vocalSeek" value="0" max="100" oninput="seekAudio('vocalAudio', this.value)">
+                    </div>
+                </div>
+                <audio id="vocalAudio" style="display: none;" ontimeupdate="updateProgress('vocalAudio', 'vocalSeek', 'vocalCurrent')" onloadedmetadata="setDuration('vocalAudio', 'vocalTotal')"></audio>
+                <button class="btn-download-custom" onclick="downloadFile('vocalAudio', 'Vocals_Only.wav')"><i class="fa-solid fa-download"></i> حفظ الصوت</button>
+            </div>
+
+            <div class="result-card inst">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-music"></i> الموسيقى</h3>
+                </div>
+                <div class="custom-player">
+                    <button class="play-btn" onclick="togglePlay('instAudio', this)"><i class="fa-solid fa-play"></i></button>
+                    <div class="timeline-wrapper">
+                        <div class="time-display"><span id="instCurrent">0:00</span><span id="instTotal">0:00</span></div>
+                        <input type="range" id="instSeek" value="0" max="100" oninput="seekAudio('instAudio', this.value)">
+                    </div>
+                </div>
+                <audio id="instAudio" style="display: none;" ontimeupdate="updateProgress('instAudio', 'instSeek', 'instCurrent')" onloadedmetadata="setDuration('instAudio', 'instTotal')"></audio>
+                <button class="btn-download-custom" onclick="downloadFile('instAudio', 'Instrumental.wav')"><i class="fa-solid fa-download"></i> حفظ الموسيقى</button>
+            </div>
+        </div>
+
+        <!-- زر المعالجة -->
+        <button class="btn-process" id="processBtn" onclick="startProcessing()">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> عزل الصوت
         </button>
+    </div>
 
-        <button class="btn-secondary" id="resetBtn" onclick="resetApp()">ملف جديد</button>
-
-        <div class="progress-wrap" id="progressWrap">
-            <div class="progress-text">
-                <span id="progressLabel">جاري التحضير...</span>
-                <span id="progressPercent">0%</span>
+    <!-- الإعدادات -->
+    <div class="modal-overlay" id="settingsModal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-sliders"></i> إعدادات المحرك</h2>
+                <button class="close-modal" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="progress-bar"><span id="progressFill"></span></div>
-        </div>
-
-        <div id="statusMessage"></div>
-
-        <div class="result-box" id="resultContainer">
-            <div class="audio-card">
-                <h3><i class="fa-solid fa-music"></i> الموسيقى مع الكورال</h3>
-                <audio id="instrumentalChoirAudio" controls></audio>
-                <button class="btn-download" onclick="downloadFile('instrumentalChoirAudio', 'Instrumental_Choir.wav')">
-                    <i class="fa-solid fa-download"></i> تنزيل المقطع
-                </button>
+            
+            <div class="form-group full-width">
+                <label>دقة العزل (Window Size)</label>
+                <select id="cfg_window">
+                    <option value="320">عادي (سريع)</option>
+                    <option value="512">متوازن (جيد جداً)</option>
+                    <option value="1024" selected>فائق (أفضل جودة)</option>
+                </select>
+            </div>
+            
+            <div class="form-group full-width">
+                <label>شراسة العزل (Aggression)</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="range" id="cfg_agg" min="1" max="10" value="5" style="flex:1;" oninput="document.getElementById('agg_val').innerText = this.value">
+                    <span id="agg_val" style="font-weight: bold; width: 15px; font-size: 0.8rem;">5</span>
+                </div>
             </div>
 
-            <div class="audio-card">
-                <h3><i class="fa-solid fa-microphone-lines"></i> صوت المطرب فقط</h3>
-                <audio id="vocalAudio" controls></audio>
-                <button class="btn-download" onclick="downloadFile('vocalAudio', 'Vocals_Only.wav')">
-                    <i class="fa-solid fa-download"></i> تنزيل المقطع
-                </button>
+            <div class="switch-wrapper">
+                <span>تصفية التشويش</span>
+                <label class="switch"><input type="checkbox" id="cfg_post" checked><span class="slider"></span></label>
             </div>
-        </div>
+            <div class="switch-wrapper">
+                <span>معالجة الترددات</span>
+                <label class="switch"><input type="checkbox" id="cfg_high" checked><span class="slider"></span></label>
+            </div>
+            <div class="switch-wrapper">
+                <span>تحسين الذكاء</span>
+                <label class="switch"><input type="checkbox" id="cfg_tta"><span class="slider"></span></label>
+            </div>
+            <div class="form-group">
+                <label>مستوى الصوت</label>
+                <input type="number" id="cfg_amp" value="0.1" step="0.1" min="0.0" max="1.0">
+            </div>
 
-        <div class="history-box">
-            <h3>آخر الملفات</h3>
-            <div class="history-list" id="historyList"></div>
+            <div class="form-group full-width" style="margin-top: 5px;">
+                <button class="btn-download-custom" style="background: var(--primary); color: white; border: none;" onclick="closeModal()">حفظ</button>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { Client } from "https://esm.sh/@gradio/client";
 
-        let progressTimer = null;
-        let selectedFile = null;
-        const HISTORY_KEY = 'karaoke_recent_files_v1';
-        const THEME_KEY = 'karaoke_theme_v1';
+        let currentFile = null;
+        let simInterval = null;
 
-        const fileInput = document.getElementById('audioFile');
-        const dropZone = document.getElementById('dropZone');
-        const display = document.getElementById('fileNameDisplay');
-        const fileMeta = document.getElementById('fileMeta');
-        const statusMessage = document.getElementById('statusMessage');
-        const resultContainer = document.getElementById('resultContainer');
-        const processBtn = document.getElementById('processBtn');
-        const progressWrap = document.getElementById('progressWrap');
-        const progressFill = document.getElementById('progressFill');
-        const progressLabel = document.getElementById('progressLabel');
-        const progressPercent = document.getElementById('progressPercent');
-        const historyList = document.getElementById('historyList');
-        const themeToggle = document.getElementById('themeToggle');
-        const themeLabel = document.getElementById('themeLabel');
+        window.showToast = function(msg, icon = 'fa-check') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2500);
+        }
 
-        function formatBytes(bytes) {
-            if (!bytes && bytes !== 0) return '-';
-            const units = ['B', 'KB', 'MB', 'GB'];
-            let size = bytes;
-            let unit = 0;
-            while (size >= 1024 && unit < units.length - 1) {
-                size /= 1024;
-                unit++;
+        window.openModal = () => {
+            const m = document.getElementById('settingsModal');
+            m.style.display = 'flex';
+            setTimeout(() => m.style.opacity = '1', 10);
+        }
+        window.closeModal = (e) => {
+            if(e && e.target !== document.getElementById('settingsModal')) return;
+            const m = document.getElementById('settingsModal');
+            m.style.opacity = '0';
+            setTimeout(() => m.style.display = 'none', 200);
+        }
+
+        document.getElementById('audioFile').addEventListener('change', (e) => {
+            if(e.target.files.length > 0) {
+                currentFile = e.target.files[0];
+                document.getElementById('fileDetails').style.display = 'flex';
+                document.getElementById('dropTitle').innerText = "تم التقاط الأغنية";
+                document.getElementById('dropIcon').className = "fa-solid fa-check-circle main-icon";
+                document.getElementById('dropIcon').style.color = "var(--success)";
+                
+                document.getElementById('lblFName').innerText = currentFile.name.substring(0, 15) + '...';
+                document.getElementById('lblFSize').innerText = (currentFile.size / 1048576).toFixed(1) + 'MB';
             }
-            return `${size.toFixed(size >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`;
-        }
+        });
 
-        function addToHistory(file) {
-            if (!file) return;
-            const item = {
-                name: file.name,
-                size: file.size,
-                type: file.type || 'audio/*',
-                time: new Date().toLocaleString('ar-EG')
-            };
-            const current = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-            const next = [item, ...current.filter(x => x.name !== item.name)].slice(0, 5);
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
-            renderHistory();
-        }
+        window.startProcessing = async function() {
+            if(!currentFile) return showToast('اختر الأغنية أولاً', 'fa-triangle-exclamation');
+            
+            const btn = document.getElementById('processBtn');
+            const wrap = document.getElementById('progressWrapper');
+            const drop = document.getElementById('dropZone');
+            const res = document.getElementById('resultsContainer');
+            const progBar = document.getElementById('progBar');
+            const progTxt = document.getElementById('progStatus');
+            const progPerc = document.getElementById('progPercent');
+            
+            drop.style.display = 'none';
+            res.style.display = 'none';
+            wrap.style.display = 'flex';
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> المعالجة مستمرة...';
 
-        function renderHistory() {
-            const items = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-            historyList.innerHTML = items.length
-                ? items.map(item => `<div class="history-item">${item.name}<br><small>${formatBytes(item.size)} • ${item.type} • ${item.time}</small></div>`).join('')
-                : '<div class="history-item">ما في ملفات بعد</div>';
-        }
-
-        function applyTheme(theme) {
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem(THEME_KEY, theme);
-            const isDark = theme === 'dark';
-            themeToggle.innerHTML = isDark
-                ? '<i class="fa-solid fa-sun"></i><span id="themeLabel">الوضع النهاري</span>'
-                : '<i class="fa-solid fa-moon"></i><span id="themeLabel">الوضع الليلي</span>';
-        }
-
-        function setProgress(percent, label) {
-            progressWrap.style.display = 'grid';
-            progressFill.style.width = Math.max(0, Math.min(100, percent)) + '%';
-            progressLabel.textContent = label;
-            progressPercent.textContent = Math.max(0, Math.min(100, percent)) + '%';
-        }
-
-        function startFakeProgress() {
             let p = 0;
-            setProgress(0, 'جاري رفع الملف...');
-            progressTimer = setInterval(() => {
-                p = Math.min(92, p + Math.max(2, Math.round(Math.random() * 9)));
-                if (p < 35) setProgress(p, 'جاري رفع الملف...');
-                else if (p < 70) setProgress(p, 'السيرفر يعالج الصوت...');
-                else setProgress(p, 'تقريباً انتهينا...');
-            }, 900);
-        }
-
-        function stopFakeProgress(done = false) {
-            if (progressTimer) clearInterval(progressTimer);
-            progressTimer = null;
-            if (done) setProgress(100, 'تمت المعالجة بنجاح');
-            else progressWrap.style.display = 'none';
-        }
-
-        function setSelectedFile(file) {
-            selectedFile = file;
-            fileMeta.style.display = file ? 'block' : 'none';
-            if (file) {
-                display.textContent = file.name;
-                display.style.color = '#4776E6';
-                fileMeta.innerHTML = `🎵 <strong>${file.name}</strong><br>📦 الحجم: ${formatBytes(file.size)}<br>🎼 النوع: ${file.type || 'audio/*'}`;
-                addToHistory(file);
-            } else {
-                display.textContent = 'اختر الأغنية أو اسحبها هنا';
-                display.style.color = '#495057';
-                fileMeta.innerHTML = '';
-            }
-        }
-
-        window.updateFileName = function(input) {
-            if (input.files && input.files.length > 0) {
-                setSelectedFile(input.files[0]);
-            } else {
-                setSelectedFile(null);
-            }
-        }
-
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files && files.length > 0) {
-                fileInput.files = files;
-                setSelectedFile(files[0]);
-            }
-        });
-
-        themeToggle.addEventListener('click', () => {
-            const current = document.documentElement.getAttribute('data-theme') || 'light';
-            applyTheme(current === 'dark' ? 'light' : 'dark');
-        });
-
-        window.resetApp = function() {
-            fileInput.value = '';
-            fileInput.disabled = false;
-            setSelectedFile(null);
-            statusMessage.textContent = '';
-            resultContainer.style.display = 'none';
-            progressWrap.style.display = 'none';
-            processBtn.disabled = false;
-            processBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> ابدأ العزل الآن';
-        }
-
-        window.processAudio = async function() {
-            if (fileInput.files.length === 0) {
-                statusMessage.textContent = 'يرجى اختيار الأغنية أولاً يا غالي!';
-                statusMessage.style.color = '#dc3545';
-                return;
-            }
-
-            const audioFile = fileInput.files[0];
-            const instrumentalChoirAudio = document.getElementById('instrumentalChoirAudio');
-            const vocalAudio = document.getElementById('vocalAudio');
-
-            processBtn.disabled = true;
-            fileInput.disabled = true;
-            processBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري المعالجة السحرية...';
-            statusMessage.textContent = 'الرجاء الانتظار، السيرفر يقوم بتحليل المقامات الصوتية...';
-            statusMessage.style.color = '#4776E6';
-            resultContainer.style.display = 'none';
-            startFakeProgress();
+            simInterval = setInterval(() => {
+                if(p < 30) { p+=1.5; progTxt.innerText = "جاري رفع البيانات..."; }
+                else if(p < 85) { p+=0.2; progTxt.innerText = "العزل قيد التنفيذ..."; }
+                progBar.style.width = p + '%';
+                progPerc.innerText = Math.floor(p) + '%';
+            }, 300);
 
             try {
-                const client = await Client.connect('TheStinger/UVR5_UI');
-                const result = await client.predict('/vrarch_separator', {
-                    audio: audioFile,
-                    model: '6_HP-Karaoke-UVR.pth',
-                    out_format: 'wav',
-                    window_size: 320,
-                    aggression: 1,
-                    tta: true,
-                    post_process: true,
+                const wSize = parseInt(document.getElementById('cfg_window').value);
+                const agg = parseInt(document.getElementById('cfg_agg').value);
+                const isPost = document.getElementById('cfg_post').checked;
+                const isHigh = document.getElementById('cfg_high').checked;
+                const isTTA = document.getElementById('cfg_tta').checked;
+                const amp = parseFloat(document.getElementById('cfg_amp').value);
+                
+                const client = await Client.connect("TheStinger/UVR5_UI");
+                const result = await client.predict("/vrarch_separator", {
+                    audio: currentFile,
+                    model: "6_HP-Karaoke-UVR.pth",
+                    out_format: "wav",
+                    window_size: wSize,
+                    aggression: agg,
+                    tta: isTTA,
+                    post_process: isPost,           
                     post_process_threshold: 0.1,
-                    high_end_process: true,
+                    high_end_process: isHigh,
                     batch_size: 1,
                     norm_thresh: 0.1,
-                    amp_thresh: 0.1,
-                    single_stem: '(None)'
+                    amp_thresh: amp,
+                    single_stem: "(None)"
                 });
 
-                if (!result.data || result.data.length === 0) {
-                    throw new Error('لا توجد استجابة من السيرفر.');
+                clearInterval(simInterval);
+                progBar.style.width = '100%';
+                progPerc.innerText = '100%';
+                progTxt.innerText = "نجاح!";
+                
+                const getUrl = (i) => (typeof i==='string')?i:((i&&i.url)?i.url:((i&&i.path)?"https://thestinger-uvr5-ui.hf.space/file="+i.path:""));
+                
+                document.getElementById('instAudio').src = getUrl(result.data[0]);
+                document.getElementById('vocalAudio').src = getUrl(result.data[1]);
+                
+                setTimeout(() => {
+                    wrap.style.display = 'none';
+                    res.style.display = 'flex'; 
+                    btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> معالجة جديدة';
+                    btn.onclick = () => location.reload();
+                    btn.disabled = false;
+                    showToast('تم الفصل بنجاح!');
+                }, 800);
+
+            } catch (err) {
+                clearInterval(simInterval);
+                showToast('خطأ! استخدم كاسر البروكسي', 'fa-xmark');
+                setTimeout(() => location.reload(), 3000);
+            }
+        }
+
+        // مشغل الصوت المخصص مع تضخيم الصوت (200%)
+        window.audioContexts = window.audioContexts || {};
+        
+        window.togglePlay = function(audioId, btnEl) {
+            const audio = document.getElementById(audioId);
+            const icon = btnEl.querySelector('i');
+            
+            if (!window.audioContexts[audioId]) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const ctx = new AudioContext();
+                const source = ctx.createMediaElementSource(audio);
+                const gainNode = ctx.createGain();
+                
+                gainNode.gain.value = 2.0; // 200% Volume
+                
+                source.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                window.audioContexts[audioId] = { ctx, gainNode };
+            }
+
+            if(audio.paused) { 
+                if(window.audioContexts[audioId].ctx.state === 'suspended') {
+                    window.audioContexts[audioId].ctx.resume();
                 }
-
-                const getAudioUrl = (item) => {
-                    if (typeof item === 'string') return item;
-                    if (item && item.url) return item.url;
-                    if (item && item.path) return 'https://thestinger-uvr5-ui.hf.space/file=' + item.path;
-                    return '';
-                };
-
-                instrumentalChoirAudio.src = getAudioUrl(result.data[0]);
-                vocalAudio.src = getAudioUrl(result.data[1]);
-
-                stopFakeProgress(true);
-                statusMessage.textContent = '✅ انتهت المعالجة بنجاح. يمكنك الآن الاستماع أو تنزيل الملفات.';
-                statusMessage.style.color = '#28a745';
-                resultContainer.style.display = 'flex';
-            } catch (error) {
-                console.error(error);
-                stopFakeProgress(false);
-                statusMessage.textContent = 'رسالة السيرفر: ' + (error.message || error);
-                statusMessage.style.color = '#dc3545';
-            } finally {
-                processBtn.disabled = false;
-                fileInput.disabled = false;
-                processBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> ابدأ العزل الآن';
+                audio.play(); 
+                icon.className = 'fa-solid fa-pause'; 
+            } else { 
+                audio.pause(); 
+                icon.className = 'fa-solid fa-play'; 
             }
         }
 
-        window.downloadFile = async function(audioElementId, defaultFilename) {
-            const audioElement = document.getElementById(audioElementId);
-            const url = audioElement.src;
-            if (!url) return;
+        const fmtTime = (secs) => {
+            const m = Math.floor(secs / 60) || 0;
+            const s = Math.floor(secs % 60) || 0;
+            return m + ':' + (s < 10 ? '0' : '') + s;
+        }
 
-            try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
+        window.setDuration = (audioId, displayId) => {
+            document.getElementById(displayId).innerText = fmtTime(document.getElementById(audioId).duration);
+        }
 
-                const link = document.createElement('a');
-                link.href = blobUrl;
-                link.download = defaultFilename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(blobUrl);
-            } catch (error) {
-                console.error('خطأ في التحميل المباشر:', error);
-                window.open(url, '_blank');
+        window.updateProgress = (audioId, seekId, currentId) => {
+            const audio = document.getElementById(audioId);
+            const slider = document.getElementById(seekId);
+            if(audio.duration) {
+                slider.value = (audio.currentTime / audio.duration) * 100;
+                document.getElementById(currentId).innerText = fmtTime(audio.currentTime);
             }
         }
 
-        const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
-        applyTheme(savedTheme);
-        renderHistory();
+        window.seekAudio = (audioId, percent) => {
+            const audio = document.getElementById(audioId);
+            if(audio.duration) audio.currentTime = (percent / 100) * audio.duration;
+        }
+
+        window.downloadFile = (audioId, name) => {
+            const url = document.getElementById(audioId).src;
+            if(!url) return;
+            const a = document.createElement('a');
+            a.href = url; a.download = name;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            showToast('جاري التنزيل...');
+        }
     </script>
 </body>
 </html>
