@@ -1377,16 +1377,14 @@ async function toggleRecording(isSinging = false) {
   if (!navigator.mediaDevices) { showToast('المتصفح لا يدعم التسجيل', 'error'); return; }
   try {
     isSingingMode = isSinging; 
-    
-    // 🚀 السحر هون: إنشاء محرك الصوت وإيقاظه فوراً عند الضغطة قبل الانتظار
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') {
-      await audioCtx.resume();
-    }
-
     let audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000, channelCount: 2 };
     if (internalMicId) audioConstraints.deviceId = { exact: internalMicId };
     const rawStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+    
+    await new Promise(r => setTimeout(r, 300));
+    
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
     
     const source = audioCtx.createMediaStreamSource(rawStream);
     const analyser = audioCtx.createAnalyser(); analyser.fftSize = 64; source.connect(analyser);
@@ -1423,13 +1421,10 @@ async function toggleRecording(isSinging = false) {
       if (isRecordingCanceled) { showToast('تم رمي التسجيل 🗑️'); return; }
       
       const localChunks = [...audioChunks];
-      const actualMimeType = mediaRecorder.mimeType || 'audio/webm';
-      const blob = new Blob(localChunks, { type: actualMimeType });
+      const blob = new Blob(localChunks, { type: 'audio/webm' });
       const finalDuration = recordDurationStr;
       
-      // حماية صارمة: إذا الحجم صغير كتير أو المدة صفر بنلغي الإرسال لمنع الفقاعات الفاضية
       if (blob.size < 3000 || finalDuration === '0:00') {
-         showToast('لم يتم التقاط الصوت بشكل كافٍ، أعد المحاولة', 'error');
          return;
       }
       
@@ -1442,7 +1437,7 @@ async function toggleRecording(isSinging = false) {
         tempDiv.innerHTML = `
           <div class="msg-bubble" style="background:rgba(0, 240, 255, 0.05); border:1px dashed var(--neon-cyan); color:var(--text-secondary); width: 220px;">
             <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; margin-bottom:8px;">
-              <span id="voice_lbl_${tempId}">${isSingingMode ? 'إرسال المقطع... 🎤' : 'إرسال المقطع... 🎙️'}</span>
+              <span>${isSingingMode ? 'إرسال المقطع... 🎤' : 'إرسال المقطع... 🎙️'}</span>
               <span id="voice_pct_${tempId}" style="color:var(--neon-cyan); font-family:var(--font-en);">0%</span>
             </div>
             <div style="width:100%; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden;">
@@ -1458,7 +1453,6 @@ async function toggleRecording(isSinging = false) {
       const tryUploadVoice = () => {
           const el = document.getElementById(tempId);
           if (el) {
-              // نرجع الفقاعة لشكلها الأصلي بحال كانت جاي من إعادة محاولة
               const bubble = el.querySelector('.msg-bubble');
               if (bubble) {
                  bubble.innerHTML = `
@@ -1474,7 +1468,7 @@ async function toggleRecording(isSinging = false) {
               }
           }
 
-                    const fd = new FormData();
+          const fd = new FormData();
           fd.append('file', blob);
 
           const xhr = new XMLHttpRequest();
@@ -1530,12 +1524,13 @@ async function toggleRecording(isSinging = false) {
           xhr.ontimeout = function() { handleFail('انتهى الوقت', 'Timeout 120s'); };
 
           xhr.send(fd);
+      }; // <-- هذا هو القوس الذي كان مفقوداً وأدى للانهيار
       
       window.pendingUploads[tempId] = tryUploadVoice;
       tryUploadVoice();
     };
     
-    mediaRecorder.start(200); isRecording = true; recordStart = Date.now();
+    mediaRecorder.start(); isRecording = true; recordStart = Date.now();
 
     if (isSingingMode) { document.getElementById('btn-music-voice').classList.add('recording'); document.getElementById('btn-voice').style.display = 'none'; } 
     else { document.getElementById('btn-voice').classList.add('recording'); document.getElementById('btn-music-voice').style.display = 'none'; }
