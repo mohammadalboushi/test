@@ -3,22 +3,32 @@ importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBB_U4C880PW4GxZd8FALv8yBSiP2mNeBY",
-  authDomain: "malaboushi.firebaseapp.com",
-  databaseURL: "https://malaboushi-default-rtdb.firebaseio.com/",
-  projectId: "malaboushi",
-  storageBucket: "malaboushi.firebasestorage.app",
-  messagingSenderId: "110336819350",
-  appId: "1:110336819350:web:2b1b0488e72b811f0602b7"
+  apiKey: "AIzaSyCZH225ITSw_JGx8Faq8nxxgzb49SBqrk8",
+  authDomain: "neonchat-2df05.firebaseapp.com",
+  databaseURL: "https://neonchat-2df05-default-rtdb.firebaseio.com",
+  projectId: "neonchat-2df05",
+  storageBucket: "neonchat-2df05.firebasestorage.app",
+  messagingSenderId: "275702671868",
+  appId: "1:275702671868:web:e4235a6991b3ae22276a79"
 };
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// تم إزالة توليد الإشعارات اليدوي من هنا 
-// لأن فايربيز يقوم بعرض الإشعارات تلقائياً بناءً على البيانات المرسلة من ملف send.js
+// 🚀 الحل الجذري: إجبار المتصفح على عرض الإشعار برمجياً لتخطي قيود الأندرويد
+messaging.onBackgroundMessage(function(payload) {
+  const notificationTitle = payload.notification?.title || 'إشعار جديد';
+  const notificationOptions = {
+    body: payload.notification?.body || 'لديك رسالة جديدة',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    dir: 'rtl',
+    vibrate: [300, 100, 300]
+  };
+  return self.registration.showNotification(notificationTitle, notificationOptions);
+});
 
 // رفعنا الإصدار ليجبر المتصفح ياخد النسخة الجديدة
-const CACHE_NAME = 'app-cache-85'; 
+const CACHE_NAME = 'app-cache-12'; 
 const ASSETS = [
   './',
   './index.html',
@@ -60,8 +70,8 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 2. تكييش الصوتيات والصور مباشرة للعمل بدون نت
-  if (event.request.url.includes('cloudinary.com') || event.request.url.includes('catbox.moe')) {
+  // 2. تكييش الصوتيات والصور من كلاوديناري مباشرة للعمل بدون نت
+  if (event.request.url.includes('cloudinary.com')) {
     event.respondWith(
       caches.match(event.request).then(cached => {
         if (cached) return cached;
