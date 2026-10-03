@@ -1,0 +1,19 @@
+{
+  "menuItems": {
+    "basterma": { "id":1, "type":"sandwich", "name":"سندويش بسترما", "price":450000, "img":"https://midomido.neocities.org/bastermaa.jpg", "ingredients":["مايونيز","خردل","بندورة","كبيس"], "badge":"الأشهر" },
+    "rosto": { "id":2, "type":"sandwich", "name":"روستو", "price":450000, "img":"https://midomido.neocities.org/rostoo.jpg", "ingredients":["مايونيز","خردل","بندورة","كبيس","خس"] },
+    "soujouk": { "id":4, "type":"sandwich", "name":"سندويش سجق", "price":400000, "img":"https://midomido.neocities.org/soujoukk.jpg", "ingredients":["مايونيز","خردل","بندورة","كبيس","حامض"] },
+    "makanek": { "id":5, "type":"sandwich", "name":"سندويش مقانق", "price":400000, "img":"https://midomido.neocities.org/makanekk.jpg", "ingredients":["مايونيز","خردل","بندورة","كبيس","حامض"] },
+    "hotdog": { "id":6, "type":"sandwich", "name":"سندويش هوت دوغ", "price":350000, "img":"https://midomido.neocities.org/hot%20dogg.jpg", "ingredients":["مايونيز","خردل","بندورة","كبيس","خس","كاتشب"] },
+    "kilo_basterma": { "id":7, "type":"kilo", "name":"لحمة بسترما", "price":2400000, "icon":"🥩" },
+    "kilo_rosto": { "id":8, "type":"kilo", "name":"لحمة روستو", "price":2700000, "icon":"🍖" },
+    "kilo_soujouk": { "id":9, "type":"kilo", "name":"لحمة سجق", "price":1400000, "icon":"🌭" },
+    "kilo_makanek": { "id":10, "type":"kilo", "name":"لحمة مقانق", "price":1400000, "icon":"🍗" },
+    "pepsi": { "id":11, "type":"drink", "name":"بيبسي", "price":80000, "img":"https://midomido.neocities.org/mido/%D8%A8%D9%8A%D8%A8%D8%B3%D9%8A.png" },
+    "pepsi_diet": { "id":12, "type":"drink", "name":"بيبسي دايت", "price":80000, "img":"https://midomido.neocities.org/mido/%D8%A8%D9%8A%D8%A8%D8%B3%D9%8A%20%D8%AF%D8%A7%D9%8A%D8%AA%20-7.jpeg" },
+    "7up": { "id":13, "type":"drink", "name":"سفن آب", "price":80000, "img":"https://midomido.neocities.org/mido/%D8%B3%D9%81%D9%86%20%D8%A7%D8%A8.png" },
+    "7up_diet": { "id":14, "type":"drink", "name":"سفن آب دايت", "price":80000, "img":"https://midomido.neocities.org/mido/%D8%B3%D9%81%D9%86%20%D8%A7%D8%A8%20%D8%AF%D8%A7%D9%8A%D8%AA%20.png" },
+    "mirinda": { "id":15, "type":"drink", "name":"ميرندا", "price":80000, "img":"https://midomido.neocities.org/mido/%D9%85%D9%8A%D8%B1%D9%86%D8%AF%D8%A7.png" },
+    "laban": { "id":16, "type":"drink", "name":"لبن عيران", "price":80000, "img":"https://midomido.neocities.org/mido/%D9%84%D8%A8%D9%86.png" }
+  }
+}
