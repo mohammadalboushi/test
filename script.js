@@ -320,7 +320,7 @@ window.startProcessing = async function() {
 
     const client = await Client.connect(spaceName, clientConfig);
     
-    // الحل الجذري: توجيه كل زر للمحرك والنموذج المناسب له بتقنيات MDX
+    // الحل الجذري: محرك هجين (Hybrid Engine)
     const selectedModelRadio = document.querySelector('input[name="model_choice"]:checked');
     const isKaraoke = selectedModelRadio && selectedModelRadio.id === 'model_karaoke';
 
@@ -328,11 +328,11 @@ window.startProcessing = async function() {
     let predictParams = {};
 
     if (isKaraoke) {
-      // خيار 1: موسيقى وكورال (يستخدم MDX-Net مع نموذج الكاريوكي)
+      // خيار 1: موسيقى وكورال (باستخدام النسخة الأصلية من نموذج الكاريوكي في MDX-Net)
       apiEndpoint = "/mdxnet_separator";
       predictParams = {
         audio: currentFile,
-        model: "UVR_MDXNET_KARA_2.onnx", // نموذج الكاريوكي القياسي
+        model: "UVR_MDXNET_KARA.onnx", 
         out_format: "wav",
         hop_length: 1024,
         segment_size: 256,
@@ -344,11 +344,11 @@ window.startProcessing = async function() {
         single_stem: ""
       };
     } else {
-      // خيار 2: موسيقى فقط (يستخدم MDX23C الجبار)
+      // خيار 2: موسيقى فقط (نستخدم محرك MDX23C الجبار)
       apiEndpoint = "/mdxc_separator";
       predictParams = {
         audio: currentFile,
-        model: "MDX23C-8KFFT-InstVoc_HQ_2.ckpt", // أقوى نموذج عزل موسيقى
+        model: "MDX23C-8KFFT-InstVoc_HQ_2.ckpt",
         out_format: "wav",
         segment_size: 256,
         override_seg_size: false,
@@ -396,8 +396,19 @@ window.startProcessing = async function() {
       }
     };
 
-    const rawInstUrl = getUrl(result.data[0]);
-    const rawVocalUrl = getUrl(result.data[1]);
+    let rawInstUrl, rawVocalUrl;
+        
+    // ترتيب الملفات الذكي لتفادي عكس البطاقات
+    if (isKaraoke) {
+      // نموذج الكاريوكي يعطي المطرب كملف أول [0] والموسيقى+الكورال كملف ثاني [1]
+      rawInstUrl = getUrl(result.data[1]);
+      rawVocalUrl = getUrl(result.data[0]);
+    } else {
+      // نموذج الموسيقى يعطي الموسيقى كملف أول [0] والمطرب كملف ثاني [1]
+      rawInstUrl = getUrl(result.data[0]);
+      rawVocalUrl = getUrl(result.data[1]);
+    }
+
     const instBlob = await fetchAudio(rawInstUrl);
     const vocalBlob = await fetchAudio(rawVocalUrl);
 
