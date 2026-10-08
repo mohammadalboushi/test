@@ -328,16 +328,15 @@ window.startProcessing = async function() {
     let predictParams = {};
 
     if (isKaraoke) {
-      // خيار 1: موسيقى وكورال (باستخدام النسخة الأصلية من نموذج الكاريوكي في MDX-Net)
-      apiEndpoint = "/mdxnet_separator";
+      // خيار 1: موسيقى وكورال (باستخدام محرك Roformer الخرافي كما في موقع MVSep)
+      apiEndpoint = "/roformer_separator";
       predictParams = {
         audio: currentFile,
-        model: "UVR_MDXNET_KARA.onnx", 
+        model_key: "MelBand Roformer | Karaoke by Gabox", // أقوى نموذج كاريوكي حالياً
         out_format: "wav",
-        hop_length: 1024,
         segment_size: 256,
-        denoise: document.getElementById('cfg_post').checked,
-        overlap: 0.25,
+        override_seg_size: false,
+        overlap: 8,
         batch_size: 1,
         norm_thresh: 0.9,
         amp_thresh: 1.0,
@@ -396,18 +395,9 @@ window.startProcessing = async function() {
       }
     };
 
-    let rawInstUrl, rawVocalUrl;
-        
-    // ترتيب الملفات الذكي لتفادي عكس البطاقات
-    if (isKaraoke) {
-      // نموذج الكاريوكي يعطي المطرب كملف أول [0] والموسيقى+الكورال كملف ثاني [1]
-      rawInstUrl = getUrl(result.data[1]);
-      rawVocalUrl = getUrl(result.data[0]);
-    } else {
-      // نموذج الموسيقى يعطي الموسيقى كملف أول [0] والمطرب كملف ثاني [1]
-      rawInstUrl = getUrl(result.data[0]);
-      rawVocalUrl = getUrl(result.data[1]);
-    }
+    // كلا المحركين (Roformer و MDX23C) يعطيان الموسيقى أولاً [0] والمطرب ثانياً [1]
+    const rawInstUrl = getUrl(result.data[0]);
+    const rawVocalUrl = getUrl(result.data[1]);
 
     const instBlob = await fetchAudio(rawInstUrl);
     const vocalBlob = await fetchAudio(rawVocalUrl);
