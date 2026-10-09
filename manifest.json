@@ -1,27 +1,19 @@
 {
-  "name": "AI Voice Studio Pro - منصة فصل الصوت الذكية",
-  "short_name": "Voice Studio Pro",
-  "description": "تم بناؤه بواسطة نيو كود",
-  "start_url": "/",
+  "name": "Yalla Run",
+  "short_name": "Yalla Run",
+  "description": "تطبيق Yalla Run لخدمات التوصيل",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
-  "orientation": "any",
+  "background_color": "#F8FAFC",
+  "theme_color": "#D9480F",
+  "dir": "rtl",
+  "lang": "ar",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
-  ],
-  "categories": [
-    "utilities",
-    "productivity"
   ]
 }
