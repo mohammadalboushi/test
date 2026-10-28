@@ -1,405 +1,701 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl"><head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Voice Studio Pro — منصة فصل الصوت الذكية</title>
-
-  <meta name="description" content="منصة احترافية لفصل الصوت عن الموسيقى باستخدام الذكاء الاصطناعي">
-  <meta name="theme-color" content="#f5f7fb">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-  <link rel="apple-touch-icon" href="icon-192.png">
-
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Cairo:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-  <!-- Theme bootstrap — يمنع وميض المظهر عند التحميل -->
-
-
-
-  <link rel="stylesheet" href="style.css">
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#080a10">
+<meta name="description" content="SONIQ Audio Studio — local AAC 64 kbps audio compression powered by FFmpeg.wasm.">
+<title>SONIQ Audio Studio</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#080a10;--bg2:#10141f;--surface:#151a26;--glass:rgba(255,255,255,.045);
+  --lime:#b8ff65;--violet:#8b7cff;--text:#f5f7fc;--muted:#939bae;
+  --border:rgba(255,255,255,.09);--success:#7dffb3;--error:#ff647c;
+  --radius:26px;--shadow:0 24px 70px rgba(0,0,0,.34);
+}
+*{box-sizing:border-box}
+html{min-height:100%;background:var(--bg);scroll-behavior:smooth}
+body{margin:0;min-height:100vh;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(ellipse at 8% 12%,rgba(139,124,255,.11),transparent 33rem),radial-gradient(ellipse at 94% 38%,rgba(184,255,101,.075),transparent 30rem),var(--bg);overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.12;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.13'/%3E%3C/svg%3E");z-index:-1}
+button,input{font:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,.dropzone:focus-visible{outline:2px solid var(--lime);outline-offset:4px}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+.shell{width:min(100% - 40px,1040px);margin:0 auto;padding:26px 0 44px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand-mark{width:43px;height:43px;display:grid;place-items:center;border:1px solid rgba(184,255,101,.28);border-radius:15px;background:linear-gradient(145deg,rgba(184,255,101,.13),rgba(139,124,255,.12));box-shadow:inset 0 1px rgba(255,255,255,.08)}
+.brand-mark svg{width:24px;height:24px}
+.brand-name{font-size:18px;font-weight:850;letter-spacing:.14em;line-height:1.1}
+.brand-sub{display:block;margin-top:5px;color:var(--muted);font-size:9px;font-weight:750;letter-spacing:.23em}
+.top-actions{display:flex;align-items:center;gap:10px}
+.local-badge,.settings-btn{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:999px;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.1em;padding:11px 13px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px rgba(184,255,101,.7)}
+.settings-btn{width:42px;height:42px;justify-content:center;padding:0;color:var(--text);letter-spacing:0}
+.settings-btn svg{width:17px;height:17px}
+.hero{padding:66px 0 28px;max-width:760px}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;color:var(--lime);font-size:10px;font-weight:850;letter-spacing:.19em;text-transform:uppercase}
+.eyebrow:before{content:"";height:1px;width:24px;background:var(--lime);box-shadow:0 0 12px rgba(184,255,101,.6)}
+h1{font-size:clamp(42px,7vw,76px);line-height:.99;letter-spacing:-.065em;margin:18px 0 18px;font-weight:780}
+h1 .accent{color:var(--lime)}
+.hero-copy{max-width:570px;color:var(--muted);font-size:15px;line-height:1.8;margin:0}
+.privacy-line{display:flex;align-items:center;gap:8px;margin-top:20px;color:#c8d0de;font-size:10px;font-weight:800;letter-spacing:.12em}
+.privacy-line svg{width:15px;height:15px;color:var(--lime)}
+.workspace{position:relative;border:1px solid rgba(255,255,255,.105);border-radius:30px;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018));box-shadow:var(--shadow),inset 0 1px rgba(255,255,255,.045);padding:clamp(18px,4vw,34px);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);overflow:hidden}
+.workspace:before{content:"";position:absolute;top:-130px;right:-90px;width:260px;height:260px;border-radius:50%;background:rgba(139,124,255,.07);filter:blur(60px);pointer-events:none}
+.workspace-head{position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:23px}
+.section-label{font-size:10px;font-weight:850;letter-spacing:.16em;color:var(--muted);text-transform:uppercase}
+.workspace-title{font-size:22px;letter-spacing:-.04em;font-weight:750;margin:8px 0 0}
+.engine-chip{flex:none;display:flex;align-items:center;gap:7px;border:1px solid var(--border);border-radius:11px;padding:9px 10px;color:var(--muted);font-size:10px;white-space:nowrap;background:rgba(0,0,0,.14)}
+.engine-chip .mini-dot{width:6px;height:6px;background:#657087;border-radius:50%}
+.engine-chip.ready .mini-dot{background:var(--success)}
+.dropzone{position:relative;min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 18px;border:1px dashed rgba(184,255,101,.32);border-radius:22px;background:linear-gradient(135deg,rgba(184,255,101,.035),rgba(139,124,255,.035));transition:border-color .2s,background .2s,transform .2s}
+.dropzone.dragging{border-color:var(--lime);background:rgba(184,255,101,.09);transform:scale(.995)}
+.upload-icon{width:62px;height:62px;display:grid;place-items:center;border-radius:20px;background:rgba(184,255,101,.09);border:1px solid rgba(184,255,101,.18);color:var(--lime);margin-bottom:19px;box-shadow:0 0 36px rgba(184,255,101,.05)}
+.upload-icon svg{width:28px;height:28px}
+.drop-title{font-size:19px;font-weight:750;letter-spacing:-.025em;margin:0 0 7px}
+.drop-copy{font-size:12px;color:var(--muted);line-height:1.6;margin:0 0 20px}
+.primary-btn,.download-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:13px;padding:14px 19px;background:var(--lime);color:#11170a;font-weight:850;font-size:13px;box-shadow:0 8px 28px rgba(184,255,101,.13);transition:transform .18s,box-shadow .18s,filter .18s}
+.primary-btn:hover,.download-btn:hover{transform:translateY(-2px);box-shadow:0 12px 34px rgba(184,255,101,.22);filter:brightness(1.035)}
+.primary-btn svg,.download-btn svg{width:17px;height:17px}
+.formats{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:7px;margin-top:22px}
+.formats span{font-size:9px;font-weight:800;letter-spacing:.09em;color:#a9b0c0;border:1px solid var(--border);background:rgba(0,0,0,.13);padding:6px 8px;border-radius:7px}
+.formats .format-label{border:0;background:none;color:#687185;padding-left:0}
+.hidden{display:none!important}
+.file-panel{border:1px solid var(--border);border-radius:20px;background:rgba(4,6,11,.35);padding:18px}
+.file-top{display:flex;align-items:center;gap:14px;min-width:0}
+.file-icon{width:48px;height:48px;flex:none;display:grid;place-items:center;border-radius:15px;background:rgba(139,124,255,.12);border:1px solid rgba(139,124,255,.2);color:#c0b8ff}
+.file-icon svg{width:23px;height:23px}
+.file-meta{min-width:0;flex:1}
+.file-name{font-weight:750;font-size:14px;white-space:normal;overflow-wrap:anywhere;line-height:1.45}
+.file-sub{font-size:11px;color:var(--muted);margin-top:5px;display:flex;gap:9px;flex-wrap:wrap}
+.icon-btn{width:37px;height:37px;flex:none;display:grid;place-items:center;border:1px solid var(--border);border-radius:11px;background:rgba(255,255,255,.035);color:var(--muted);transition:color .18s,border-color .18s}
+.icon-btn:hover{color:var(--text);border-color:rgba(255,255,255,.24)}
+.icon-btn svg{width:17px;height:17px}
+.waveform{height:62px;display:flex;align-items:center;justify-content:center;gap:4px;margin:16px 0 15px;padding:0 8px;overflow:hidden}
+.waveform span{width:3px;max-width:3px;flex:1;border-radius:4px;background:linear-gradient(180deg,var(--violet),rgba(139,124,255,.24));opacity:.8}
+.file-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.stat{padding:12px;border:1px solid rgba(255,255,255,.065);border-radius:12px;background:rgba(255,255,255,.025);min-width:0}
+.stat-label{font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.stat-value{font-size:14px;font-weight:800;margin-top:7px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.config-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding:13px 14px;border-radius:12px;background:rgba(184,255,101,.045);border:1px solid rgba(184,255,101,.12)}
+.config-label{font-size:10px;color:var(--muted);font-weight:750}
+.config-value{font-size:10px;color:var(--lime);font-weight:900;letter-spacing:.08em;text-align:right}
+.action-row{display:flex;align-items:center;gap:12px;margin-top:17px}
+.action-row .primary-btn{flex:1;min-height:49px}
+.secondary-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:12px 15px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.035);color:var(--text);font-size:12px;font-weight:750;transition:background .18s,border-color .18s}
+.secondary-btn:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2)}
+.secondary-btn svg{width:16px;height:16px}
+.progress-panel{margin-top:18px;padding:17px;border:1px solid var(--border);border-radius:16px;background:rgba(0,0,0,.2)}
+.progress-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}
+.progress-status{font-size:12px;font-weight:750}
+.progress-percent{font-size:13px;font-weight:850;color:var(--lime);font-variant-numeric:tabular-nums}
+.progress-track{height:7px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--violet),var(--lime));border-radius:99px;transition:width .2s}
+.progress-fill.indeterminate{width:35%;animation:indeterminate 1.3s ease-in-out infinite}
+.progress-foot{display:flex;justify-content:space-between;gap:10px;margin-top:11px;font-size:10px;color:var(--muted)}
+@keyframes indeterminate{0%{transform:translateX(-110%)}100%{transform:translateX(320%)}}
+.results{margin-top:18px}
+.result-banner{display:flex;align-items:flex-start;gap:12px;padding:16px;border:1px solid rgba(125,255,179,.17);border-radius:16px;background:rgba(125,255,179,.045);margin-bottom:14px}
+.success-icon{width:34px;height:34px;display:grid;place-items:center;flex:none;border-radius:11px;background:rgba(125,255,179,.1);color:var(--success)}
+.success-icon svg{width:19px;height:19px}
+.result-banner strong{display:block;font-size:14px;margin:1px 0 5px}
+.result-banner p{font-size:11px;color:var(--muted);line-height:1.6;margin:0}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.result-card{padding:18px;border:1px solid var(--border);border-radius:17px;background:rgba(255,255,255,.025);min-width:0}
+.result-card.output{border-color:rgba(184,255,101,.22);background:linear-gradient(145deg,rgba(184,255,101,.065),rgba(255,255,255,.02))}
+.result-kicker{font-size:9px;letter-spacing:.15em;font-weight:900;color:var(--muted)}
+.result-card.output .result-kicker{color:var(--lime)}
+.result-size{font-size:clamp(25px,4vw,36px);font-weight:820;letter-spacing:-.055em;margin:13px 0 7px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.result-filename{font-size:11px;color:var(--muted);overflow-wrap:anywhere;line-height:1.5}
+.result-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:13px}
+.result-tags span{font-size:9px;font-weight:850;letter-spacing:.07em;padding:6px 7px;border-radius:6px;border:1px solid var(--border);color:#c2c9d8}
+.savings{margin-top:12px;padding:17px;border:1px solid var(--border);border-radius:16px;background:rgba(0,0,0,.18)}
+.savings-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.savings-label{font-size:10px;font-weight:850;color:var(--muted);letter-spacing:.1em}
+.savings-value{font-size:24px;font-weight:850;letter-spacing:-.04em;margin-top:7px;font-variant-numeric:tabular-nums}
+.savings-value.positive{color:var(--lime)}
+.savings-value.negative{color:#ffd08a}
+.savings-note{font-size:11px;color:var(--muted);margin-top:5px}
+.savings-percent{font-size:20px;font-weight:850;color:var(--lime);font-variant-numeric:tabular-nums}
+.compare-track{height:8px;border-radius:99px;background:rgba(255,255,255,.075);overflow:hidden;margin-top:16px}
+.compare-fill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--violet),var(--lime))}
+.audio-player{display:flex;align-items:center;gap:12px;margin-top:12px;padding:14px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.025)}
+.play-btn{width:42px;height:42px;flex:none;display:grid;place-items:center;border:0;border-radius:14px;background:var(--lime);color:#11170a}
+.play-btn svg{width:18px;height:18px}
+.player-main{flex:1;min-width:0}
+.player-top{display:flex;justify-content:space-between;gap:10px;font-size:10px;color:var(--muted);margin-bottom:9px;font-variant-numeric:tabular-nums}
+.seek{width:100%;height:5px;border-radius:99px;appearance:none;background:rgba(255,255,255,.12);outline:none;cursor:pointer}
+.seek::-webkit-slider-thumb{appearance:none;width:12px;height:12px;border-radius:50%;background:var(--lime);box-shadow:0 0 10px rgba(184,255,101,.35)}
+.seek::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:var(--lime)}
+.result-actions{display:flex;gap:10px;margin-top:14px}
+.download-btn{flex:1;min-height:51px;text-decoration:none}
+.result-actions .secondary-btn{min-height:51px}
+.notice{display:none;margin-top:14px;padding:12px 14px;border:1px solid rgba(255,100,124,.2);border-radius:12px;background:rgba(255,100,124,.06);color:#ffb3bf;font-size:12px;line-height:1.6}
+.notice.show{display:block}
+.notice.success-notice{border-color:rgba(125,255,179,.2);background:rgba(125,255,179,.055);color:#baffd4}
+.settings-panel{margin-top:14px;padding:18px;border:1px solid var(--border);border-radius:17px;background:rgba(8,10,16,.72);display:none}
+.settings-panel.open{display:block}
+.settings-title{font-size:13px;font-weight:800;margin:0 0 13px}
+.setting-line{display:flex;justify-content:space-between;gap:15px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px}
+.setting-line:last-child{border-bottom:0}
+.setting-line span:first-child{color:var(--muted)}
+.setting-line strong{font-size:11px;color:var(--lime);text-align:right}
+.settings-note{font-size:11px;line-height:1.7;color:var(--muted);margin:13px 0 0}
+.footer{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:24px 2px 0;color:#687185;font-size:10px;line-height:1.6}
+.footer .footer-brand{font-weight:850;letter-spacing:.14em;color:#a0a8b8}
+.footer-right{text-align:right}
+.toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:20;max-width:calc(100% - 30px);padding:12px 16px;border:1px solid var(--border);border-radius:13px;background:#171c28;color:var(--text);font-size:12px;box-shadow:var(--shadow);transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.small-note{font-size:10px;line-height:1.65;color:#717b91;margin:12px 2px 0}
+#fileInput{display:none}
+@media(max-width:650px){
+ .shell{width:min(100% - 26px,1040px);padding-top:16px}
+ .brand-mark{width:39px;height:39px;border-radius:13px}
+ .brand-name{font-size:16px}
+ .local-badge{font-size:0;gap:0;width:37px;height:37px;justify-content:center;padding:0}
+ .local-badge .dot{width:8px;height:8px}
+ .settings-btn{width:37px;height:37px}
+ .hero{padding:48px 0 24px}
+ h1{font-size:clamp(42px,12vw,62px)}
+ .hero-copy{font-size:13px}
+ .workspace{padding:17px;border-radius:23px}
+ .workspace-head{margin-bottom:17px}
+ .workspace-title{font-size:19px}
+ .engine-chip{font-size:9px;padding:8px}
+ .dropzone{min-height:240px;padding:24px 12px}
+ .file-panel{padding:13px}
+ .file-stats{gap:6px}
+ .stat{padding:10px 8px}
+ .stat-value{font-size:12px}
+ .config-row{align-items:flex-start;flex-direction:column;gap:7px}
+ .config-value{text-align:left}
+ .action-row{flex-direction:column}
+ .action-row .primary-btn,.action-row .secondary-btn{width:100%}
+ .result-grid{grid-template-columns:1fr}
+ .result-card{padding:16px}
+ .result-size{font-size:32px}
+ .result-actions{flex-direction:column}
+ .result-actions .download-btn,.result-actions .secondary-btn{width:100%}
+ .footer{align-items:flex-start;flex-direction:column}
+ .footer-right{text-align:left}
+}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
 </head>
-
 <body>
-
-  <!-- ============ LOCK SCREEN ============ -->
-  <div id="telegramLockScreen" class="lock-overlay">
-    <div class="lock-card">
-      <div class="lock-icon-container">
-        <i class="fas fa-shield-alt"></i>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand" aria-label="SONIQ Audio Studio">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none"><path d="M4 13v6M9 8v16M14 4v24M19 10v12M24 7v18M29 13v6" stroke="#B8FF65" stroke-width="2.5" stroke-linecap="round"/></svg>
       </div>
-      <h2 class="lock-title">تسجيل الدخول للمنصة</h2>
-      <p class="lock-desc">أدخل بياناتك لطلب إذن الدخول من الإدارة</p>
-
-      <!-- Step 1 -->
-      <div id="lockStep1">
-        <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" class="lock-input" dir="ltr">
-        <input type="password" id="loginPassword" placeholder="كلمة المرور (6 أحرف على الأقل)" class="lock-input" dir="ltr">
-        <div class="lock-btn-row">
-          <button class="btn-primary" onclick="authWithFirebase('login')" style="margin-top:0; padding: 0.9rem; font-size: 0.9rem;">
-            <i class="fas fa-sign-in-alt"></i> دخول
-          </button>
-          <button class="btn-secondary" onclick="authWithFirebase('signup')" style="margin-top:0; padding: 0.9rem; font-size: 0.9rem;">
-            <i class="fas fa-user-plus"></i> إنشاء
-          </button>
-        </div>
-      </div>
-
-      <!-- Step 2 -->
-      <div id="lockStep2" style="display: none;">
-        <div class="success-box">
-          <i class="fas fa-check-circle"></i> تم إرسال الطلب للمدير!
-        </div>
-        <p class="lock-desc" style="font-size: 0.82rem; margin-bottom: 1rem;">تواصل مع المدير للحصول على كود التحقق</p>
-        <input type="number" id="verificationCode" placeholder="- - - -" class="lock-input text-center" style="letter-spacing: 12px; font-size: 1.6rem; font-weight: 900; text-align: center;">
-        <button class="btn-primary" onclick="verifyAccess()">
-          <i class="fas fa-unlock"></i> تحقق ودخول
-        </button>
-        <button class="btn-secondary" onclick="location.reload()">
-          <i class="fas fa-arrow-right"></i> رجوع
-        </button>
-      </div>
+      <div><div class="brand-name">SONIQ</div><span class="brand-sub">AUDIO STUDIO</span></div>
     </div>
-  </div>
-
-  <!-- ============ HEADER ============ -->
-  <header class="app-header">
-    <div class="logo">
-      <div class="logo-icon"><i class="fas fa-music"></i></div>
-      <span class="logo-text">Voice Studio</span>
-      <span class="version-badge">v3.0</span>
+    <div class="top-actions">
+      <div class="local-badge" title="Audio is processed locally in your browser"><span class="dot"></span> LOCAL ENGINE</div>
+      <button class="settings-btn" id="settingsToggle" aria-label="Open settings" aria-expanded="false" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="m19.4 15 .1.1 1.1.9-1.2 2.1-1.4-.6a7.8 7.8 0 0 1-1.7 1l-.2 1.5h-2.4l-.3-1.5a7.8 7.8 0 0 1-1.7-1l-1.4.6-1.2-2.1 1.1-.9a7.2 7.2 0 0 1 0-2l-1.1-.9 1.2-2.1 1.4.6a7.8 7.8 0 0 1 1.7-1l.3-1.5h2.4l.2 1.5a7.8 7.8 0 0 1 1.7 1l1.4-.6 1.2 2.1-1.1.9a7.2 7.2 0 0 1 0 2Z" transform="translate(-1 -1)"/></svg>
+      </button>
     </div>
-    <button class="theme-quick-btn" id="themeQuickBtn" onclick="cycleTheme()" aria-label="تبديل المظهر">
-      <i class="fas fa-sun"></i>
-    </button>
   </header>
 
-  <!-- ============ MAIN ============ -->
-  <main class="app-main">
+  <main>
+    <section class="hero">
+      <div class="eyebrow">Audio, refined</div>
+      <h1>Your Audio.<br><span class="accent">Less Space.</span></h1>
+      <p class="hero-copy">Premium AAC compression, powered by FFmpeg and processed locally on your device. Keep the sound you love, in a smaller file.</p>
+      <div class="privacy-line">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 19 6v5c0 4.6-3 7.8-7 10-4-2.2-7-5.4-7-10V6l7-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+        YOUR FILES STAY ON YOUR DEVICE
+      </div>
+    </section>
 
-    <!-- ===== HOME PAGE ===== -->
-    <div id="home" class="page active">
-
-      <div class="greeting-card">
-        <img src="https://midomido.neocities.org/Imageme/file_00000000b0e471f4bb14b679b943d519.png" alt="Profile" class="greeting-avatar">
-        <div class="greeting-info">
-          <h2>MohaMmAD_WaSSouF</h2>
-          <p>النسخة الاحترافية المخصصة</p>
-        </div>
-        <span class="greeting-badge">
-          <i class="fas fa-crown"></i> PRO
-        </span>
+    <section class="workspace" aria-labelledby="workspaceTitle">
+      <div class="workspace-head">
+        <div><div class="section-label">Workspace / 01</div><h2 class="workspace-title" id="workspaceTitle">Compress your audio</h2></div>
+        <div class="engine-chip" id="engineChip"><span class="mini-dot"></span><span id="engineLabel">ENGINE STANDBY</span></div>
       </div>
 
-      <!-- Upload Card -->
-      <div class="studio-card">
-        <div class="upload-area" id="uploadArea" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('audioFile').click()">
-          <div class="upload-icon">
-            <i class="fas fa-cloud-arrow-up"></i>
-          </div>
-          <h2 class="upload-title">اختر أو اسحب ملفاً صوتياً</h2>
-          <p class="upload-desc">MP3 · WAV · FLAC · M4A</p>
+      <input id="fileInput" type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.ogg,.opus,.wma">
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose an audio file or drag it here">
+        <div class="upload-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
         </div>
-        <input type="file" id="audioFile" accept="audio/*" onchange="handleFileSelect(event)">
-
-        <!-- File Info -->
-        <div class="file-info-section" id="fileInfo">
-          <div class="file-card-new">
-            <div class="file-icon-box"><i class="fas fa-file-audio"></i></div>
-            <div class="file-meta">
-              <div class="file-name-text" id="fileName">—</div>
-              <div class="file-chips">
-                <span class="file-chip"><i class="fas fa-weight-hanging"></i> <span id="fileSize">—</span></span>
-                <span class="file-chip"><i class="fas fa-clock"></i> <span id="fileDuration">—</span></span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Waveform -->
-        <div class="waveform-section" id="waveformSection">
-          <canvas id="waveformCanvas"></canvas>
-        </div>
-
-        <!-- Settings -->
-        <div class="settings-section" id="settingsSection">
-          <h3 class="section-heading" style="margin-bottom: 0.9rem; font-size: 0.9rem;">
-            <i class="fas fa-sliders-h"></i> خيارات المعالجة
-          </h3>
-
-          <div class="setting-group">
-            <label class="setting-label">نموذج العزل</label>
-            <div class="model-toggle-container">
-              <input type="radio" id="model_karaoke" name="model_choice" value="6_HP-Karaoke-UVR.pth" checked="">
-              <label class="model-toggle-btn" for="model_karaoke">🎤 موسيقى وكورال</label>
-
-              <input type="radio" id="model_inst" name="model_choice" value="1_HP-UVR.pth">
-              <label class="model-toggle-btn" for="model_inst">🎸 موسيقى فقط</label>
-            </div>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-group half">
-              <label class="setting-label">الدقة</label>
-              <select id="cfg_window" class="setting-select">
-                <option value="320">عادي</option>
-                <option value="512">متوازن</option>
-                <option value="1024" selected="">عالي</option>
-              </select>
-            </div>
-            <div class="setting-group half">
-              <label class="setting-label">القوة (<span id="aggValue">5</span>)</label>
-              <input type="range" id="cfg_agg" min="1" max="10" value="5" class="ios-slider">
-            </div>
-          </div>
-
-          <div class="ios-toggles-container">
-            <label class="ios-toggle-row">
-              <span class="toggle-text">تصفية التشويش والضوضاء</span>
-              <input type="checkbox" id="cfg_post" checked="">
-            </label>
-            <label class="ios-toggle-row">
-              <span class="toggle-text">معالجة الترددات العالية</span>
-              <input type="checkbox" id="cfg_high" checked="">
-            </label>
-            <label class="ios-toggle-row">
-              <span class="toggle-text">تحسين الذكاء الاصطناعي (TTA)</span>
-              <input type="checkbox" id="cfg_tta">
-            </label>
-          </div>
-        </div>
-
-        <!-- Progress -->
-        <div class="progress-section" id="progressSection">
-          <div class="progress-header">
-            <span class="progress-status" id="progressStatus">جاري المعالجة...</span>
-            <span class="progress-percent" id="progressPercent">0%</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" id="progressFill"></div>
-          </div>
-          <div class="steps-compact">
-            <div class="step" id="step1"><i class="fas fa-upload"></i></div>
-            <div class="step-line"></div>
-            <div class="step" id="step2"><i class="fas fa-brain"></i></div>
-            <div class="step-line"></div>
-            <div class="step" id="step3"><i class="fas fa-cogs"></i></div>
-            <div class="step-line"></div>
-            <div class="step" id="step4"><i class="fas fa-check"></i></div>
-          </div>
-        </div>
-
-        <!-- Results -->
-        <div class="results-section" id="resultsSection">
-          <div class="result-card vocal" id="vocalCard" onclick="openPlayer('vocal')">
-            <div class="result-icon-lg vocal-bg"><i class="fas fa-microphone-alt"></i></div>
-            <div class="result-card-info">
-              <h3>صوت المطرب</h3>
-              <p>اضغط للتشغيل أو التحميل</p>
-            </div>
-            <i class="fas fa-chevron-left arrow-icon"></i>
-            <audio id="vocalAudio" class="hidden-audio"></audio>
-          </div>
-
-          <div class="result-card inst" id="instCard" onclick="openPlayer('inst')">
-            <div class="result-icon-lg inst-bg"><i class="fas fa-guitar"></i></div>
-            <div class="result-card-info">
-              <h3>الموسيقى الخلفية</h3>
-              <p>اضغط للتشغيل أو التحميل</p>
-            </div>
-            <i class="fas fa-chevron-left arrow-icon"></i>
-            <audio id="instAudio" class="hidden-audio"></audio>
-          </div>
-        </div>
-
-        <button class="btn-primary" id="processBtn" onclick="startProcessing()">
-          <i class="fas fa-wand-magic-sparkles"></i> بدء المعالجة
+        <h3 class="drop-title">Drop your audio here</h3>
+        <p class="drop-copy">Choose a track from your device to get started.<br>Nothing gets uploaded for compression.</p>
+        <button class="primary-btn" id="chooseBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 16V4m-5 5 5-5 5 5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg>
+          Choose Audio File
         </button>
+        <div class="formats"><span class="format-label">SUPPORTS</span><span>MP3</span><span>WAV</span><span>M4A</span><span>AAC</span><span>FLAC</span><span>OGG</span><span>OPUS</span></div>
       </div>
-    </div>
 
-    <!-- ===== HISTORY PAGE ===== -->
-    <div id="history" class="page">
-      <div class="studio-card">
-        <h3 class="section-heading"><i class="fas fa-history"></i> سجل المعالجات</h3>
-        <div id="historyList"></div>
-        <button class="btn-secondary danger" onclick="clearHistory()">
-          <i class="fas fa-trash"></i> مسح السجل بالكامل
-        </button>
-      </div>
-    </div>
-
-    <!-- ===== SETTINGS PAGE ===== -->
-    <div id="settings" class="page">
-
-      <!-- Appearance -->
-      <div class="studio-card">
-        <h3 class="section-heading"><i class="fas fa-palette"></i> المظهر</h3>
-        <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.9rem; font-weight: 600;">
-          اختر مظهر التطبيق المفضل لديك
-        </p>
-        <div class="theme-selector">
-          <button class="theme-option" data-theme="light" onclick="setTheme('light')">
-            <div class="theme-preview light-preview">
-              <div class="preview-bar"></div>
-              <div class="preview-content">
-                <div class="preview-line"></div>
-                <div class="preview-line short"></div>
-              </div>
-            </div>
-            <span><i class="fas fa-sun"></i> فاتح</span>
+      <div class="file-panel hidden" id="filePanel">
+        <div class="file-top">
+          <div class="file-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+          <div class="file-meta"><div class="file-name" id="fileName" dir="auto">—</div><div class="file-sub"><span id="fileExt">AUDIO</span><span id="fileMime">Local file</span></div></div>
+          <button class="icon-btn" id="replaceBtn" type="button" aria-label="Replace file" title="Replace file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.5 9A7 7 0 0 1 17 5l3 2M4 17l3 2a7 7 0 0 0 11.5-4"/></svg></button>
+          <button class="icon-btn" id="removeBtn" type="button" aria-label="Remove file" title="Remove file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+        </div>
+        <div class="waveform" id="waveform" aria-hidden="true"></div>
+        <div class="file-stats">
+          <div class="stat"><div class="stat-label">Original size</div><div class="stat-value" id="originalSize">—</div></div>
+          <div class="stat"><div class="stat-label">Duration</div><div class="stat-value" id="duration">Checking…</div></div>
+          <div class="stat"><div class="stat-label">Output</div><div class="stat-value">M4A / AAC</div></div>
+        </div>
+        <div class="config-row"><div class="config-label">ENCODING CONFIGURATION</div><div class="config-value">AAC AUDIO&nbsp; · &nbsp;64 KBPS&nbsp; · &nbsp;M4A OUTPUT</div></div>
+        <div class="action-row">
+          <button class="primary-btn" id="compressBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 10l7-7 7 7"/><path d="M5 16v4h14v-4"/></svg>
+            Compress Audio
           </button>
-          <button class="theme-option" data-theme="dark" onclick="setTheme('dark')">
-            <div class="theme-preview dark-preview">
-              <div class="preview-bar"></div>
-              <div class="preview-content">
-                <div class="preview-line"></div>
-                <div class="preview-line short"></div>
-              </div>
-            </div>
-            <span><i class="fas fa-moon"></i> داكن</span>
-          </button>
-          <button class="theme-option" data-theme="system" onclick="setTheme('system')">
-            <div class="theme-preview system-preview">
-              <div class="preview-bar"></div>
-              <div class="preview-content">
-                <div class="preview-line"></div>
-                <div class="preview-line short"></div>
-              </div>
-            </div>
-            <span><i class="fas fa-circle-half-stroke"></i> النظام</span>
-          </button>
+          <button class="secondary-btn" id="clearBtn" type="button">Clear selection</button>
         </div>
       </div>
 
-      <!-- Token -->
-      <div class="studio-card">
-        <h3 class="section-heading"><i class="fas fa-shield-alt"></i> محرك VIP</h3>
-        <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.9rem; font-weight: 600;">
-          أضف توكن للاتصال السريع بالخادم الخاص
-        </p>
-
-        <div class="setting-group">
-          <label class="setting-label">Token</label>
-          <div class="token-input-row">
-            <input type="password" id="hf_token_input" class="setting-select" placeholder="hf_..." style="flex: 1;">
-            <button type="button" id="tokenToggleBtn" onclick="toggleTokenStatus()" class="lock-btn">
-              <i class="fas fa-lock-open" id="tokenLockIcon"></i>
-            </button>
-          </div>
-          <small id="tokenStatusText" class="token-status">الحالة: التوكن نشط</small>
-        </div>
-
-        <button class="btn-primary" onclick="saveSettings()">
-          <i class="fas fa-save"></i> حفظ التوكن
-        </button>
+      <div class="progress-panel hidden" id="progressPanel" aria-live="polite">
+        <div class="progress-head"><div class="progress-status" id="progressStatus">Preparing audio engine…</div><div class="progress-percent" id="progressPercent">—</div></div>
+        <div class="progress-track"><div class="progress-fill indeterminate" id="progressFill"></div></div>
+        <div class="progress-foot"><span id="progressDetail">Initializing FFmpeg.wasm</span><span id="progressRight">LOCAL PROCESSING</span></div>
       </div>
 
-      <!-- About -->
-      <div class="studio-card">
-        <h3 class="section-heading"><i class="fas fa-info-circle"></i> عن التطبيق</h3>
-        <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.7; font-weight: 600;">
-
-          Voice Studio Pro
-          هو تطبيق فصل صوت احترافي
-          يعتمد على نماذج ذكاء اصطناعي متطورة
-          لفصل صوت المطرب عن الموسيقى الخلفية بدقة عالية ومع بقاء الكورال…
-        </p>
-        <div style="margin-top: 0.8rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <span class="file-chip"><i class="fas fa-code-branch"></i> v3.0</span>
-          <span class="file-chip"><i class="fas fa-microchip"></i> AI Powered</span>
-          <span class="file-chip"><i class="fas fa-lock"></i> Private</span>
+      <div class="results hidden" id="resultsPanel" aria-live="polite">
+        <div class="result-banner">
+          <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></div>
+          <div><strong>Compression complete</strong><p>Your M4A file is ready. The sizes below are measured from the actual input and output files.</p></div>
+        </div>
+        <div class="result-grid">
+          <div class="result-card"><div class="result-kicker">ORIGINAL AUDIO</div><div class="result-size" id="resultOriginalSize">—</div><div class="result-filename" id="resultOriginalName" dir="auto"></div><div class="result-tags"><span id="resultOriginalExt">SOURCE</span></div></div>
+          <div class="result-card output"><div class="result-kicker">COMPRESSED AUDIO</div><div class="result-size" id="resultCompressedSize">—</div><div class="result-filename" id="resultOutputName" dir="auto"></div><div class="result-tags"><span>M4A</span><span>AAC</span><span>64 KBPS</span></div></div>
+        </div>
+        <div class="savings">
+          <div class="savings-top"><div><div class="savings-label" id="savingsLabel">SPACE SAVED</div><div class="savings-value positive" id="savingsValue">—</div><div class="savings-note" id="savingsNote">Calculated from actual file sizes</div></div><div class="savings-percent" id="savingsPercent">—</div></div>
+          <div class="compare-track"><div class="compare-fill" id="compareFill"></div></div>
+        </div>
+        <div class="audio-player" id="audioPlayer">
+          <button class="play-btn" id="playBtn" type="button" aria-label="Play compressed audio">
+            <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5c0-.8.9-1.3 1.6-.8l9.1 6.1a1.4 1.4 0 0 1 0 2.4l-9.1 6.1c-.7.5-1.6 0-1.6-.8V5.5Z"/></svg>
+          </button>
+          <div class="player-main"><div class="player-top"><span id="playerStatus">Preview compressed audio</span><span id="playerTime">0:00 / --:--</span></div><input class="seek" id="seekBar" type="range" min="0" max="1000" value="0" aria-label="Seek compressed audio"></div>
+        </div>
+        <audio id="audioElement" preload="metadata" class="hidden"></audio>
+        <div class="result-actions">
+          <a class="download-btn" id="downloadBtn" href="#" download="compressed.m4a">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5"/><path d="M4 16v4h16v-4"/></svg>
+            Download M4A
+          </a>
+          <button class="secondary-btn" id="anotherBtn" type="button">Compress Another File</button>
         </div>
       </div>
 
-    </div>
+      <div class="notice" id="notice" role="alert"></div>
+      <div class="settings-panel" id="settingsPanel">
+        <h3 class="settings-title">Compression settings</h3>
+        <div class="setting-line"><span>Audio codec</span><strong>AAC</strong></div>
+        <div class="setting-line"><span>Target bitrate</span><strong>64 kbps</strong></div>
+        <div class="setting-line"><span>Output container</span><strong>M4A</strong></div>
+        <div class="setting-line"><span>Processing</span><strong>Local browser engine</strong></div>
+        <p class="settings-note">AAC at 64 kbps is lossy compression. Results depend on the source audio and FFmpeg build. The first run requires an internet connection to load FFmpeg assets; audio itself is not uploaded for processing.</p>
+      </div>
+      <p class="small-note">Note: very large files may exceed your browser's available memory. FFmpeg assets are loaded from a CDN when needed; your selected audio stays in this browser session.</p>
+    </section>
   </main>
 
-  <!-- ============ BOTTOM NAV ============ -->
-  <nav class="bottom-nav">
-    <a href="#" class="nav-item active" onclick="document.querySelectorAll('.nav-item').forEach(e=&gt;e.classList.remove('active')); this.classList.add('active'); showPage('home'); return false;">
-      <i class="fas fa-layer-group"></i>
-      <span>الاستوديو</span>
-    </a>
-    <a href="#" class="nav-item" onclick="document.querySelectorAll('.nav-item').forEach(e=&gt;e.classList.remove('active')); this.classList.add('active'); showPage('history'); return false;">
-      <i class="fas fa-clock-rotate-left"></i>
-      <span>السجل</span>
-    </a>
-    <a href="#" class="nav-item" onclick="document.querySelectorAll('.nav-item').forEach(e=&gt;e.classList.remove('active')); this.classList.add('active'); showPage('settings'); return false;">
-      <i class="fas fa-cog"></i>
-      <span>الإعدادات</span>
-    </a>
-  </nav>
+  <footer class="footer">
+    <div><div class="footer-brand">SONIQ / AUDIO STUDIO</div><div>Designed for sound. Built for space.</div></div>
+    <div class="footer-right">LOCAL PROCESSING · AAC 64 KBPS<br>FFmpeg.wasm powered</div>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <!-- ============ PLAYER MODAL ============ -->
-  <div class="player-modal" id="playerModal">
-    <div class="player-modal-content">
-      <div class="player-top-bar">
-        <button class="close-player-btn" onclick="closePlayer()">
-          <i class="fas fa-chevron-down"></i>
-        </button>
-        <div class="player-title" id="playerTitle">المشغل</div>
-        <button class="download-player-btn" id="modalDownloadBtn" onclick="downloadCurrentAudio()">
-          <i class="fas fa-cloud-arrow-down"></i>
-        </button>
-      </div>
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const els = {
+  input:$('fileInput'),dropzone:$('dropzone'),choose:$('chooseBtn'),filePanel:$('filePanel'),
+  fileName:$('fileName'),fileExt:$('fileExt'),fileMime:$('fileMime'),originalSize:$('originalSize'),
+  duration:$('duration'),waveform:$('waveform'),compress:$('compressBtn'),replace:$('replaceBtn'),
+  remove:$('removeBtn'),clear:$('clearBtn'),progressPanel:$('progressPanel'),progressStatus:$('progressStatus'),
+  progressPercent:$('progressPercent'),progressFill:$('progressFill'),progressDetail:$('progressDetail'),
+  progressRight:$('progressRight'),results:$('resultsPanel'),notice:$('notice'),engineChip:$('engineChip'),
+  engineLabel:$('engineLabel'),settingsToggle:$('settingsToggle'),settingsPanel:$('settingsPanel'),
+  resultOriginalSize:$('resultOriginalSize'),resultCompressedSize:$('resultCompressedSize'),
+  resultOriginalName:$('resultOriginalName'),resultOutputName:$('resultOutputName'),resultOriginalExt:$('resultOriginalExt'),
+  savingsLabel:$('savingsLabel'),savingsValue:$('savingsValue'),savingsNote:$('savingsNote'),
+  savingsPercent:$('savingsPercent'),compareFill:$('compareFill'),download:$('downloadBtn'),
+  another:$('anotherBtn'),audio:$('audioElement'),play:$('playBtn'),playIcon:$('playIcon'),
+  playerStatus:$('playerStatus'),playerTime:$('playerTime'),seek:$('seekBar'),toast:$('toast')
+};
+const state = {
+  file:null, ffmpeg:null, ffmpegLoadPromise:null, loaded:false, busy:false, jobId:0,
+  outputBlob:null, outputUrl:null, outputName:'', sourceDuration:null, durationUrl:null,
+  progressHandler:null, logHandler:null, toastTimer:null, previewFailed:false
+};
 
-      <div class="player-artwork-container">
-        <div class="player-artwork" id="playerArtwork">
-          <i class="fas fa-music" id="playerArtworkIcon"></i>
-        </div>
-      </div>
+const ICONS = {
+  pause:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5c0-.8.9-1.3 1.6-.8l9.1 6.1a1.4 1.4 0 0 1 0 2.4l-9.1 6.1c-.7.5-1.6 0-1.6-.8V5.5Z"/></svg>'
+};
 
-      <div class="player-track-info">
-        <h2 id="trackName">اسم المقطع</h2>
-        <p id="trackFileName">Original_File.mp3</p>
-      </div>
+function showNotice(message, type='error') {
+  els.notice.textContent = message;
+  els.notice.classList.toggle('success-notice', type === 'success');
+  els.notice.classList.add('show');
+}
+function hideNotice(){els.notice.classList.remove('show');els.notice.classList.remove('success-notice');els.notice.textContent='';}
+function toast(message){
+  els.toast.textContent=message;els.toast.classList.add('show');
+  clearTimeout(state.toastTimer);state.toastTimer=setTimeout(()=>els.toast.classList.remove('show'),2600);
+}
+function formatBytes(bytes){
+  if(!Number.isFinite(bytes)||bytes<0)return '—';
+  if(bytes===0)return '0 B';
+  const units=['B','KB','MB','GB','TB'];
+  const i=Math.min(Math.floor(Math.log(bytes)/Math.log(1024)),units.length-1);
+  const value=bytes/Math.pow(1024,i);
+  return `${value.toFixed(i===0?0:2)} ${units[i]}`;
+}
+function formatMB(bytes){return `${(bytes/(1024*1024)).toFixed(2)} MB`;}
+function formatTime(seconds){
+  if(!Number.isFinite(seconds)||seconds<0)return '--:--';
+  const s=Math.floor(seconds),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
+  return h>0?`${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`:`${m}:${String(sec).padStart(2,'0')}`;
+}
+function safeBaseName(filename){
+  const last=filename.split(/[\\/]/).pop()||'audio';
+  const dot=last.lastIndexOf('.');
+  let base=dot>0?last.slice(0,dot):last;
+  base=base.replace(/[<>:"/\\|?*\u0000-\u001F]/g,'_').replace(/\s+/g,' ').trim();
+  base=base.replace(/[. ]+$/g,'');
+  return base||'audio';
+}
+function outputFilename(filename){return `${safeBaseName(filename)}_جودة_خرافية.m4a`;}
+function getExtension(filename){const m=filename.match(/\.([^.]+)$/);return m?m[1].toUpperCase():'AUDIO';}
+function setEngineStatus(ready,label){
+  els.engineChip.classList.toggle('ready',!!ready);
+  els.engineLabel.textContent=label;
+}
+function makeWaveform(){
+  els.waveform.replaceChildren();
+  // Decorative waveform only; it is not presented as audio analysis.
+  const heights=[18,26,36,22,43,29,52,34,20,42,57,31,45,25,38,56,29,19,35,48,27,40,54,32,22,44,30,51,36,24,42,18,34,47,26,39,56,31,20,43,28,49,35,23,40,53,30,18];
+  for(const h of heights){const bar=document.createElement('span');bar.style.height=`${h}px`;els.waveform.append(bar);}
+}
+function cleanupOutput(){
+  if(state.outputUrl){URL.revokeObjectURL(state.outputUrl);state.outputUrl=null;}
+  state.outputBlob=null;state.outputName='';
+  els.download.removeAttribute('href');
+  els.audio.pause();els.audio.removeAttribute('src');els.audio.load();
+  els.results.classList.add('hidden');
+  resetPlayer();
+}
+function resetPlayer(){
+  els.playIcon.innerHTML=ICONS.play;els.playerStatus.textContent='Preview compressed audio';
+  els.playerTime.textContent='0:00 / --:--';els.seek.value='0';els.seek.disabled=true;
+}
+function resetWorkspace({keepFile=false}={}){
+  state.jobId++;
+  state.busy=false;
+  cleanupOutput();
+  hideNotice();
+  els.progressPanel.classList.add('hidden');
+  els.progressFill.classList.remove('indeterminate');
+  els.progressFill.style.width='0%';
+  els.progressPercent.textContent='—';
+  els.progressStatus.textContent='Preparing audio engine…';
+  els.progressDetail.textContent='Initializing FFmpeg.wasm';
+  els.progressRight.textContent='LOCAL PROCESSING';
+  els.compress.disabled=false;els.compress.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 10l7-7 7 7"/><path d="M5 16v4h14v-4"/></svg> Compress Audio';
+  if(!keepFile){
+    state.file=null;state.sourceDuration=null;
+    if(state.durationUrl){URL.revokeObjectURL(state.durationUrl);state.durationUrl=null;}
+    els.input.value='';
+    els.filePanel.classList.add('hidden');els.dropzone.classList.remove('hidden');
+  }
+}
+function showSelectedFile(file){
+  resetWorkspace();
+  state.file=file;
+  hideNotice();
+  els.dropzone.classList.add('hidden');
+  els.filePanel.classList.remove('hidden');
+  els.fileName.textContent=file.name;
+  els.fileExt.textContent=getExtension(file.name);
+  els.fileMime.textContent=file.type||'Audio file';
+  els.originalSize.textContent=formatBytes(file.size);
+  els.duration.textContent='Checking…';
+  makeWaveform();
+  // Native metadata probe only; no upload and no decoding required for compression.
+  try{
+    if(state.durationUrl)URL.revokeObjectURL(state.durationUrl);
+    state.durationUrl=URL.createObjectURL(file);
+    const probe=new Audio();
+    probe.preload='metadata';
+    probe.onloadedmetadata=()=>{
+      if(state.file!==file)return;
+      if(Number.isFinite(probe.duration)){
+        state.sourceDuration=probe.duration;
+        els.duration.textContent=formatTime(probe.duration);
+      }else els.duration.textContent='Unavailable';
+      probe.src='';
+      if(state.durationUrl){URL.revokeObjectURL(state.durationUrl);state.durationUrl=null;}
+    };
+    probe.onerror=()=>{
+      if(state.file===file)els.duration.textContent='Unavailable';
+      probe.src='';
+      if(state.durationUrl){URL.revokeObjectURL(state.durationUrl);state.durationUrl=null;}
+    };
+    probe.src=state.durationUrl;
+  }catch{els.duration.textContent='Unavailable';}
+  toast('Audio file selected');
+}
+function chooseFile(){if(!state.busy)els.input.click();}
+function validateFile(file){
+  if(!file)return 'Choose an audio file first.';
+  if(file.size===0)return 'This file is empty. Choose a valid audio file.';
+  return '';
+}
 
-      <div class="player-controls-section">
-        <div class="timeline-container-lg">
-          <input type="range" class="timeline-lg" id="modalSeek" min="0" max="100" value="0" oninput="seekModalAudio(this.value)">
-          <div class="time-display-lg">
-            <span id="modalCurrentTime">0:00</span>
-            <span id="modalTotalTime">0:00</span>
-          </div>
-        </div>
-
-        <div class="main-controls">
-          <button class="control-btn" onclick="seekRelative(-10)"><i class="fas fa-backward-10"></i></button>
-          <button class="play-pause-btn-lg" id="modalPlayBtn" onclick="toggleModalPlay()">
-            <i class="fas fa-play"></i>
-          </button>
-          <button class="control-btn" onclick="seekRelative(10)"><i class="fas fa-forward-10"></i></button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============ CONFIRM MODAL ============ -->
-  <div class="confirm-modal" id="confirmModal">
-    <div class="confirm-modal-content">
-      <div class="confirm-icon"><i class="fas fa-trash-alt"></i></div>
-      <h3>تأكيد الحذف</h3>
-      <p>هل أنت متأكد أنك تريد مسح السجل بالكامل؟ لن تتمكن من استرجاع المقاطع بعد حذفها.</p>
-      <div class="confirm-actions">
-        <button class="btn-cancel" onclick="closeConfirmModal()">إلغاء</button>
-        <button class="btn-confirm" onclick="confirmClearHistory()">نعم، امسح</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============ FIREBASE ============ -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-
-  <!-- ============ MAIN APP MODULE ============ -->
-
-
-  <!-- ============ SERVICE WORKER ============ -->
-
-
-
-  <script type="module" src="script.js"></script>
-
-
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>console.log('SW registered:',r.scope)).catch(e=>console.error('SW registration failed:',e));});}</script></body></html>
+async function loadFFmpeg(){
+  if(state.loaded&&state.ffmpeg)return state.ffmpeg;
+  if(state.ffmpegLoadPromise)return state.ffmpegLoadPromise;
+  state.ffmpegLoadPromise=(async()=>{
+    setEngineStatus(false,'LOADING ENGINE');
+    updateProgress('Loading FFmpeg engine…',null,'Downloading required engine assets','ENGINE INITIALIZATION');
+    try{
+      // Keep wrapper and core versions compatible. Single-thread core avoids cross-origin isolation requirements.
+      const [{FFmpeg},{toBlobURL}] = await Promise.all([
+        import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js'),
+        import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js')
+      ]);
+      const ffmpeg=new FFmpeg();
+      const onProgress=({progress})=>{
+        if(!state.busy)return;
+        if(Number.isFinite(progress)){
+          const pct=Math.max(0,Math.min(99,Math.round(progress*100)));
+          updateProgress('Compressing audio…',pct,'FFmpeg reported approximate processing progress','AAC ENCODING');
+        }
+      };
+      const onLog=({message})=>{
+        if(typeof message==='string' && /error|invalid data|unsupported/i.test(message)){
+          console.debug('[SONIQ FFmpeg]',message);
+        }
+      };
+      ffmpeg.on('progress',onProgress);
+      ffmpeg.on('log',onLog);
+      const base='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+      const coreURL=await toBlobURL(`${base}/ffmpeg-core.js`,'text/javascript');
+      const wasmURL=await toBlobURL(`${base}/ffmpeg-core.wasm`,'application/wasm');
+      await ffmpeg.load({coreURL,wasmURL});
+      state.ffmpeg=ffmpeg;state.loaded=true;
+      setEngineStatus(true,'ENGINE READY');
+      return ffmpeg;
+    }catch(error){
+      console.error('[SONIQ] FFmpeg initialization failed:',error);
+      setEngineStatus(false,'ENGINE ERROR');
+      throw new Error('Could not load the audio engine. Check your internet connection and reopen the page. If you opened this file directly, try serving it through localhost or HTTPS.');
+    }finally{
+      state.ffmpegLoadPromise=null;
+    }
+  })();
+  return state.ffmpegLoadPromise;
+}
+function updateProgress(status,percent,detail,right){
+  els.progressPanel.classList.remove('hidden');
+  els.progressStatus.textContent=status;
+  els.progressDetail.textContent=detail||'';
+  els.progressRight.textContent=right||'LOCAL PROCESSING';
+  if(Number.isFinite(percent)){
+    const p=Math.max(0,Math.min(100,percent));
+    els.progressFill.classList.remove('indeterminate');
+    els.progressFill.style.width=`${p}%`;
+    els.progressPercent.textContent=`${p}%`;
+  }else{
+    els.progressFill.classList.add('indeterminate');
+    els.progressFill.style.width='';
+    els.progressPercent.textContent='…';
+  }
+}
+function mapError(error){
+  const raw=String(error?.message||error||'');
+  if(/memory|allocation|out of memory|abort\(.*memory/i.test(raw))return 'The browser ran out of memory while processing this file. Try a smaller audio file or close other tabs.';
+  if(/invalid data|could not find codec|unsupported|unknown format|error while decoding/i.test(raw))return 'FFmpeg could not read this audio format or the file may be damaged. Try another audio file.';
+  if(/fetch|network|load|worker|wasm|cross-origin|import/i.test(raw))return 'The audio engine could not be loaded. Check your connection and open this page over localhost or HTTPS.';
+  return 'Compression failed. The file may be damaged, unsupported, or too large for the available browser memory. Try another file.';
+}
+async function compressAudio(){
+  if(state.busy)return;
+  const error=validateFile(state.file);
+  if(error){showNotice(error);return;}
+  hideNotice();cleanupOutput();
+  const file=state.file;
+  const job=++state.jobId;
+  state.busy=true;
+  els.compress.disabled=true;
+  els.compress.textContent='Preparing…';
+  els.progressPanel.classList.remove('hidden');
+  updateProgress('Preparing audio engine…',null,'Loading FFmpeg.wasm if needed','ENGINE INITIALIZATION');
+  try{
+    const ffmpeg=await loadFFmpeg();
+    if(job!==state.jobId)return;
+    updateProgress('Reading audio file…',null,'Loading selected file into browser memory','LOCAL FILE READ');
+    const inputData=new Uint8Array(await file.arrayBuffer());
+    if(job!==state.jobId)return;
+    const inputName='soniq_input_'+job+'.bin';
+    const outputName='soniq_output_'+job+'.m4a';
+    let inputWritten=false;
+    try{
+      await ffmpeg.writeFile(inputName,inputData);
+      inputWritten=true;
+      updateProgress('Compressing audio…',null,'Encoding AAC at the required 64 kbps bitrate','AAC ENCODING');
+      // Exact approved encoding configuration: AAC at 64 kbps, M4A output.
+      // No filters, normalization, speed changes, or additional encoding flags.
+      const exitCode=await ffmpeg.exec(['-i',inputName,'-c:a','aac','-b:a','64k',outputName]);
+      if(job!==state.jobId)return;
+      if(exitCode!==0)throw new Error(`FFmpeg exited with code ${exitCode}`);
+      updateProgress('Finalizing output…',null,'Verifying the generated M4A file','FINALIZING');
+      const outputData=await ffmpeg.readFile(outputName);
+      if(!(outputData instanceof Uint8Array)||outputData.byteLength===0)throw new Error('Empty output file');
+      if(job!==state.jobId)return;
+      const blob=new Blob([outputData],{type:'audio/mp4'});
+      state.outputBlob=blob;
+      state.outputUrl=URL.createObjectURL(blob);
+      state.outputName=outputFilename(file.name);
+      displayResults(file,blob,state.outputName,state.outputUrl);
+      updateProgress('Compression complete',100,'M4A output verified and ready to download','COMPLETE');
+      els.progressFill.classList.remove('indeterminate');
+      els.progressFill.style.width='100%';
+      els.progressPercent.textContent='100%';
+      toast('Compression completed');
+    }finally{
+      try{if(inputWritten)await ffmpeg.deleteFile(inputName);}catch(e){console.debug('Temporary input cleanup:',e);}
+      try{await ffmpeg.deleteFile(outputName);}catch(e){/* Output may not have been created. */}
+    }
+  }catch(error){
+    console.error('[SONIQ] Compression failed:',error);
+    if(job===state.jobId){
+      showNotice(mapError(error));
+      els.progressPanel.classList.add('hidden');
+      cleanupOutput();
+    }
+  }finally{
+    if(job===state.jobId){
+      state.busy=false;
+      els.compress.disabled=false;
+      els.compress.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 10l7-7 7 7"/><path d="M5 16v4h14v-4"/></svg> Compress Audio';
+    }
+  }
+}
+function displayResults(original,blob,name,url){
+  const originalBytes=original.size,compressedBytes=blob.size;
+  const diff=originalBytes-compressedBytes;
+  const percent=originalBytes>0?(diff/originalBytes)*100:0;
+  els.resultOriginalSize.textContent=formatMB(originalBytes);
+  els.resultCompressedSize.textContent=formatMB(compressedBytes);
+  els.resultOriginalName.textContent=original.name;
+  els.resultOutputName.textContent=name;
+  els.resultOriginalExt.textContent=getExtension(original.name);
+  els.savingsValue.classList.toggle('positive',diff>=0);
+  els.savingsValue.classList.toggle('negative',diff<0);
+  if(diff>0){
+    els.savingsLabel.textContent='SPACE SAVED';
+    els.savingsValue.textContent=formatBytes(diff);
+    els.savingsNote.textContent='Smaller than the original file';
+    els.savingsPercent.textContent=`${percent.toFixed(1)}%`;
+  }else if(diff<0){
+    els.savingsLabel.textContent='SIZE INCREASE';
+    els.savingsValue.textContent=`+${formatBytes(Math.abs(diff))}`;
+    els.savingsNote.textContent='The compressed output is larger than the source';
+    els.savingsPercent.textContent=`${Math.abs(percent).toFixed(1)}%`;
+  }else{
+    els.savingsLabel.textContent='SIZE CHANGE';
+    els.savingsValue.textContent='0 B';
+    els.savingsNote.textContent='The file sizes are identical';
+    els.savingsPercent.textContent='0.0%';
+  }
+  // Relative bar compares output size against the original size without exaggerating savings.
+  const ratio=originalBytes>0?Math.min(100,(compressedBytes/originalBytes)*100):100;
+  els.compareFill.style.width=`${ratio}%`;
+  els.download.href=url;
+  els.download.download=name;
+  els.results.classList.remove('hidden');
+  els.audio.src=url;
+  els.audio.load();
+  resetPlayer();
+  els.seek.disabled=false;
+}
+function resetToChoose(){
+  if(state.busy)return;
+  resetWorkspace();
+  hideNotice();
+  toast('Ready for another file');
+}
+function handleFiles(files){
+  const file=files&&files[0];
+  if(!file)return;
+  const error=validateFile(file);
+  if(error){showNotice(error);return;}
+  showSelectedFile(file);
+}
+els.choose.addEventListener('click',(e)=>{e.stopPropagation();chooseFile();});
+els.dropzone.addEventListener('click',(e)=>{if(e.target.closest('button'))return;chooseFile();});
+els.dropzone.addEventListener('keydown',(e)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();chooseFile();}});
+els.input.addEventListener('change',()=>{handleFiles(els.input.files);});
+els.replace.addEventListener('click',chooseFile);
+els.remove.addEventListener('click',()=>{if(!state.busy)resetToChoose();});
+els.clear.addEventListener('click',()=>{if(!state.busy)resetToChoose();});
+els.compress.addEventListener('click',compressAudio);
+els.another.addEventListener('click',resetToChoose);
+els.settingsToggle.addEventListener('click',()=>{
+  const open=els.settingsPanel.classList.toggle('open');
+  els.settingsToggle.setAttribute('aria-expanded',String(open));
+  els.settingsToggle.setAttribute('aria-label',open?'Close settings':'Open settings');
+});
+['dragenter','dragover'].forEach(type=>els.dropzone.addEventListener(type,e=>{e.preventDefault();e.stopPropagation();els.dropzone.classList.add('dragging');}));
+['dragleave','drop'].forEach(type=>els.dropzone.addEventListener(type,e=>{e.preventDefault();e.stopPropagation();els.dropzone.classList.remove('dragging');}));
+els.dropzone.addEventListener('drop',e=>{if(!state.busy)handleFiles(e.dataTransfer.files);});
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',e=>{if(!els.dropzone.contains(e.target))e.preventDefault();});
+els.play.addEventListener('click',async()=>{
+  if(!state.outputUrl||state.previewFailed)return;
+  try{
+    if(els.audio.paused){await els.audio.play();}else{els.audio.pause();}
+  }catch(error){
+    console.warn('[SONIQ] Preview playback unavailable:',error);
+    state.previewFailed=true;els.playerStatus.textContent='Preview unavailable';
+    showNotice('The compressed file was created, but this browser could not play its preview. You can still download the M4A file.');
+  }
+});
+els.audio.addEventListener('play',()=>{els.playIcon.innerHTML=ICONS.pause;els.play.setAttribute('aria-label','Pause compressed audio');els.playerStatus.textContent='Playing compressed audio';});
+els.audio.addEventListener('pause',()=>{els.playIcon.innerHTML=ICONS.play;els.play.setAttribute('aria-label','Play compressed audio');if(!state.previewFailed)els.playerStatus.textContent='Preview compressed audio';});
+els.audio.addEventListener('timeupdate',()=>{
+  const duration=els.audio.duration;
+  els.playerTime.textContent=`${formatTime(els.audio.currentTime)} / ${formatTime(duration)}`;
+  if(Number.isFinite(duration)&&duration>0)els.seek.value=String(Math.round((els.audio.currentTime/duration)*1000));
+});
+els.audio.addEventListener('loadedmetadata',()=>{
+  els.playerTime.textContent=`${formatTime(els.audio.currentTime)} / ${formatTime(els.audio.duration)}`;
+  els.seek.disabled=!(Number.isFinite(els.audio.duration)&&els.audio.duration>0);
+});
+els.audio.addEventListener('ended',()=>{els.playIcon.innerHTML=ICONS.play;els.play.setAttribute('aria-label','Play compressed audio');els.playerStatus.textContent='Preview finished';});
+els.audio.addEventListener('error',()=>{
+  if(!state.outputUrl)return;
+  state.previewFailed=true;els.playerStatus.textContent='Preview unavailable';
+  els.play.disabled=true;
+  showNotice('The M4A was generated, but audio preview is unavailable in this browser. The download is still available.');
+});
+els.seek.addEventListener('input',()=>{
+  const duration=els.audio.duration;
+  if(Number.isFinite(duration)&&duration>0)els.audio.currentTime=(Number(els.seek.value)/1000)*duration;
+});
+window.addEventListener('beforeunload',()=>{
+  if(state.outputUrl)URL.revokeObjectURL(state.outputUrl);
+  if(state.durationUrl)URL.revokeObjectURL(state.durationUrl);
+});
+makeWaveform();
+setEngineStatus(false,'ENGINE STANDBY');
+resetPlayer();
+</script>
+</body>
+</html>
