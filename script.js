@@ -559,6 +559,7 @@ function updateModalProgress() {
   if (activeAudio && activeAudio.duration) {
     document.getElementById('modalSeek').value = (activeAudio.currentTime / activeAudio.duration) * 100;
     document.getElementById('modalCurrentTime').innerText = window.formatTime(activeAudio.currentTime);
+    document.getElementById('modalTotalTime').innerText = window.formatTime(activeAudio.duration);
     if (activeAudio.ended) syncPlayPauseIcon();
   }
 }
@@ -575,17 +576,30 @@ window.formatTime = function(sec) {
   return Math.floor(sec / 60) + ':' + Math.floor(sec % 60).toString().padStart(2, '0');
 }
 
-window.downloadAudio = function(id, name) {
+window.downloadAudio = async function(id, name) {
   const url = document.getElementById(id).src;
-  if (!url) return showToast('لا يوجد ملف متاح', 'error');
-  showToast('جاري بدء التنزيل...', 'success');
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  a.target = '_blank';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  if (!url || url === window.location.href) return showToast('لا يوجد ملف متاح', 'error');
+
+  showToast('⏳ جاري تجهيز الملف للتنزيل...', 'warning');
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Download failed');
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+    showToast('✅ بدأ حفظ الملف على جهازك', 'success');
+  } catch (e) {
+    window.open(url, '_blank');
+  }
 }
 
 
@@ -647,7 +661,7 @@ window.startProcessing = async function() {
         out_format: "wav",
         segment_size: 256,
         override_seg_size: false,
-        overlap: 8,
+        overlap: 2,
         batch_size: 1,
         norm_thresh: 0.9,
         amp_thresh: 1.0,
@@ -661,7 +675,7 @@ window.startProcessing = async function() {
         out_format: "wav",
         segment_size: 256,
         override_seg_size: false,
-        overlap: 8,
+        overlap: 2,
         batch_size: 1,
         norm_thresh: 0.9,
         amp_thresh: 1.0,
@@ -669,88 +683,35 @@ window.startProcessing = async function() {
       };
     }
 
-    let result;
-    let isUsingVIP = false;
+    const connectOptions = savedToken ? {
+      token: savedToken,
+      hf_token: savedToken
+    } : {};
 
-    // 2. محاولة الاتصال بناءً على توفر التوكن وحالته
-    if (savedToken) {
-      try {
-        // أولوية أولى: سيرفر VIP السريع
-        const clientVIP = await Client.connect("itsalboushi/UVR5_UI", {
-          token: savedToken,
-          hf_token: savedToken
-        });
-        result = await clientVIP.predict(apiEndpoint, predictParams);
-        isUsingVIP = true;
-      } catch (vipErr) {
-        // فشل VIP (خلص الرصيد أو السيرفر نايم) -> انتقال للمجاني
-        showToast('نفد رصيد التوكن أو غير متاح! التبديل للمجاني...', 'warning');
-        document.getElementById('progressStatus').innerText = 'يتم الآن المعالجة عبر السيرفر المجاني...';
-        const clientFree = await Client.connect("TheStinger/UVR5_UI", {});
-        result = await clientFree.predict(apiEndpoint, predictParams);
-        isUsingVIP = false;
-      }
-    } else {
-      // لا يوجد توكن أو التوكن مقفول -> السيرفر المجاني فوراً
-      const clientFree = await Client.connect("TheStinger/UVR5_UI", {});
-      result = await clientFree.predict(apiEndpoint, predictParams);
-      isUsingVIP = false;
-    }
+    const client = await Client.connect("TheStinger/UVR5_UI", connectOptions);
+    const result = await client.predict(apiEndpoint, predictParams);
 
-    // --- إكمال العملية بعد نجاح أي من السيرفرين ---
     clearInterval(simInterval);
-    document.getElementById('progressStatus').innerText = 'تم العزل! جاري تحميل الملفات...';
-    updateProcessing(90);
 
-    let downloadP = 90;
-    let downloadInterval = setInterval(() => {
-      if (downloadP < 99) {
-        downloadP += 0.5;
-        updateProcessing(Math.floor(downloadP));
-      }
-    }, 800);
-
-    // تحديد الروابط بناءً على السيرفر الذي نجح فعلاً
     const getUrl = (i) => {
-      const baseUrl = isUsingVIP ?
-        "https://itsalboushi-uvr5-ui.hf.space" :
-        "https://thestinger-uvr5-ui.hf.space";
+      const baseUrl = "https://thestinger-uvr5-ui.hf.space";
+      if (!i) return '';
       return typeof i === 'string' ? i : (i?.url || (i?.path ? baseUrl + "/file=" + i.path : ''));
-    };
-
-    const fetchAudio = async (url) => {
-      if (!url) return '';
-      try {
-        let fetchOptions = {};
-        if (isUsingVIP) {
-          fetchOptions = {
-            headers: {
-              "Authorization": `Bearer ${savedToken}`
-            }
-          };
-        }
-        const res = await fetch(url, fetchOptions);
-        if (!res.ok) return '';
-        const blob = await res.blob();
-        return URL.createObjectURL(blob);
-      } catch (e) {
-        return '';
-      }
     };
 
     const rawInstUrl = getUrl(result.data[0]);
     const rawVocalUrl = getUrl(result.data[1]);
 
-    const instBlob = await fetchAudio(rawInstUrl);
-    const vocalBlob = await fetchAudio(rawVocalUrl);
+    const instAudio = document.getElementById('instAudio');
+    const vocalAudio = document.getElementById('vocalAudio');
 
-    clearInterval(downloadInterval);
-
-    document.getElementById('instAudio').src = instBlob;
-    document.getElementById('vocalAudio').src = vocalBlob;
+    instAudio.src = rawInstUrl;
+    vocalAudio.src = rawVocalUrl;
+    instAudio.load();
+    if (rawVocalUrl) vocalAudio.load();
 
     const vocalCard = document.getElementById('vocalCard');
-    if (!vocalBlob) vocalCard.style.display = 'none';
+    if (!rawVocalUrl) vocalCard.style.display = 'none';
     else vocalCard.style.display = 'flex';
 
     updateProcessing(100);
@@ -771,8 +732,13 @@ window.startProcessing = async function() {
     clearInterval(simInterval);
     console.error(err);
     const msg = err.message || '';
-    if (msg.toLowerCase().includes('quota')) {
-      showToast('🚫 انتهت حصة IP المجانية! استخدم التوكن.', 'error');
+    const lowerMsg = msg.toLowerCase();
+    if (lowerMsg.includes('quota') || lowerMsg.includes('exceeded') || lowerMsg.includes('limit')) {
+      if (savedToken) {
+        showToast('🚫 انتهت حصة التوكن! شغّل VPN أو بدّل التوكن.', 'error');
+      } else {
+        showToast('🚫 خلصت المحاولات المجانية! شغّل VPN أو أضف توكن بالإعدادات.', 'error');
+      }
     } else if (msg.includes('queue')) {
       showToast('⏳ طابور الانتظار ممتلئ، أعد المحاولة.', 'warning');
     } else {
@@ -842,29 +808,6 @@ window.saveToHistory = async function(name, instUrl, vocalUrl) {
   });
 
   localStorage.setItem('voiceHistory', JSON.stringify(history.slice(0, 15)));
-
-  try {
-    const instRes = await fetch(document.getElementById('instAudio').src);
-    const instBlob = await instRes.blob();
-
-    let vocalBlob = null;
-    if (document.getElementById('vocalAudio').src && document.getElementById('vocalCard').style.display !== 'none') {
-      const vocalRes = await fetch(document.getElementById('vocalAudio').src);
-      vocalBlob = await vocalRes.blob();
-    }
-
-    const db = await dbPromise;
-    const tx = db.transaction("audioFiles", "readwrite");
-    const store = tx.objectStore("audioFiles");
-    store.put({
-      id: id,
-      instBlob: instBlob,
-      vocalBlob: vocalBlob,
-      timestamp: timestamp
-    });
-  } catch (e) {
-    console.log("لم يتم حفظ الملفات في الذاكرة المحلية.");
-  }
 
   loadHistory();
 }
@@ -973,45 +916,28 @@ window.restoreFromHistory = async function(index) {
         showToast('⚠️ مقطع قديم — أعد معالجته للحفظ بجهازك.', 'warning');
         return;
       }
-      showToast('جاري استرجاع المقطع...', 'success');
-      const isTokenActive = localStorage.getItem('hf_token_active') !== 'false';
-      const savedToken = isTokenActive ? localStorage.getItem('hf_token') : null;
-      const fetchOptions = savedToken ? {
-        headers: {
-          "Authorization": `Bearer ${savedToken}`
-        }
-      } : {};
+      const instAudio = document.getElementById('instAudio');
+      const vocalAudio = document.getElementById('vocalAudio');
 
-      try {
-        const instRes = await fetch(item.instUrl, fetchOptions);
-        if (!instRes.ok) throw new Error('Expired');
-        const instBlob = await instRes.blob();
+      instAudio.src = item.instUrl;
+      instAudio.load();
 
-        let vocalBlob = null;
-        if (item.vocalUrl) {
-          const vocalRes = await fetch(item.vocalUrl, fetchOptions);
-          if (vocalRes.ok) vocalBlob = await vocalRes.blob();
-        }
-
-        document.getElementById('instAudio').src = URL.createObjectURL(instBlob);
-        if (vocalBlob) {
-          document.getElementById('vocalAudio').src = URL.createObjectURL(vocalBlob);
-          document.getElementById('vocalCard').style.display = 'flex';
-        } else {
-          document.getElementById('vocalCard').style.display = 'none';
-        }
-
-        showPage('home');
-        document.getElementById('fileName').innerText = item.name;
-        document.getElementById('fileInfo').classList.add('show');
-        document.getElementById('resultsSection').classList.add('show');
-        currentFile = {
-          name: item.name
-        };
-        showToast('✨ تم الاسترجاع!', 'success');
-      } catch (err) {
-        showToast('❌ انتهت صلاحية المقطع، أعد معالجته.', 'error');
+      if (item.vocalUrl) {
+        vocalAudio.src = item.vocalUrl;
+        vocalAudio.load();
+        document.getElementById('vocalCard').style.display = 'flex';
+      } else {
+        document.getElementById('vocalCard').style.display = 'none';
       }
+
+      showPage('home');
+      document.getElementById('fileName').innerText = item.name;
+      document.getElementById('fileInfo').classList.add('show');
+      document.getElementById('resultsSection').classList.add('show');
+      currentFile = {
+        name: item.name
+      };
+      showToast('⚡ جاهز للتشغيل المباشر!', 'success');
     };
 
     if (!item.id) {
