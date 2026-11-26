@@ -1,4 +1,4 @@
-const CACHE_NAME = 'app-cache-v57';
+const CACHE_NAME = 'app-cache-v58';
 const ASSETS = [
   '/',
   '/index.html',
@@ -35,13 +35,17 @@ self.addEventListener('fetch', event => {
     url.includes('firebase') || 
     url.includes('hf.space') || 
     url.endsWith('.wav') || 
+    url.endsWith('.flac') || 
+    url.endsWith('.mp3') || 
     url.startsWith('blob:')
   ) {
     return;
   }
 
+  const fetchOptions = url.startsWith(self.location.origin) ? { cache: 'no-cache' } : {};
+
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, fetchOptions)
       .then(response => {
         const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
