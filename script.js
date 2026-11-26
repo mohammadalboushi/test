@@ -566,7 +566,7 @@ function updateModalProgress() {
 
 window.downloadCurrentAudio = function() {
   if (!activeType) return;
-  const fileName = activeType === 'vocal' ? 'Vocals.wav' : 'Instrumental.wav';
+  const fileName = activeType === 'vocal' ? 'Vocals.flac' : 'Instrumental.flac';
   const audioId = activeType === 'vocal' ? 'vocalAudio' : 'instAudio';
   window.downloadAudio(audioId, fileName);
 }
@@ -576,30 +576,19 @@ window.formatTime = function(sec) {
   return Math.floor(sec / 60) + ':' + Math.floor(sec % 60).toString().padStart(2, '0');
 }
 
-window.downloadAudio = async function(id, name) {
+window.downloadAudio = function(id, name) {
   const url = document.getElementById(id).src;
   if (!url || url === window.location.href) return showToast('لا يوجد ملف متاح', 'error');
 
-  showToast('⏳ جاري تجهيز الملف للتنزيل...', 'warning');
-
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Download failed');
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
-    showToast('✅ بدأ حفظ الملف على جهازك', 'success');
-  } catch (e) {
-    window.open(url, '_blank');
-  }
+  showToast('جاري فتح رابط التنزيل المباشر...', 'success');
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 
@@ -658,7 +647,7 @@ window.startProcessing = async function() {
       predictParams = {
         audio: currentFile,
         model_key: "MelBand Roformer | Karaoke by Gabox",
-        out_format: "wav",
+        out_format: "flac",
         segment_size: 256,
         override_seg_size: false,
         overlap: 2,
@@ -672,7 +661,7 @@ window.startProcessing = async function() {
       predictParams = {
         audio: currentFile,
         model: "MDX23C-8KFFT-InstVoc_HQ_2.ckpt",
-        out_format: "wav",
+        out_format: "flac",
         segment_size: 256,
         override_seg_size: false,
         overlap: 2,
