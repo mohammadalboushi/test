@@ -1,4 +1,4 @@
-const CACHE_NAME = 'app-cache-v50';
+const CACHE_NAME = 'app-cache-v57';
 const ASSETS = [
   '/',
   '/index.html',
@@ -10,7 +10,6 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', event => {
-  // تكييش الملفات الأساسية والصور مشان يقبل يتثبت كـ PWA
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(ASSETS);
@@ -20,7 +19,6 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  // حذف الكاش القديم
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
@@ -30,19 +28,26 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // منع تكعيش ملفات فايربيس لضمان بقاء تسجيل الدخول
-  if (event.request.method !== 'GET' || event.request.url.includes('firebase')) return;
+  const url = event.request.url;
+  
+  if (
+    event.request.method !== 'GET' || 
+    url.includes('firebase') || 
+    url.includes('hf.space') || 
+    url.endsWith('.wav') || 
+    url.startsWith('blob:')
+  ) {
+    return;
+  }
 
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // جلب من النت أولاً، وتحديث الكاش بالخلفية
         const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         return response; 
       })
       .catch(() => {
-        // إذا مافي نت، جيب من الكاش
         return caches.match(event.request);
       })
   );
