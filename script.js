@@ -566,7 +566,7 @@ function updateModalProgress() {
 
 window.downloadCurrentAudio = function() {
   if (!activeType) return;
-  const fileName = activeType === 'vocal' ? 'Vocals.flac' : 'Instrumental.flac';
+  const fileName = activeType === 'vocal' ? 'Vocals.mp3' : 'Instrumental.mp3';
   const audioId = activeType === 'vocal' ? 'vocalAudio' : 'instAudio';
   window.downloadAudio(audioId, fileName);
 }
@@ -647,7 +647,7 @@ window.startProcessing = async function() {
       predictParams = {
         audio: currentFile,
         model_key: "MelBand Roformer | Karaoke by Gabox",
-        out_format: "flac",
+        out_format: "mp3",
         segment_size: 256,
         override_seg_size: false,
         overlap: 2,
@@ -661,7 +661,7 @@ window.startProcessing = async function() {
       predictParams = {
         audio: currentFile,
         model: "MDX23C-8KFFT-InstVoc_HQ_2.ckpt",
-        out_format: "flac",
+        out_format: "mp3",
         segment_size: 256,
         override_seg_size: false,
         overlap: 2,
