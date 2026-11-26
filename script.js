@@ -576,19 +576,74 @@ window.formatTime = function(sec) {
   return Math.floor(sec / 60) + ':' + Math.floor(sec % 60).toString().padStart(2, '0');
 }
 
-window.downloadAudio = function(id, name) {
+window.downloadAudio = async function(id, name) {
   const url = document.getElementById(id).src;
   if (!url || url === window.location.href) return showToast('لا يوجد ملف متاح', 'error');
 
-  showToast('جاري فتح رابط التنزيل المباشر...', 'success');
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  a.target = '_blank';
-  a.rel = 'noopener noreferrer';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  const btn = document.getElementById('modalDownloadBtn');
+  if (btn && btn.disabled) return;
+
+  const originalIcon = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span style="font-size:0.7rem;font-weight:800;">0%</span>';
+  }
+
+  showToast('جاري تنزيل الملف داخل الصفحة...', 'warning');
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Download failed');
+
+    let blob;
+    if (res.body && res.body.getReader) {
+      const contentLength = Number(res.headers.get('content-length')) || 0;
+      const reader = res.body.getReader();
+      const chunks = [];
+      let received = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.length;
+
+        if (btn) {
+          if (contentLength > 0) {
+            const percent = Math.min(99, Math.round((received / contentLength) * 100));
+            btn.innerHTML = `<span style="font-size:0.7rem;font-weight:800;">${percent}%</span>`;
+          } else {
+            const mb = (received / 1048576).toFixed(1);
+            btn.innerHTML = `<span style="font-size:0.62rem;font-weight:800;">${mb}M</span>`;
+          }
+        }
+      }
+
+      const contentType = res.headers.get('content-type') || 'audio/mpeg';
+      blob = new Blob(chunks, { type: contentType });
+    } else {
+      blob = await res.blob();
+    }
+
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+    showToast('✅ تم تجهيز الملف وحفظه!', 'success');
+  } catch (e) {
+    showToast('تعذّر الحفظ المباشر، جاري الفتح بتبويب جديد...', 'warning');
+    window.open(url, '_blank', 'noopener,noreferrer');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalIcon;
+    }
+  }
 }
 
 
