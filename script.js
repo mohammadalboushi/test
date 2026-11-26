@@ -592,8 +592,11 @@ window.downloadAudio = async function(id, name) {
   showToast('جاري تنزيل الملف داخل الصفحة...', 'warning');
 
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Download failed');
+    const res = await fetch(url, {
+      cache: 'no-store',
+      mode: 'cors'
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
 
     let blob;
     if (res.body && res.body.getReader) {
@@ -636,8 +639,8 @@ window.downloadAudio = async function(id, name) {
     setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
     showToast('✅ تم تجهيز الملف وحفظه!', 'success');
   } catch (e) {
-    showToast('تعذّر الحفظ المباشر، جاري الفتح بتبويب جديد...', 'warning');
-    window.open(url, '_blank', 'noopener,noreferrer');
+    console.error('Download error:', e);
+    showToast('❌ تعذّر التنزيل: ' + (e.message || 'خطأ بالاتصال'), 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
