@@ -974,11 +974,21 @@ window.downloadAudio = async function(id, name) {
 };
 
 /* ==========================================
-   7. PROCESSING (GRADIO + LIVE TIMER)
+   7. PROCESSING (REAL UPLOAD + LIVE PROGRESS)
 ========================================== */
+function setProgressPercent(percent) {
+  const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+  const percentEl = document.getElementById('progressPercent');
+  const fillEl = document.getElementById('progressFill');
+  if (percentEl) percentEl.innerText = clamped + '%';
+  if (fillEl) {
+    fillEl.classList.remove('indeterminate');
+    fillEl.style.width = clamped + '%';
+  }
+}
+
 function setStage(stageIndex, statusText) {
   const statusEl = document.getElementById('progressStatus');
-  const fillEl = document.getElementById('progressFill');
   if (statusEl && statusText) statusEl.innerText = statusText;
 
   for (let i = 1; i <= 4; i++) {
@@ -988,18 +998,50 @@ function setStage(stageIndex, statusText) {
     if (i < stageIndex) el.classList.add('done');
     else if (i === stageIndex) el.classList.add(stageIndex === 4 ? 'done' : 'active');
   }
+}
 
-  if (fillEl) {
-    if (stageIndex === 4) {
-      fillEl.classList.remove('indeterminate');
-      fillEl.style.width = '100%';
-    } else if (stageIndex === 3) {
-      fillEl.classList.add('indeterminate');
-    } else {
-      fillEl.classList.remove('indeterminate');
-      fillEl.style.width = stageIndex === 1 ? '20%' : '45%';
+function uploadFileWithProgress(file, apiBase, token, onUploadPercent) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${apiBase}/upload`, true);
+    if (token) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     }
-  }
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && e.total > 0) {
+        const pct = Math.min(100, Math.round((e.loaded / e.total) * 100));
+        if (typeof onUploadPercent === 'function') onUploadPercent(pct);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const paths = JSON.parse(xhr.responseText);
+          if (Array.isArray(paths) && paths.length > 0 && typeof paths[0] === 'string') {
+            resolve({
+              path: paths[0],
+              url: `${apiBase}/file=${paths[0]}`,
+              orig_name: file.name,
+              size: file.size,
+              mime_type: file.type || 'audio/mpeg',
+              meta: { _type: 'gradio.FileData' }
+            });
+            return;
+          }
+        } catch (e) {}
+      }
+      reject(new Error('Upload fallback'));
+    };
+
+    xhr.onerror = () => reject(new Error('Upload network error'));
+    xhr.onabort = () => reject(new Error('Upload aborted'));
+
+    const formData = new FormData();
+    formData.append('files', file, file.name);
+    xhr.send(formData);
+  });
 }
 
 window.startProcessing = async function() {
@@ -1032,8 +1074,10 @@ window.startProcessing = async function() {
   document.getElementById('progressSection').classList.add('show');
   document.getElementById('resultsSection').classList.remove('show');
 
-  // Real live elapsed timer
   let elapsedSeconds = 0;
+  let currentPct = 0;
+  let aiTickInterval = null;
+
   const timerEl = document.getElementById('progressTimer');
   if (timerEl) timerEl.innerText = '00:00';
 
@@ -1042,16 +1086,57 @@ window.startProcessing = async function() {
     if (timerEl) timerEl.innerText = formatElapsedTimer(elapsedSeconds);
   }, 1000);
 
-  let aiStageTimeout = null;
+  const updatePct = (val) => {
+    const next = Math.max(currentPct, Math.min(100, Math.round(val)));
+    currentPct = next;
+    setProgressPercent(currentPct);
+  };
+
   setStage(1, 'جاري الاتصال بالسيرفر...');
+  setProgressPercent(2);
+  currentPct = 2;
 
   try {
     const isKaraoke = selectedModel === 'karaoke';
     const apiEndpoint = isKaraoke ? '/roformer_separator' : '/mdxc_separator';
 
+    const connectOptions = savedToken ? {
+      token: savedToken,
+      hf_token: savedToken
+    } : {};
+
+    const client = await Client.connect('TheStinger/UVR5_UI', connectOptions);
+    updatePct(5);
+
+    const root = (client.config && client.config.root ? client.config.root : 'https://thestinger-uvr5-ui.hf.space').replace(/\/$/, '');
+    const rawPrefix = (client.config && client.config.api_prefix) ? client.config.api_prefix : '';
+    const prefix = rawPrefix ? (rawPrefix.startsWith('/') ? rawPrefix : '/' + rawPrefix) : '';
+    const apiBase = root + prefix;
+
+    // المرحلة 2: رفع فعلي مع تتبع النسبة الحقيقية للرفع
+    setStage(2, 'جاري رفع الملف إلى السيرفر (0%)...');
+    let audioPayload = currentFile;
+    let uploadCompletedExplicitly = false;
+
+    try {
+      audioPayload = await uploadFileWithProgress(currentFile, apiBase, savedToken, (uploadPct) => {
+        const overallPct = 5 + Math.round(uploadPct * 0.30);
+        updatePct(overallPct);
+        const statusEl = document.getElementById('progressStatus');
+        if (statusEl) statusEl.innerText = `جاري رفع الملف إلى السيرفر (${uploadPct}%)...`;
+      });
+      uploadCompletedExplicitly = true;
+      updatePct(35);
+      setStage(3, 'اكتمل الرفع — جاري العزل بالذكاء الاصطناعي...');
+    } catch (uploadErr) {
+      // في حال تعذّر الرفع المباشر، نمرر الملف ليرفعه العميل تلقائياً
+      audioPayload = currentFile;
+      setStage(2, 'جاري رفع الملف إلى المحرك...');
+    }
+
     const predictParams = isKaraoke
       ? {
-          audio: currentFile,
+          audio: audioPayload,
           model_key: 'MelBand Roformer | Karaoke by Gabox',
           out_format: selectedFormat,
           segment_size: 256,
@@ -1063,7 +1148,7 @@ window.startProcessing = async function() {
           single_stem: ''
         }
       : {
-          audio: currentFile,
+          audio: audioPayload,
           model: 'MDX23C-8KFFT-InstVoc_HQ_2.ckpt',
           out_format: selectedFormat,
           segment_size: 256,
@@ -1075,22 +1160,87 @@ window.startProcessing = async function() {
           single_stem: ''
         };
 
-    const connectOptions = savedToken ? {
-      token: savedToken,
-      hf_token: savedToken
-    } : {};
+    let result = null;
+    let hasServerProgress = false;
+    let aiStarted = uploadCompletedExplicitly;
+    let aiStartSec = elapsedSeconds;
 
-    const client = await Client.connect('TheStinger/UVR5_UI', connectOptions);
+    const startAiFallbackTicker = () => {
+      if (aiTickInterval) return;
+      aiTickInterval = setInterval(() => {
+        if (aiStarted && !hasServerProgress && currentPct < 94) {
+          const step = currentPct < 70 ? 2 : 1;
+          updatePct(Math.min(94, currentPct + step));
+        }
+      }, 1400);
+    };
 
-    setStage(2, 'جاري رفع الملف إلى المحرك...');
-    aiStageTimeout = setTimeout(() => {
-      setStage(3, 'جاري العزل بالذكاء الاصطناعي...');
-    }, 3500);
+    if (uploadCompletedExplicitly) {
+      startAiFallbackTicker();
+    }
 
-    const result = await client.predict(apiEndpoint, predictParams);
+    if (typeof client.submit === 'function') {
+      const job = client.submit(apiEndpoint, predictParams);
 
-    clearTimeout(aiStageTimeout);
+      for await (const msg of job) {
+        if (msg.type === 'status') {
+          if (msg.stage === 'error') {
+            throw new Error(msg.message || 'خطأ أثناء المعالجة على السيرفر');
+          }
+
+          // فور استلام أي حالة من السيرفر يعني الرفع اكتمل فعلياً
+          if (!aiStarted) {
+            aiStarted = true;
+            aiStartSec = elapsedSeconds;
+            updatePct(35);
+            setStage(3, 'اكتمل الرفع — جاري العزل بالذكاء الاصطناعي...');
+            startAiFallbackTicker();
+          }
+
+          if (msg.stage === 'pending') {
+            if (typeof msg.position === 'number') {
+              setStage(3, `اكتمل الرفع — في طابور الانتظار (الدور ${msg.position + 1})...`);
+            } else {
+              setStage(3, 'اكتمل الرفع — بانتظار بدء المعالجة...');
+            }
+          } else if (msg.stage === 'generating') {
+            setStage(3, 'جاري العزل بالذكاء الاصطناعي...');
+
+            if (Array.isArray(msg.progress_data) && msg.progress_data.length > 0) {
+              const latest = msg.progress_data[msg.progress_data.length - 1];
+              let ratio = null;
+              if (typeof latest.progress === 'number' && isFinite(latest.progress)) {
+                ratio = latest.progress;
+              } else if (typeof latest.index === 'number' && typeof latest.length === 'number' && latest.length > 0) {
+                ratio = latest.index / latest.length;
+              }
+
+              if (ratio !== null) {
+                hasServerProgress = true;
+                const clampedRatio = Math.max(0, Math.min(1, ratio));
+                updatePct(35 + Math.round(clampedRatio * 64));
+              }
+            } else if (typeof msg.eta === 'number' && msg.eta > 0 && !hasServerProgress) {
+              const aiElapsed = Math.max(1, elapsedSeconds - aiStartSec);
+              const etaRatio = aiElapsed / (aiElapsed + msg.eta);
+              updatePct(Math.min(96, 35 + Math.round(etaRatio * 61)));
+            }
+          }
+        } else if (msg.type === 'data') {
+          result = msg;
+          break;
+        }
+      }
+    } else {
+      result = await client.predict(apiEndpoint, predictParams);
+    }
+
+    if (aiTickInterval) clearInterval(aiTickInterval);
     clearInterval(elapsedInterval);
+
+    if (!result || !Array.isArray(result.data)) {
+      throw new Error('لم يرجع السيرفر ملفات النتيجة');
+    }
 
     const getUrl = (item) => {
       const baseUrl = 'https://thestinger-uvr5-ui.hf.space';
@@ -1116,6 +1266,7 @@ window.startProcessing = async function() {
     const metaBadge = document.getElementById('resultMetaBadge');
     if (metaBadge) metaBadge.innerText = `${selectedFormat.toUpperCase()} · ${formatElapsedTimer(elapsedSeconds)}`;
 
+    updatePct(100);
     setStage(4, `تم الفصل بنجاح خلال ${formatElapsedTimer(elapsedSeconds)}`);
 
     saveToHistory(currentFile.name, rawInstUrl, rawVocalUrl, selectedFormat);
@@ -1127,10 +1278,10 @@ window.startProcessing = async function() {
       processBtn.disabled = false;
       processBtn.innerHTML = '<i class="ri-magic-line"></i><span>بدء الفصل الآن</span>';
       showToast(`تم الفصل خلال ${formatElapsedTimer(elapsedSeconds)} — جاهز للاستماع`, 'success');
-    }, 600);
+    }, 650);
 
   } catch (err) {
-    clearTimeout(aiStageTimeout);
+    if (aiTickInterval) clearInterval(aiTickInterval);
     clearInterval(elapsedInterval);
     console.error(err);
 

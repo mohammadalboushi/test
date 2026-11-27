@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v=3.0">
+  <link rel="stylesheet" href="style.css?v=3.1">
 </head>
 
 <body>
@@ -224,7 +224,10 @@
                       <span class="pulse-indicator"></span>
                       <span class="progress-status" id="progressStatus">جاري تجهيز الاتصال...</span>
                     </div>
-                    <span class="progress-timer" id="progressTimer" dir="ltr">00:00</span>
+                    <div class="progress-metrics" dir="ltr">
+                      <span class="progress-percent" id="progressPercent">0%</span>
+                      <span class="progress-timer" id="progressTimer">00:00</span>
+                    </div>
                   </div>
 
                   <div class="progress-track">
@@ -666,7 +669,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
   <!-- ============ MAIN APP MODULE ============ -->
-  <script type="module" src="script.js?v=3.0"></script>
+  <script type="module" src="script.js?v=3.1"></script>
 
 </body>
 </html>
