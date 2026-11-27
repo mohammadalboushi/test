@@ -121,6 +121,31 @@ const auth = firebase.auth();
 
 let isProcessingActive = false;
 let sessionRef = null;
+let wakeLockSentinel = null;
+
+async function acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    if (wakeLockSentinel) return;
+    wakeLockSentinel = await navigator.wakeLock.request('screen');
+    wakeLockSentinel.addEventListener('release', () => {
+      wakeLockSentinel = null;
+    });
+  } catch (e) {}
+}
+
+function releaseWakeLock() {
+  if (wakeLockSentinel) {
+    wakeLockSentinel.release().catch(() => {});
+    wakeLockSentinel = null;
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && isProcessingActive) {
+    acquireWakeLock();
+  }
+});
 
 window.addEventListener('beforeunload', function(e) {
   if (isProcessingActive) {
@@ -174,7 +199,7 @@ function resetLoginButton() {
 }
 
 function stopAllPlayback() {
-  ['vocalAudio', 'instAudio'].forEach(id => {
+  ['vocalAudio', 'instAudio', 'previewAudio'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
       if (el.fadeInterval) clearInterval(el.fadeInterval);
@@ -182,6 +207,11 @@ function stopAllPlayback() {
       el.volume = 1;
     }
   });
+  const previewBtn = document.getElementById('previewToggleBtn');
+  if (previewBtn) {
+    previewBtn.classList.remove('playing');
+    previewBtn.innerHTML = '<i class="ri-play-fill"></i>';
+  }
 }
 
 function monitorSession(uid) {
@@ -319,10 +349,14 @@ window.requestLogout = function() {
 /* ==========================================
    3. STATE & PREFERENCES
 ========================================== */
+const MAX_FILE_SIZE_MB = 30;
 let currentFile = null;
+let previewObjectUrl = null;
 let currentOutputFormat = localStorage.getItem('pref_out_format') || 'mp3';
 let activeAudio = null;
 let activeType = null;
+let mixVocalVol = 0.35;
+let mixInstVol = 1.0;
 let progressInterval = null;
 let pendingConfirmAction = null;
 
@@ -436,20 +470,45 @@ window.handleDragLeave = function() {
   document.getElementById('uploadArea').classList.remove('dragover');
 };
 
+function validateAndLoadFile(file) {
+  if (!file) return;
+
+  const isAudioMime = file.type && file.type.startsWith('audio/');
+  const isAudioExt = /\.(mp3|wav|flac|m4a|ogg|aac|opus|wma|webm)$/i.test(file.name || '');
+
+  if (!isAudioMime && !isAudioExt) {
+    showToast('يرجى اختيار ملف صوتي صالح فقط (MP3, WAV, FLAC, M4A).', 'error');
+    return;
+  }
+
+  if (file.size === 0) {
+    showToast('الملف المختار فارغ ولا يمكن معالجته.', 'error');
+    return;
+  }
+
+  const maxBytes = MAX_FILE_SIZE_MB * 1024 * 1024;
+  if (file.size > maxBytes) {
+    showToast(`حجم الملف يتجاوز الحد المسموح (${MAX_FILE_SIZE_MB} MB) لضمان سرعة واستقرار الفصل.`, 'error');
+    return;
+  }
+
+  currentFile = file;
+  showFileInfo();
+}
+
 window.handleDrop = function(e) {
   e.preventDefault();
   document.getElementById('uploadArea').classList.remove('dragover');
   if (e.dataTransfer.files.length > 0) {
-    currentFile = e.dataTransfer.files[0];
-    showFileInfo();
+    validateAndLoadFile(e.dataTransfer.files[0]);
   }
 };
 
 window.handleFileSelect = function(e) {
   if (e.target.files.length > 0) {
-    currentFile = e.target.files[0];
-    showFileInfo();
+    validateAndLoadFile(e.target.files[0]);
   }
+  e.target.value = '';
 };
 
 async function drawWaveform(file) {
@@ -534,8 +593,54 @@ async function drawWaveform(file) {
   }
 }
 
+function stopPreviewAudio() {
+  const previewAudio = document.getElementById('previewAudio');
+  const previewBtn = document.getElementById('previewToggleBtn');
+  if (previewAudio) {
+    previewAudio.pause();
+    previewAudio.currentTime = 0;
+  }
+  if (previewBtn) {
+    previewBtn.classList.remove('playing');
+    previewBtn.innerHTML = '<i class="ri-play-fill"></i>';
+  }
+}
+
+window.togglePreviewAudio = function() {
+  const previewAudio = document.getElementById('previewAudio');
+  const previewBtn = document.getElementById('previewToggleBtn');
+  if (!previewAudio || !previewObjectUrl) return;
+
+  if (previewAudio.paused) {
+    ['vocalAudio', 'instAudio'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !el.paused) el.pause();
+    });
+    previewAudio.play().then(() => {
+      if (previewBtn) {
+        previewBtn.classList.add('playing');
+        previewBtn.innerHTML = '<i class="ri-pause-fill"></i>';
+      }
+    }).catch(() => {
+      showToast('تعذّر تشغيل معاينة هذا الملف.', 'warning');
+    });
+  } else {
+    previewAudio.pause();
+    if (previewBtn) {
+      previewBtn.classList.remove('playing');
+      previewBtn.innerHTML = '<i class="ri-play-fill"></i>';
+    }
+  }
+};
+
 function showFileInfo() {
   if (!currentFile) return;
+
+  stopPreviewAudio();
+  if (previewObjectUrl) {
+    URL.revokeObjectURL(previewObjectUrl);
+    previewObjectUrl = null;
+  }
 
   document.getElementById('fileName').innerText = currentFile.name;
   document.getElementById('fileSize').innerText = (currentFile.size / 1048576).toFixed(1) + ' MB';
@@ -544,24 +649,26 @@ function showFileInfo() {
   document.getElementById('waveformSection').classList.add('show');
   document.getElementById('changeFileBtn').classList.remove('hidden');
 
-  const tempUrl = URL.createObjectURL(currentFile);
-  const tempAudio = new Audio();
-  tempAudio.preload = 'metadata';
-  tempAudio.src = tempUrl;
+  const previewAudio = document.getElementById('previewAudio');
+  const previewBtn = document.getElementById('previewToggleBtn');
+  previewObjectUrl = URL.createObjectURL(currentFile);
 
-  const cleanup = () => {
-    URL.revokeObjectURL(tempUrl);
-    tempAudio.src = '';
-  };
-
-  tempAudio.onloadedmetadata = () => {
-    const minutes = Math.floor(tempAudio.duration / 60);
-    const seconds = Math.floor(tempAudio.duration % 60);
-    document.getElementById('fileDuration').innerText =
-      `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    cleanup();
-  };
-  tempAudio.onerror = cleanup;
+  if (previewAudio) {
+    previewAudio.src = previewObjectUrl;
+    previewAudio.onloadedmetadata = () => {
+      const minutes = Math.floor(previewAudio.duration / 60);
+      const seconds = Math.floor(previewAudio.duration % 60);
+      document.getElementById('fileDuration').innerText =
+        `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    };
+    previewAudio.onended = () => {
+      if (previewBtn) {
+        previewBtn.classList.remove('playing');
+        previewBtn.innerHTML = '<i class="ri-play-fill"></i>';
+      }
+    };
+  }
+  if (previewBtn) previewBtn.classList.remove('hidden');
 
   drawWaveform(currentFile);
 }
@@ -570,7 +677,22 @@ function showFileInfo() {
    6. PLAYER MODAL + A/B SWITCH + MEDIA SESSION
 ========================================== */
 function hasValidSrc(el) {
-  return Boolean(el && el.src && el.src !== window.location.href && !el.src.endsWith('#player'));
+  const attr = el ? el.getAttribute('src') : '';
+  return Boolean(attr && attr.trim() !== '' && el.src !== window.location.href && !el.src.endsWith('#player'));
+}
+
+function attachAudioErrorHandlers() {
+  ['vocalAudio', 'instAudio'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('error', () => {
+      const rawSrc = el.getAttribute('src') || '';
+      if (rawSrc.startsWith('http')) {
+        showToast('انتهت صلاحية رابط هذا المقطع على السيرفر، يرجى إعادة فصله.', 'error');
+        syncPlayPauseIcon();
+      }
+    });
+  });
 }
 
 function updateSwitchBarUI() {
@@ -579,36 +701,81 @@ function updateSwitchBarUI() {
   const bar = document.getElementById('playerSwitchBar');
   const vocalBtn = document.getElementById('switchVocalBtn');
   const instBtn = document.getElementById('switchInstBtn');
+  const mixBtn = document.getElementById('switchMixBtn');
+  const mixerPanel = document.getElementById('liveMixerPanel');
+  const sheet = document.querySelector('.player-sheet');
 
   const bothReady = hasValidSrc(vocalAudio) && hasValidSrc(instAudio);
   if (bar) bar.classList.toggle('hidden', !bothReady);
 
   if (vocalBtn) vocalBtn.className = 'ab-btn' + (activeType === 'vocal' ? ' active-vocal' : '');
   if (instBtn) instBtn.className = 'ab-btn' + (activeType === 'inst' ? ' active-inst' : '');
+  if (mixBtn) mixBtn.className = 'ab-btn' + (activeType === 'mix' ? ' active-mix' : '');
+
+  const isMix = activeType === 'mix' && bothReady;
+  if (mixerPanel) mixerPanel.classList.toggle('hidden', !isMix);
+  if (sheet) sheet.classList.toggle('mixer-active', isMix);
 }
 
 function applyPlayerTrackUI(type) {
   const isVocal = type === 'vocal';
-  document.getElementById('playerTitle').innerText = isVocal ? 'صوت المطرب' : 'الموسيقى الخلفية';
-  document.getElementById('trackName').innerText = isVocal ? 'المسار الصوتي (Vocals)' : 'المسار الموسيقي (Instrumental)';
+  const isMix = type === 'mix';
+
+  document.getElementById('playerTitle').innerText = isMix
+    ? 'مكسر صوتي حي'
+    : (isVocal ? 'صوت المطرب' : 'الموسيقى الخلفية');
+
+  document.getElementById('trackName').innerText = isMix
+    ? 'مزج حي (المطرب + الموسيقى)'
+    : (isVocal ? 'المسار الصوتي (Vocals)' : 'المسار الموسيقي (Instrumental)');
+
   document.getElementById('trackFileName').innerText = currentFile ? currentFile.name : 'Audio Track';
 
   const artwork = document.getElementById('playerArtwork');
   const icon = document.getElementById('playerArtworkIcon');
-  artwork.classList.remove('vocal-theme', 'inst-theme');
-  artwork.classList.add(isVocal ? 'vocal-theme' : 'inst-theme');
-  icon.className = isVocal ? 'ri-mic-2-line' : 'ri-music-2-line';
+  artwork.classList.remove('vocal-theme', 'inst-theme', 'mix-theme');
+
+  if (isMix) {
+    artwork.classList.add('mix-theme');
+    icon.className = 'ri-equalizer-line';
+  } else if (isVocal) {
+    artwork.classList.add('vocal-theme');
+    icon.className = 'ri-mic-2-line';
+  } else {
+    artwork.classList.add('inst-theme');
+    icon.className = 'ri-music-2-line';
+  }
 
   updateSwitchBarUI();
   updateMediaSession();
 }
 
+window.updateMixerVolume = function(track, value) {
+  const pct = Math.max(0, Math.min(100, Number(value) || 0));
+  const normalized = pct / 100;
+
+  if (track === 'vocal') {
+    mixVocalVol = normalized;
+    const label = document.getElementById('mixVocalVal');
+    if (label) label.innerText = pct + '%';
+    const el = document.getElementById('vocalAudio');
+    if (el && activeType === 'mix') el.volume = mixVocalVol;
+  } else {
+    mixInstVol = normalized;
+    const label = document.getElementById('mixInstVal');
+    if (label) label.innerText = pct + '%';
+    const el = document.getElementById('instAudio');
+    if (el && activeType === 'mix') el.volume = mixInstVol;
+  }
+};
+
 function updateMediaSession() {
   if (!('mediaSession' in navigator) || !activeAudio) return;
 
-  const isVocal = activeType === 'vocal';
   const baseName = currentFile ? currentFile.name : 'Voice Studio Pro';
-  const trackLabel = isVocal ? 'صوت المطرب' : 'الموسيقى الخلفية';
+  const trackLabel = activeType === 'mix'
+    ? 'مكسر صوتي حي'
+    : (activeType === 'vocal' ? 'صوت المطرب' : 'الموسيقى الخلفية');
 
   try {
     navigator.mediaSession.metadata = new MediaMetadata({
@@ -637,7 +804,12 @@ function updateMediaSession() {
     });
     navigator.mediaSession.setActionHandler('seekto', (details) => {
       if (activeAudio && details && typeof details.seekTime === 'number' && isFinite(activeAudio.duration)) {
-        activeAudio.currentTime = Math.max(0, Math.min(details.seekTime, activeAudio.duration));
+        const clamped = Math.max(0, Math.min(details.seekTime, activeAudio.duration));
+        activeAudio.currentTime = clamped;
+        if (activeType === 'mix') {
+          const vocalEl = document.getElementById('vocalAudio');
+          if (vocalEl && isFinite(vocalEl.duration)) vocalEl.currentTime = Math.min(clamped, vocalEl.duration);
+        }
         updateMediaPositionState();
       }
     });
@@ -666,6 +838,7 @@ function updateMediaPositionState() {
 }
 
 window.openPlayer = function(type) {
+  stopPreviewAudio();
   const audioId = type === 'vocal' ? 'vocalAudio' : 'instAudio';
   const targetAudio = document.getElementById(audioId);
 
@@ -674,14 +847,19 @@ window.openPlayer = function(type) {
     return;
   }
 
-  // Pause the other track cleanly if switching via cards
+  if (targetAudio.error) {
+    showToast('انتهت صلاحية رابط هذا المقطع على السيرفر، يرجى إعادة فصله.', 'error');
+    return;
+  }
+
   const otherAudio = document.getElementById(type === 'vocal' ? 'instAudio' : 'vocalAudio');
-  if (otherAudio && !otherAudio.paused) {
+  if (otherAudio) {
     if (otherAudio.fadeInterval) clearInterval(otherAudio.fadeInterval);
     otherAudio.pause();
     otherAudio.volume = 1;
   }
 
+  targetAudio.volume = 1;
   activeType = type;
   activeAudio = targetAudio;
   applyPlayerTrackUI(type);
@@ -705,21 +883,78 @@ window.openPlayer = function(type) {
 window.switchPlayerTrack = function(targetType) {
   if (!targetType || targetType === activeType) return;
 
-  const targetId = targetType === 'vocal' ? 'vocalAudio' : 'instAudio';
-  const targetAudio = document.getElementById(targetId);
-  if (!hasValidSrc(targetAudio)) return;
+  const vocalAudio = document.getElementById('vocalAudio');
+  const instAudio = document.getElementById('instAudio');
+
+  if (targetType === 'mix') {
+    if (!hasValidSrc(vocalAudio) || !hasValidSrc(instAudio)) return;
+  } else {
+    const checkEl = targetType === 'vocal' ? vocalAudio : instAudio;
+    if (!hasValidSrc(checkEl)) return;
+  }
 
   const prevAudio = activeAudio;
   const wasPlaying = prevAudio ? !prevAudio.paused : false;
   const syncTime = prevAudio ? (prevAudio.currentTime || 0) : 0;
 
-  if (prevAudio) {
-    if (prevAudio.fadeInterval) clearInterval(prevAudio.fadeInterval);
-    prevAudio.pause();
-    prevAudio.volume = 1;
-  }
+  [vocalAudio, instAudio].forEach(el => {
+    if (el) {
+      if (el.fadeInterval) clearInterval(el.fadeInterval);
+      el.pause();
+    }
+  });
 
   activeType = targetType;
+
+  if (targetType === 'mix') {
+    activeAudio = instAudio;
+    applyPlayerTrackUI('mix');
+
+    const startMixSynced = () => {
+      const instDur = isFinite(instAudio.duration) ? instAudio.duration : 0;
+      const vocDur = isFinite(vocalAudio.duration) ? vocalAudio.duration : 0;
+      if (instDur > 0) instAudio.currentTime = Math.min(syncTime, Math.max(0, instDur - 0.1));
+      if (vocDur > 0) vocalAudio.currentTime = Math.min(syncTime, Math.max(0, vocDur - 0.1));
+      instAudio.volume = mixInstVol;
+      vocalAudio.volume = mixVocalVol;
+
+      if (wasPlaying) {
+        Promise.all([
+          instAudio.play().catch(() => {}),
+          vocalAudio.play().catch(() => {})
+        ]).then(() => {
+          syncPlayPauseIcon();
+          updateMediaPositionState();
+        });
+      } else {
+        syncPlayPauseIcon();
+      }
+    };
+
+    if (instAudio.readyState >= 1 && vocalAudio.readyState >= 1) {
+      startMixSynced();
+    } else {
+      let loadedCount = 0;
+      const needed = (instAudio.readyState >= 1 ? 0 : 1) + (vocalAudio.readyState >= 1 ? 0 : 1);
+      const onReady = () => {
+        loadedCount += 1;
+        if (loadedCount >= needed) startMixSynced();
+      };
+      if (instAudio.readyState < 1) {
+        instAudio.addEventListener('loadedmetadata', onReady, { once: true });
+        instAudio.load();
+      }
+      if (vocalAudio.readyState < 1) {
+        vocalAudio.addEventListener('loadedmetadata', onReady, { once: true });
+        vocalAudio.load();
+      }
+    }
+    return;
+  }
+
+  const targetAudio = targetType === 'vocal' ? vocalAudio : instAudio;
+  vocalAudio.volume = 1;
+  instAudio.volume = 1;
   activeAudio = targetAudio;
   applyPlayerTrackUI(targetType);
 
@@ -788,6 +1023,43 @@ window.addEventListener('keydown', function(e) {
 window.toggleModalPlay = function() {
   if (!activeAudio) return;
 
+  if (activeAudio.error) {
+    showToast('انتهت صلاحية رابط هذا المقطع على السيرفر، يرجى إعادة فصله.', 'error');
+    return;
+  }
+
+  const vocalAudio = document.getElementById('vocalAudio');
+  const instAudio = document.getElementById('instAudio');
+
+  if (activeType === 'mix') {
+    if (instAudio.paused) {
+      instAudio.volume = mixInstVol;
+      vocalAudio.volume = mixVocalVol;
+      if (isFinite(vocalAudio.duration) && vocalAudio.duration > 0) {
+        vocalAudio.currentTime = Math.min(instAudio.currentTime || 0, Math.max(0, vocalAudio.duration - 0.1));
+      }
+      Promise.all([
+        instAudio.play(),
+        vocalAudio.play().catch(() => {})
+      ]).then(() => {
+        syncPlayPauseIcon();
+        updateMediaSession();
+        updateMediaPositionState();
+      }).catch(() => {
+        showToast('تعذّر تشغيل البث، ربما انتهت صلاحية الرابط على السيرفر.', 'error');
+        syncPlayPauseIcon();
+      });
+    } else {
+      instAudio.pause();
+      vocalAudio.pause();
+      syncPlayPauseIcon();
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'paused';
+      }
+    }
+    return;
+  }
+
   const otherAudioId = activeAudio.id === 'vocalAudio' ? 'instAudio' : 'vocalAudio';
   const otherAudio = document.getElementById(otherAudioId);
 
@@ -815,6 +1087,7 @@ window.toggleModalPlay = function() {
       updateMediaPositionState();
     }).catch(() => {
       activeAudio.volume = 1;
+      showToast('تعذّر تشغيل البث، ربما انتهت صلاحية الرابط على السيرفر.', 'error');
       syncPlayPauseIcon();
     });
   } else {
@@ -843,7 +1116,14 @@ function syncPlayPauseIcon() {
 
 window.seekModalAudio = function(val) {
   if (activeAudio && isFinite(activeAudio.duration) && activeAudio.duration > 0) {
-    activeAudio.currentTime = (val / 100) * activeAudio.duration;
+    const targetTime = (val / 100) * activeAudio.duration;
+    activeAudio.currentTime = targetTime;
+    if (activeType === 'mix') {
+      const vocalAudio = document.getElementById('vocalAudio');
+      if (vocalAudio && isFinite(vocalAudio.duration) && vocalAudio.duration > 0) {
+        vocalAudio.currentTime = Math.min(targetTime, vocalAudio.duration);
+      }
+    }
     document.getElementById('modalCurrentTime').innerText = window.formatTime(activeAudio.currentTime);
     updateMediaPositionState();
   }
@@ -855,6 +1135,12 @@ window.seekRelative = function(seconds) {
     if (newTime < 0) newTime = 0;
     if (newTime > activeAudio.duration) newTime = activeAudio.duration;
     activeAudio.currentTime = newTime;
+    if (activeType === 'mix') {
+      const vocalAudio = document.getElementById('vocalAudio');
+      if (vocalAudio && isFinite(vocalAudio.duration) && vocalAudio.duration > 0) {
+        vocalAudio.currentTime = Math.min(newTime, vocalAudio.duration);
+      }
+    }
     updateMediaPositionState();
   }
 };
@@ -864,7 +1150,19 @@ function updateModalProgress() {
     document.getElementById('modalSeek').value = (activeAudio.currentTime / activeAudio.duration) * 100;
     document.getElementById('modalCurrentTime').innerText = window.formatTime(activeAudio.currentTime);
     document.getElementById('modalTotalTime').innerText = window.formatTime(activeAudio.duration);
+
+    if (activeType === 'mix' && !activeAudio.paused) {
+      const vocalAudio = document.getElementById('vocalAudio');
+      if (vocalAudio && vocalAudio.readyState >= 2 && Math.abs(vocalAudio.currentTime - activeAudio.currentTime) > 0.3) {
+        vocalAudio.currentTime = activeAudio.currentTime;
+      }
+    }
+
     if (activeAudio.ended) {
+      if (activeType === 'mix') {
+        const vocalAudio = document.getElementById('vocalAudio');
+        if (vocalAudio) vocalAudio.pause();
+      }
       syncPlayPauseIcon();
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     }
@@ -882,11 +1180,21 @@ function buildDownloadName(type) {
   return `${baseName} - ${suffix}.${ext}`;
 }
 
+window.downloadTrackDirect = function(type, triggerBtn) {
+  const audioId = type === 'vocal' ? 'vocalAudio' : 'instAudio';
+  const fileName = buildDownloadName(type);
+  window.downloadAudio(audioId, fileName, triggerBtn);
+};
+
 window.downloadCurrentAudio = function() {
   if (!activeType) return;
+  if (activeType === 'mix') {
+    showToast('للتنزيل، اختر مسار المطرب أو الموسيقى من الشريط بالأعلى أولاً.', 'warning');
+    return;
+  }
   const audioId = activeType === 'vocal' ? 'vocalAudio' : 'instAudio';
   const fileName = buildDownloadName(activeType);
-  window.downloadAudio(audioId, fileName);
+  window.downloadAudio(audioId, fileName, document.getElementById('modalDownloadBtn'));
 };
 
 window.formatTime = function(sec) {
@@ -900,11 +1208,12 @@ function formatElapsedTimer(totalSeconds) {
   return `${m}:${s}`;
 }
 
-window.downloadAudio = async function(id, name) {
-  const url = document.getElementById(id).src;
-  if (!url || url === window.location.href) return showToast('لا يوجد ملف متاح', 'error');
+window.downloadAudio = async function(id, name, triggerBtn = null) {
+  const audioEl = document.getElementById(id);
+  const url = audioEl ? audioEl.src : '';
+  if (!hasValidSrc(audioEl)) return showToast('لا يوجد ملف متاح', 'error');
 
-  const btn = document.getElementById('modalDownloadBtn');
+  const btn = triggerBtn || document.getElementById('modalDownloadBtn');
   if (btn && btn.disabled) return;
 
   const originalIcon = btn ? btn.innerHTML : '';
@@ -920,6 +1229,9 @@ window.downloadAudio = async function(id, name) {
       cache: 'no-store',
       mode: 'cors'
     });
+    if (res.status === 404 || res.status === 410) {
+      throw new Error('انتهت صلاحية رابط هذا المقطع على السيرفر، أعد فصله.');
+    }
     if (!res.ok) throw new Error('HTTP ' + res.status);
 
     let blob;
@@ -1049,7 +1361,9 @@ window.startProcessing = async function() {
     return showToast('اختر ملفاً صوتياً من جهازك أولاً', 'warning');
   }
 
+  stopPreviewAudio();
   isProcessingActive = true;
+  acquireWakeLock();
 
   const isTokenActive = localStorage.getItem('hf_token_active') !== 'false';
   const rawToken = localStorage.getItem('hf_token');
@@ -1273,6 +1587,7 @@ window.startProcessing = async function() {
 
     setTimeout(() => {
       isProcessingActive = false;
+      releaseWakeLock();
       document.getElementById('progressSection').classList.remove('show');
       document.getElementById('resultsSection').classList.add('show');
       processBtn.disabled = false;
@@ -1300,6 +1615,7 @@ window.startProcessing = async function() {
     }
 
     isProcessingActive = false;
+    releaseWakeLock();
     processBtn.disabled = false;
     processBtn.innerHTML = '<i class="ri-magic-line"></i><span>بدء الفصل الآن</span>';
     document.getElementById('progressSection').classList.remove('show');
@@ -1349,6 +1665,29 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+function getHistoryAgeBadge(ts) {
+  if (!ts) return { text: 'غير محدد', cls: 'old' };
+  const diffMin = Math.max(0, Math.floor((Date.now() - ts) / 60000));
+  if (diffMin < 2) return { text: 'الآن · نشط', cls: 'fresh' };
+  if (diffMin < 60) return { text: `منذ ${diffMin} د · نشط`, cls: 'fresh' };
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 3) return { text: `منذ ${diffHours} س · نشط`, cls: 'fresh' };
+  if (diffHours < 12) return { text: `منذ ${diffHours} س · مؤقت`, cls: 'aging' };
+  if (diffHours < 24) return { text: `منذ ${diffHours} س · قديم`, cls: 'old' };
+  const diffDays = Math.floor(diffHours / 24);
+  return { text: `منذ ${diffDays} ي · منتهي غالباً`, cls: 'old' };
+}
+
+window.deleteHistoryItem = function(event, index) {
+  if (event) event.stopPropagation();
+  const history = JSON.parse(localStorage.getItem('voiceHistory') || '[]');
+  if (index < 0 || index >= history.length) return;
+  history.splice(index, 1);
+  localStorage.setItem('voiceHistory', JSON.stringify(history));
+  loadHistory();
+  showToast('تم حذف المقطع من السجل', 'success');
+};
+
 window.loadHistory = function() {
   const history = JSON.parse(localStorage.getItem('voiceHistory') || '[]');
   const list = document.getElementById('historyList');
@@ -1367,6 +1706,7 @@ window.loadHistory = function() {
   list.innerHTML = history.map((h, index) => {
     const fmt = (h.format || 'mp3').toUpperCase();
     const displayDate = h.timestamp ? formatHistoryDate(h.timestamp) : (h.date || '');
+    const age = getHistoryAgeBadge(h.timestamp);
     return `
       <div class="history-item" onclick="restoreFromHistory(${index})">
         <div class="history-meta">
@@ -1374,10 +1714,16 @@ window.loadHistory = function() {
           <div class="history-sub">
             <span dir="ltr">${escapeHtml(displayDate)}</span>
             <span class="history-format-tag">${escapeHtml(fmt)}</span>
+            <span class="history-age-tag ${age.cls}">${escapeHtml(age.text)}</span>
           </div>
         </div>
-        <div class="history-play-btn">
-          <i class="ri-play-fill"></i>
+        <div class="history-actions">
+          <button type="button" class="history-del-btn" onclick="deleteHistoryItem(event, ${index})" aria-label="حذف هذا المقطع" title="حذف">
+            <i class="ri-delete-bin-line"></i>
+          </button>
+          <div class="history-play-btn">
+            <i class="ri-play-fill"></i>
+          </div>
         </div>
       </div>
     `;
@@ -1424,9 +1770,13 @@ window.restoreFromHistory = function(index) {
     vocalAudio.load();
     document.getElementById('vocalCard').style.display = 'flex';
   } else {
-    vocalAudio.src = '';
+    vocalAudio.removeAttribute('src');
+    vocalAudio.load();
     document.getElementById('vocalCard').style.display = 'none';
   }
+
+  const previewBtn = document.getElementById('previewToggleBtn');
+  if (previewBtn) previewBtn.classList.add('hidden');
 
   currentFile = { name: item.name };
   currentOutputFormat = item.format || 'mp3';
@@ -1545,6 +1895,7 @@ function updateTokenLockUI(isActive) {
 document.getElementById('hf_token_input').value = localStorage.getItem('hf_token') || '';
 updateTokenLockUI(localStorage.getItem('hf_token_active') !== 'false');
 restoreProcessingPrefs();
+attachAudioErrorHandlers();
 loadHistory();
 
 if ('serviceWorker' in navigator) {
