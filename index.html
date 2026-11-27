@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v=3.1">
+  <link rel="stylesheet" href="style.css?v=3.2">
 </head>
 
 <body>
@@ -192,7 +192,7 @@
                     <i class="ri-upload-cloud-2-line"></i>
                   </div>
                   <h2 class="upload-title">اختر أو اسحب ملفاً صوتياً هنا</h2>
-                  <p class="upload-desc" dir="ltr">MP3 · WAV · FLAC · M4A</p>
+                  <p class="upload-desc" dir="ltr">MP3 · WAV · FLAC · M4A · MAX 30 MB</p>
                 </div>
                 <input type="file" id="audioFile" accept="audio/*" onchange="handleFileSelect(event)">
 
@@ -209,7 +209,11 @@
                         <span class="meta-chip"><i class="ri-time-line"></i> <span id="fileDuration" dir="ltr">—</span></span>
                       </div>
                     </div>
+                    <button type="button" class="preview-play-btn hidden" id="previewToggleBtn" onclick="togglePreviewAudio()" aria-label="معاينة الملف قبل الفصل" title="معاينة الملف">
+                      <i class="ri-play-fill"></i>
+                    </button>
                   </div>
+                  <audio id="previewAudio" class="hidden-audio" preload="metadata"></audio>
                 </div>
 
                 <!-- Waveform -->
@@ -277,7 +281,12 @@
                       <h4>صوت المطرب</h4>
                       <p>بث مباشر فوري وتبديل لحظي مع الموسيقى</p>
                     </div>
-                    <span class="result-action-icon"><i class="ri-play-fill"></i></span>
+                    <div class="result-actions">
+                      <button type="button" class="result-download-btn" id="cardDownloadVocalBtn" onclick="event.stopPropagation(); downloadTrackDirect('vocal', this)" aria-label="تنزيل صوت المطرب" title="تنزيل مباشر">
+                        <i class="ri-download-2-line"></i>
+                      </button>
+                      <span class="result-action-icon"><i class="ri-play-fill"></i></span>
+                    </div>
                     <audio id="vocalAudio" class="hidden-audio" preload="metadata"></audio>
                   </div>
 
@@ -289,7 +298,12 @@
                       <h4>الموسيقى الخلفية</h4>
                       <p>بث مباشر فوري وتنزيل مباشر داخل الصفحة</p>
                     </div>
-                    <span class="result-action-icon"><i class="ri-play-fill"></i></span>
+                    <div class="result-actions">
+                      <button type="button" class="result-download-btn" id="cardDownloadInstBtn" onclick="event.stopPropagation(); downloadTrackDirect('inst', this)" aria-label="تنزيل الموسيقى الخلفية" title="تنزيل مباشر">
+                        <i class="ri-download-2-line"></i>
+                      </button>
+                      <span class="result-action-icon"><i class="ri-play-fill"></i></span>
+                    </div>
                     <audio id="instAudio" class="hidden-audio" preload="metadata"></audio>
                   </div>
                 </div>
@@ -573,15 +587,19 @@
         </button>
       </div>
 
-      <!-- Instant A/B Track Switcher -->
+      <!-- Instant A/B & Live Mixer Switcher -->
       <div class="ab-switcher" id="playerSwitchBar">
         <button type="button" class="ab-btn" id="switchVocalBtn" onclick="switchPlayerTrack('vocal')">
           <i class="ri-mic-2-line"></i>
-          <span>صوت المطرب</span>
+          <span>المطرب</span>
         </button>
         <button type="button" class="ab-btn" id="switchInstBtn" onclick="switchPlayerTrack('inst')">
           <i class="ri-music-2-line"></i>
-          <span>الموسيقى الخلفية</span>
+          <span>الموسيقى</span>
+        </button>
+        <button type="button" class="ab-btn" id="switchMixBtn" onclick="switchPlayerTrack('mix')">
+          <i class="ri-equalizer-line"></i>
+          <span>مكسر حي</span>
         </button>
       </div>
 
@@ -597,6 +615,24 @@
       <div class="player-track-info">
         <h2 id="trackName">المسار الموسيقي</h2>
         <p id="trackFileName" dir="ltr">track.mp3</p>
+      </div>
+
+      <!-- Live Dual-Track Mixer Panel -->
+      <div class="live-mixer-panel hidden" id="liveMixerPanel">
+        <div class="mixer-row">
+          <div class="mixer-label-row">
+            <span class="mixer-label vocal"><i class="ri-mic-2-line"></i> صوت المطرب</span>
+            <span class="mixer-val" id="mixVocalVal" dir="ltr">35%</span>
+          </div>
+          <input type="range" class="mixer-slider vocal" id="mixVocalSlider" min="0" max="100" value="35" oninput="updateMixerVolume('vocal', this.value)">
+        </div>
+        <div class="mixer-row">
+          <div class="mixer-label-row">
+            <span class="mixer-label inst"><i class="ri-music-2-line"></i> الموسيقى الخلفية</span>
+            <span class="mixer-val" id="mixInstVal" dir="ltr">100%</span>
+          </div>
+          <input type="range" class="mixer-slider inst" id="mixInstSlider" min="0" max="100" value="100" oninput="updateMixerVolume('inst', this.value)">
+        </div>
       </div>
 
       <div class="player-controls-wrap">
@@ -669,7 +705,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
   <!-- ============ MAIN APP MODULE ============ -->
-  <script type="module" src="script.js?v=3.1"></script>
+  <script type="module" src="script.js?v=3.2"></script>
 
 </body>
 </html>
