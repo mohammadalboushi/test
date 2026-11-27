@@ -1,13 +1,16 @@
+/* ==========================================
+   0. ZERO-FLASH THEME BOOTSTRAP
+========================================== */
 (function() {
   try {
-    var pref = localStorage.getItem('theme_preference') || 'light';
+    var pref = localStorage.getItem('theme_preference') || 'dark';
     var effective = pref;
     if (pref === 'system') {
       effective = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
     document.documentElement.setAttribute('data-theme', effective);
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = effective === 'dark' ? '#0a0f1e' : '#f5f7fb';
+    if (meta) meta.content = effective === 'dark' ? '#0b0d12' : '#f4f5f7';
   } catch (e) {}
 })();
 
@@ -33,11 +36,11 @@ function applyTheme(pref) {
     systemMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const isDark = systemMediaQuery.matches;
     html.setAttribute('data-theme', isDark ? 'dark' : 'light');
-    if (meta) meta.content = isDark ? '#0a0f1e' : '#f5f7fb';
+    if (meta) meta.content = isDark ? '#0b0d12' : '#f4f5f7';
     systemMediaQuery.addEventListener('change', handleSystemThemeChange);
   } else {
     html.setAttribute('data-theme', pref);
-    if (meta) meta.content = pref === 'dark' ? '#0a0f1e' : '#f5f7fb';
+    if (meta) meta.content = pref === 'dark' ? '#0b0d12' : '#f4f5f7';
   }
 }
 
@@ -45,7 +48,7 @@ function handleSystemThemeChange(e) {
   const html = document.documentElement;
   const meta = document.querySelector('meta[name="theme-color"]');
   html.setAttribute('data-theme', e.matches ? 'dark' : 'light');
-  if (meta) meta.content = e.matches ? '#0a0f1e' : '#f5f7fb';
+  if (meta) meta.content = e.matches ? '#0b0d12' : '#f4f5f7';
 }
 
 window.setTheme = function(pref) {
@@ -53,20 +56,20 @@ window.setTheme = function(pref) {
   applyTheme(pref);
   updateThemeUI(pref);
   updateThemeQuickIcon(pref);
-}
+};
 
 window.cycleTheme = function() {
-  const current = localStorage.getItem('theme_preference') || 'light';
+  const current = localStorage.getItem('theme_preference') || 'dark';
   const order = ['light', 'dark', 'system'];
   const next = order[(order.indexOf(current) + 1) % order.length];
   window.setTheme(next);
   const labels = {
-    light: '☀️ الوضع الفاتح',
-    dark: '🌙 الوضع الداكن',
-    system: '🌓 وضع النظام'
+    light: 'الوضع الفاتح',
+    dark: 'الوضع الداكن',
+    system: 'وضع النظام'
   };
   window.showToast('تم التبديل إلى ' + labels[next], 'success');
-}
+};
 
 function updateThemeUI(pref) {
   document.querySelectorAll('.theme-option').forEach(el => {
@@ -75,25 +78,34 @@ function updateThemeUI(pref) {
 }
 
 function updateThemeQuickIcon(pref) {
-  const icon = document.querySelector('#themeQuickBtn i');
-  if (!icon) return;
   const icons = {
-    light: 'fa-sun',
-    dark: 'fa-moon',
-    system: 'fa-circle-half-stroke'
+    light: 'ri-sun-line',
+    dark: 'ri-moon-line',
+    system: 'ri-contrast-line'
   };
-  icon.className = 'fas ' + icons[pref];
+  const labels = {
+    light: 'المظهر: فاتح',
+    dark: 'المظهر: داكن',
+    system: 'المظهر: النظام'
+  };
+
+  const mobileIcon = document.querySelector('#themeQuickBtn i');
+  if (mobileIcon) mobileIcon.className = icons[pref];
+
+  const sideIcon = document.querySelector('#sidebarThemeBtn i');
+  if (sideIcon) sideIcon.className = icons[pref];
+
+  const sideLabel = document.getElementById('sidebarThemeLabel');
+  if (sideLabel) sideLabel.innerText = labels[pref];
 }
 
-// Init theme
-const initThemePref = localStorage.getItem('theme_preference') || 'light';
+const initThemePref = localStorage.getItem('theme_preference') || 'dark';
 applyTheme(initThemePref);
 updateThemeUI(initThemePref);
 updateThemeQuickIcon(initThemePref);
 
-
 /* ==========================================
-   2. FIREBASE + LOCK SCREEN
+   2. FIREBASE + AUTH + SESSION GUARD
 ========================================== */
 const firebaseConfig = {
   apiKey: "AIzaSyBB_U4C880PW4GxZd8FALv8yBSiP2mNeBY",
@@ -108,8 +120,8 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
 let isProcessingActive = false;
+let sessionRef = null;
 
-// Warn on unload during processing
 window.addEventListener('beforeunload', function(e) {
   if (isProcessingActive) {
     e.preventDefault();
@@ -117,15 +129,13 @@ window.addEventListener('beforeunload', function(e) {
   }
 });
 
-// IndexedDB for audio blobs
+// Legacy IndexedDB handle (used only for full cleanup on clearHistory)
 const dbPromise = new Promise((resolve, reject) => {
   const request = indexedDB.open("VoiceStudioDB", 1);
   request.onupgradeneeded = (e) => {
     const db = e.target.result;
     if (!db.objectStoreNames.contains("audioFiles")) {
-      db.createObjectStore("audioFiles", {
-        keyPath: "id"
-      });
+      db.createObjectStore("audioFiles", { keyPath: "id" });
     }
   };
   request.onsuccess = () => resolve(request.result);
@@ -140,54 +150,101 @@ if (localStorage.getItem('site_unlocked') !== 'true') {
   if (lockScreen) lockScreen.style.display = 'none';
 }
 
+function detachSessionMonitor() {
+  if (sessionRef) {
+    sessionRef.off();
+    sessionRef = null;
+  }
+}
+
+function updateAccountDisplay(user) {
+  const email = user && user.email ? user.email : '—';
+  const accountEl = document.getElementById('accountEmailDisplay');
+  const sideEmailEl = document.getElementById('sidebarUserEmail');
+  if (accountEl) accountEl.innerText = email;
+  if (sideEmailEl) sideEmailEl.innerText = user && user.email ? user.email : 'حساب نشط';
+}
+
+function resetLoginButton() {
+  const loginBtn = document.getElementById('loginSubmitBtn');
+  if (loginBtn) {
+    loginBtn.disabled = false;
+    loginBtn.innerHTML = '<i class="ri-shield-keyhole-line"></i><span>دخول آمن</span>';
+  }
+}
+
+function stopAllPlayback() {
+  ['vocalAudio', 'instAudio'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (el.fadeInterval) clearInterval(el.fadeInterval);
+      el.pause();
+      el.volume = 1;
+    }
+  });
+}
+
 function monitorSession(uid) {
-  firebase.database().ref('users/' + uid + '/currentSession').on('value', (snapshot) => {
+  detachSessionMonitor();
+  sessionRef = firebase.database().ref('users/' + uid + '/currentSession');
+  sessionRef.on('value', (snapshot) => {
     const dbSession = snapshot.val();
     const mySession = localStorage.getItem("my_active_session");
 
     if (dbSession && dbSession !== mySession) {
-      firebase.database().ref('users/' + uid + '/currentSession').off();
-      alert("تم تسجيل الدخول من جهاز آخر! سيتم إنهاء جلستك الآن.");
-      executeForceLogout();
+      detachSessionMonitor();
+      executeForceLogout('تم تسجيل الدخول إلى حسابك من جهاز آخر، لذلك تم إنهاء جلستك الحالية.');
     }
   });
 }
-function executeForceLogout() {
-  auth.signOut();
+
+function executeForceLogout(customAlertMessage = null) {
+  detachSessionMonitor();
+  stopAllPlayback();
+  auth.signOut().catch(() => {});
   localStorage.removeItem('site_unlocked');
+  localStorage.removeItem('my_active_session');
+  resetLoginButton();
+  updateAccountDisplay(null);
+
+  const playerModal = document.getElementById('playerModal');
+  if (playerModal) playerModal.classList.remove('open');
+
   document.body.classList.add('locked');
   const lockScreen = document.getElementById('telegramLockScreen');
   if (lockScreen) {
     lockScreen.style.display = 'flex';
     lockScreen.style.opacity = '1';
   }
-  setTimeout(() => showToast('انتهت الجلسة أو تم إيقاف الحساب!', 'error'), 800);
+
+  if (customAlertMessage) {
+    showAlertModal('تم إنهاء الجلسة', customAlertMessage);
+  } else {
+    showToast('تم تسجيل الخروج بنجاح', 'success');
+  }
 }
 
 auth.onAuthStateChanged(async (user) => {
   if (user) {
-    // 1. تشغيل مراقبة الجلسة (كراسي الموسيقى) فوراً
-    if (localStorage.getItem('site_unlocked') === 'true' && typeof monitorSession === 'function') {
+    updateAccountDisplay(user);
+
+    if (localStorage.getItem('site_unlocked') === 'true') {
       monitorSession(user.uid);
     }
-    
+
     try {
       await user.reload();
     } catch (error) {
-      // 2. الطرد ممنوع نهائياً إلا بحالتين حصراً: الحساب انحذف أو انحظر من الإدارة
       if (error.code === 'auth/user-disabled' || error.code === 'auth/user-not-found') {
-        alert("تم إيقاف حسابك من الإدارة.");
-        executeForceLogout();
+        executeForceLogout('تم إيقاف هذا الحساب من قبل الإدارة.');
       } else {
-        // تجاهل أي خطأ آخر للحفاظ على الجلسة
-        console.warn("تم تجاهل خطأ فايربيس للحفاظ على تسجيل الدخول:", error.code);
+        console.warn('تم تجاهل خطأ مؤقت للحفاظ على الجلسة:', error.code);
       }
     }
   } else if (localStorage.getItem('site_unlocked') === 'true') {
-    // إذا كاش المتصفح انمسح من النظام والفايربيس ضيع الدخول
     setTimeout(() => {
-      if (!auth.currentUser) {
-        executeForceLogout();
+      if (!auth.currentUser && localStorage.getItem('site_unlocked') === 'true') {
+        executeForceLogout('انتهت صلاحية الجلسة، يرجى تسجيل الدخول مجدداً.');
       }
     }, 5000);
   }
@@ -201,71 +258,106 @@ window.authWithFirebase = async function() {
     return showToast('يرجى إدخال البريد وكلمة المرور', 'warning');
   }
 
-  const loginBtn = document.querySelector('#lockStep1 .btn-primary');
-  const originalHtml = loginBtn ? loginBtn.innerHTML : '';
-
+  const loginBtn = document.getElementById('loginSubmitBtn');
   if (loginBtn) {
     loginBtn.disabled = true;
-    loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> انتظر...';
+    loginBtn.innerHTML = '<i class="ri-loader-4-line spin"></i><span>جاري التحقق...</span>';
   }
-
-  showToast('جاري تسجيل الدخول...', 'warning');
 
   try {
     const userCredential = await auth.signInWithEmailAndPassword(email, password);
     const user = userCredential.user;
-    
-    // نجاح الدخول: إنشاء الجلسة فوراً وفتح القفل برمجياً
+
     localStorage.setItem('site_unlocked', 'true');
     const sessionId = Date.now().toString(36) + Math.random().toString(36).substring(2);
-    localStorage.setItem("my_active_session", sessionId);
+    localStorage.setItem('my_active_session', sessionId);
     await firebase.database().ref('users/' + user.uid).update({ currentSession: sessionId });
-    
-    // بدء مراقبة الحساب لمنع الدخول المتعدد
+
+    updateAccountDisplay(user);
     monitorSession(user.uid);
 
     document.body.classList.remove('locked');
     const lockScreen = document.getElementById('telegramLockScreen');
     if (lockScreen) {
       lockScreen.style.opacity = '0';
-      setTimeout(() => lockScreen.style.display = 'none', 500);
+      setTimeout(() => {
+        lockScreen.style.display = 'none';
+        resetLoginButton();
+      }, 350);
     }
-    showToast('تم تسجيل الدخول بنجاح! أهلاً بك.', 'success');
-
+    showToast('تم تسجيل الدخول بنجاح، أهلاً بك', 'success');
   } catch (error) {
-    if (loginBtn) {
-      loginBtn.disabled = false;
-      loginBtn.innerHTML = originalHtml;
-    }
-
+    resetLoginButton();
     let msg = 'حدث خطأ: ' + (error.code || error.message);
-    if (['auth/wrong-password', 'auth/invalid-credential', 'auth/invalid-login-credentials', 'auth/user-not-found'].includes(error.code)) msg = 'البريد أو كلمة المرور غير صحيحة.';
-    if (error.code === 'auth/user-disabled') msg = 'تم إيقاف هذا الحساب من قبل الإدارة.';
-    if (error.code === 'auth/invalid-email') msg = 'صيغة البريد خاطئة.';
-    if (error.code === 'auth/too-many-requests') msg = 'محاولات كثيرة، انتظر قليلاً.';
-    if (error.code === 'auth/network-request-failed') msg = 'تأكد من اتصالك بالإنترنت.';
-
+    if (['auth/wrong-password', 'auth/invalid-credential', 'auth/invalid-login-credentials', 'auth/user-not-found'].includes(error.code)) {
+      msg = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+    } else if (error.code === 'auth/user-disabled') {
+      msg = 'تم إيقاف هذا الحساب من قبل الإدارة.';
+    } else if (error.code === 'auth/invalid-email') {
+      msg = 'صيغة البريد الإلكتروني غير صحيحة.';
+    } else if (error.code === 'auth/too-many-requests') {
+      msg = 'محاولات كثيرة، انتظر قليلاً ثم أعد المحاولة.';
+    } else if (error.code === 'auth/network-request-failed') {
+      msg = 'تأكد من اتصالك بالإنترنت.';
+    }
     showToast(msg, 'error');
   }
-}
+};
 
+window.requestLogout = function() {
+  openConfirmDialog({
+    title: 'تسجيل الخروج',
+    message: 'هل تريد تسجيل الخروج من حسابك على هذا الجهاز؟',
+    confirmText: 'تسجيل الخروج',
+    iconClass: 'ri-logout-box-r-line',
+    onConfirm: () => {
+      executeForceLogout(null);
+    }
+  });
+};
 
 /* ==========================================
-   3. STATE
+   3. STATE & PREFERENCES
 ========================================== */
 let currentFile = null;
+let currentOutputFormat = localStorage.getItem('pref_out_format') || 'mp3';
 let activeAudio = null;
 let activeType = null;
 let progressInterval = null;
+let pendingConfirmAction = null;
+
+function restoreProcessingPrefs() {
+  const savedModel = localStorage.getItem('pref_model') || 'karaoke';
+  const savedFormat = localStorage.getItem('pref_out_format') || 'mp3';
+  const savedOverlap = localStorage.getItem('pref_overlap') || '2';
+
+  const modelEl = document.querySelector(`input[name="model_choice"][value="${savedModel}"]`);
+  const formatEl = document.querySelector(`input[name="out_format"][value="${savedFormat}"]`);
+  const overlapEl = document.querySelector(`input[name="overlap_mode"][value="${savedOverlap}"]`);
+
+  if (modelEl) modelEl.checked = true;
+  if (formatEl) formatEl.checked = true;
+  if (overlapEl) overlapEl.checked = true;
+
+  document.querySelectorAll('input[name="model_choice"]').forEach(el => {
+    el.addEventListener('change', () => localStorage.setItem('pref_model', el.value));
+  });
+  document.querySelectorAll('input[name="out_format"]').forEach(el => {
+    el.addEventListener('change', () => localStorage.setItem('pref_out_format', el.value));
+  });
+  document.querySelectorAll('input[name="overlap_mode"]').forEach(el => {
+    el.addEventListener('change', () => localStorage.setItem('pref_overlap', el.value));
+  });
+}
 
 /* ==========================================
-   4. TOAST + PAGE NAV
+   4. TOASTS, DIALOGS & NAVIGATION
 ========================================== */
 window.showToast = function(message, type = 'success') {
   const icons = {
-    success: 'fa-check-circle',
-    error: 'fa-times-circle',
-    warning: 'fa-exclamation-circle'
+    success: 'ri-checkbox-circle-line',
+    error: 'ri-close-circle-line',
+    warning: 'ri-error-warning-line'
   };
   let container = document.getElementById('toastContainer');
   if (!container) {
@@ -276,28 +368,74 @@ window.showToast = function(message, type = 'success') {
   }
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  toast.innerHTML = `<i class="fas ${icons[type]}"></i><span>${message}</span>`;
+  toast.innerHTML = `<i class="${icons[type] || icons.success}"></i><span>${message}</span>`;
   container.appendChild(toast);
-  setTimeout(() => toast.remove(), 3500);
+  setTimeout(() => toast.remove(), 3600);
+};
+
+function openConfirmDialog({ title, message, confirmText, iconClass, onConfirm }) {
+  document.getElementById('confirmTitle').innerText = title;
+  document.getElementById('confirmMessage').innerText = message;
+  document.getElementById('confirmActionBtn').innerText = confirmText || 'تأكيد';
+  const iconEl = document.querySelector('#confirmIcon i');
+  if (iconEl && iconClass) iconEl.className = iconClass;
+
+  pendingConfirmAction = onConfirm;
+  document.getElementById('confirmModal').classList.add('open');
+  history.pushState({ confirmOpen: true }, '', '#confirm');
 }
 
-window.showPage = function(page) {
+document.getElementById('confirmActionBtn').addEventListener('click', () => {
+  const action = pendingConfirmAction;
+  pendingConfirmAction = null;
+  window.closeConfirmModal();
+  if (typeof action === 'function') action();
+});
+
+window.closeConfirmModal = function() {
+  if (window.location.hash === '#confirm') {
+    history.back();
+  } else {
+    document.getElementById('confirmModal').classList.remove('open');
+  }
+};
+
+function showAlertModal(title, message) {
+  document.getElementById('alertTitle').innerText = title;
+  document.getElementById('alertMessage').innerText = message;
+  document.getElementById('alertModal').classList.add('open');
+}
+
+window.closeAlertModal = function() {
+  document.getElementById('alertModal').classList.remove('open');
+};
+
+window.navigateTo = function(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById(page).classList.add('active');
-  window.scrollTo(0, 0);
-}
+  const target = document.getElementById(page);
+  if (target) target.classList.add('active');
 
+  document.querySelectorAll('.nav-item, .side-nav-item').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.page === page);
+  });
+
+  window.scrollTo({ top: 0, behavior: 'instant' });
+};
+
+window.showPage = window.navigateTo;
 
 /* ==========================================
-   5. FILE UPLOAD
+   5. FILE UPLOAD & WAVEFORM
 ========================================== */
 window.handleDragOver = function(e) {
   e.preventDefault();
   document.getElementById('uploadArea').classList.add('dragover');
-}
-window.handleDragLeave = function(e) {
+};
+
+window.handleDragLeave = function() {
   document.getElementById('uploadArea').classList.remove('dragover');
-}
+};
+
 window.handleDrop = function(e) {
   e.preventDefault();
   document.getElementById('uploadArea').classList.remove('dragover');
@@ -305,68 +443,75 @@ window.handleDrop = function(e) {
     currentFile = e.dataTransfer.files[0];
     showFileInfo();
   }
-}
+};
+
 window.handleFileSelect = function(e) {
   if (e.target.files.length > 0) {
     currentFile = e.target.files[0];
     showFileInfo();
   }
-}
+};
 
 async function drawWaveform(file) {
   const canvas = document.getElementById('waveformCanvas');
   const ctx = canvas.getContext('2d');
-  canvas.width = canvas.offsetWidth * (window.devicePixelRatio || 1);
-  canvas.height = canvas.offsetHeight * (window.devicePixelRatio || 1);
-  canvas.style.width = canvas.offsetWidth + 'px';
-  canvas.style.height = canvas.offsetHeight + 'px';
-  ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.offsetWidth || 300;
+  const h = canvas.offsetHeight || 76;
 
-  const w = canvas.offsetWidth;
-  const h = canvas.offsetHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
 
   const styles = getComputedStyle(document.documentElement);
   const primaryColor = styles.getPropertyValue('--primary').trim();
-  const secondaryColor = styles.getPropertyValue('--secondary').trim();
+  const instColor = styles.getPropertyValue('--inst').trim();
   const textColor = styles.getPropertyValue('--text-secondary').trim();
 
   ctx.fillStyle = textColor;
-  ctx.font = 'bold 12px Cairo';
-  ctx.fillText('جاري تحليل موجة الصوت...', 15, h / 2);
+  ctx.font = '700 12px Tajawal, sans-serif';
+  ctx.fillText('جاري تحليل موجة الصوت...', 14, h / 2 + 4);
 
+  let actx = null;
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const actx = new(window.AudioContext || window.webkitAudioContext)();
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    actx = new AudioCtx();
     const audioBuffer = await actx.decodeAudioData(arrayBuffer);
     const rawData = audioBuffer.getChannelData(0);
 
-    const samples = 100;
-    const blockSize = Math.floor(rawData.length / samples);
+    const samples = 96;
+    const blockSize = Math.max(1, Math.floor(rawData.length / samples));
     const filteredData = [];
     for (let i = 0; i < samples; i++) {
-      let blockStart = blockSize * i;
+      const blockStart = blockSize * i;
       let sum = 0;
-      for (let j = 0; j < blockSize; j++) sum += Math.abs(rawData[blockStart + j]);
+      for (let j = 0; j < blockSize; j++) {
+        sum += Math.abs(rawData[blockStart + j] || 0);
+      }
       filteredData.push(sum / blockSize);
     }
 
-    const multiplier = Math.pow(Math.max(...filteredData), -1);
-    const normalizedData = filteredData.map(n => n * multiplier);
+    const peak = Math.max(...filteredData) || 1;
+    const normalizedData = filteredData.map(n => n / peak);
 
     ctx.clearRect(0, 0, w, h);
-    const barWidth = (w / samples) - 2;
+    const barGap = 2;
+    const barWidth = Math.max(1.5, (w - barGap * samples) / samples);
 
     normalizedData.forEach((val, i) => {
-      const barHeight = Math.max(val * (h - 10), 4);
+      const barHeight = Math.max(val * (h - 16), 4);
       const gradient = ctx.createLinearGradient(0, 0, 0, h);
-      gradient.addColorStop(0, secondaryColor);
-      gradient.addColorStop(1, primaryColor);
+      gradient.addColorStop(0, primaryColor);
+      gradient.addColorStop(1, instColor);
       ctx.fillStyle = gradient;
-      ctx.beginPath();
-      const x = i * (barWidth + 2);
+
+      const x = i * (barWidth + barGap);
       const y = (h - barHeight) / 2;
-      const r = Math.min(3, barWidth / 2);
+      const r = Math.min(2.5, barWidth / 2);
+
+      ctx.beginPath();
       ctx.moveTo(x + r, y);
       ctx.lineTo(x + barWidth - r, y);
       ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + r);
@@ -380,7 +525,12 @@ async function drawWaveform(file) {
     });
   } catch (e) {
     ctx.clearRect(0, 0, w, h);
-    ctx.fillText('جاهز للمعالجة', 15, h / 2);
+    ctx.fillStyle = textColor;
+    ctx.fillText('الملف جاهز للمعالجة', 14, h / 2 + 4);
+  } finally {
+    if (actx && typeof actx.close === 'function') {
+      actx.close().catch(() => {});
+    }
   }
 }
 
@@ -389,65 +539,210 @@ function showFileInfo() {
 
   document.getElementById('fileName').innerText = currentFile.name;
   document.getElementById('fileSize').innerText = (currentFile.size / 1048576).toFixed(1) + ' MB';
+  document.getElementById('fileDuration').innerText = '—';
   document.getElementById('fileInfo').classList.add('show');
-  document.getElementById('settingsSection').classList.add('show');
   document.getElementById('waveformSection').classList.add('show');
+  document.getElementById('changeFileBtn').classList.remove('hidden');
 
-  const audio = new Audio();
-  audio.src = URL.createObjectURL(currentFile);
-  audio.onloadedmetadata = () => {
-    const minutes = Math.floor(audio.duration / 60);
-    const seconds = Math.floor(audio.duration % 60);
+  const tempUrl = URL.createObjectURL(currentFile);
+  const tempAudio = new Audio();
+  tempAudio.preload = 'metadata';
+  tempAudio.src = tempUrl;
+
+  const cleanup = () => {
+    URL.revokeObjectURL(tempUrl);
+    tempAudio.src = '';
+  };
+
+  tempAudio.onloadedmetadata = () => {
+    const minutes = Math.floor(tempAudio.duration / 60);
+    const seconds = Math.floor(tempAudio.duration % 60);
     document.getElementById('fileDuration').innerText =
       `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  }
+    cleanup();
+  };
+  tempAudio.onerror = cleanup;
 
   drawWaveform(currentFile);
 }
 
-
 /* ==========================================
-   6. PLAYER MODAL
+   6. PLAYER MODAL + A/B SWITCH + MEDIA SESSION
 ========================================== */
-window.openPlayer = function(type) {
-  activeType = type;
-  const audioId = type === 'vocal' ? 'vocalAudio' : 'instAudio';
-  activeAudio = document.getElementById(audioId);
+function hasValidSrc(el) {
+  return Boolean(el && el.src && el.src !== window.location.href && !el.src.endsWith('#player'));
+}
 
-  if (!activeAudio.src || activeAudio.src === window.location.href) {
+function updateSwitchBarUI() {
+  const vocalAudio = document.getElementById('vocalAudio');
+  const instAudio = document.getElementById('instAudio');
+  const bar = document.getElementById('playerSwitchBar');
+  const vocalBtn = document.getElementById('switchVocalBtn');
+  const instBtn = document.getElementById('switchInstBtn');
+
+  const bothReady = hasValidSrc(vocalAudio) && hasValidSrc(instAudio);
+  if (bar) bar.classList.toggle('hidden', !bothReady);
+
+  if (vocalBtn) vocalBtn.className = 'ab-btn' + (activeType === 'vocal' ? ' active-vocal' : '');
+  if (instBtn) instBtn.className = 'ab-btn' + (activeType === 'inst' ? ' active-inst' : '');
+}
+
+function applyPlayerTrackUI(type) {
+  const isVocal = type === 'vocal';
+  document.getElementById('playerTitle').innerText = isVocal ? 'صوت المطرب' : 'الموسيقى الخلفية';
+  document.getElementById('trackName').innerText = isVocal ? 'المسار الصوتي (Vocals)' : 'المسار الموسيقي (Instrumental)';
+  document.getElementById('trackFileName').innerText = currentFile ? currentFile.name : 'Audio Track';
+
+  const artwork = document.getElementById('playerArtwork');
+  const icon = document.getElementById('playerArtworkIcon');
+  artwork.classList.remove('vocal-theme', 'inst-theme');
+  artwork.classList.add(isVocal ? 'vocal-theme' : 'inst-theme');
+  icon.className = isVocal ? 'ri-mic-2-line' : 'ri-music-2-line';
+
+  updateSwitchBarUI();
+  updateMediaSession();
+}
+
+function updateMediaSession() {
+  if (!('mediaSession' in navigator) || !activeAudio) return;
+
+  const isVocal = activeType === 'vocal';
+  const baseName = currentFile ? currentFile.name : 'Voice Studio Pro';
+  const trackLabel = isVocal ? 'صوت المطرب' : 'الموسيقى الخلفية';
+
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: `${baseName}`,
+      artist: trackLabel,
+      album: 'Voice Studio Pro',
+      artwork: [
+        { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+        { src: 'icon-512.png', sizes: '512x512', type: 'image/png' }
+      ]
+    });
+
+    navigator.mediaSession.playbackState = activeAudio.paused ? 'paused' : 'playing';
+
+    navigator.mediaSession.setActionHandler('play', () => {
+      if (activeAudio && activeAudio.paused) window.toggleModalPlay();
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      if (activeAudio && !activeAudio.paused) window.toggleModalPlay();
+    });
+    navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+      window.seekRelative(-(details && details.seekOffset ? details.seekOffset : 10));
+    });
+    navigator.mediaSession.setActionHandler('seekforward', (details) => {
+      window.seekRelative(details && details.seekOffset ? details.seekOffset : 10);
+    });
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      if (activeAudio && details && typeof details.seekTime === 'number' && isFinite(activeAudio.duration)) {
+        activeAudio.currentTime = Math.max(0, Math.min(details.seekTime, activeAudio.duration));
+        updateMediaPositionState();
+      }
+    });
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      const next = activeType === 'vocal' ? 'inst' : 'vocal';
+      window.switchPlayerTrack(next);
+    });
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      const prev = activeType === 'vocal' ? 'inst' : 'vocal';
+      window.switchPlayerTrack(prev);
+    });
+  } catch (e) {}
+}
+
+function updateMediaPositionState() {
+  if (!('mediaSession' in navigator) || !navigator.mediaSession.setPositionState || !activeAudio) return;
+  if (isFinite(activeAudio.duration) && activeAudio.duration > 0) {
+    try {
+      navigator.mediaSession.setPositionState({
+        duration: activeAudio.duration,
+        playbackRate: activeAudio.playbackRate || 1,
+        position: Math.min(activeAudio.currentTime || 0, activeAudio.duration)
+      });
+    } catch (e) {}
+  }
+}
+
+window.openPlayer = function(type) {
+  const audioId = type === 'vocal' ? 'vocalAudio' : 'instAudio';
+  const targetAudio = document.getElementById(audioId);
+
+  if (!hasValidSrc(targetAudio)) {
     showToast('الصوت غير متوفر أو لم يتم معالجته بعد', 'warning');
     return;
   }
 
-  document.getElementById('playerTitle').innerText = type === 'vocal' ? 'صوت المطرب' : 'الموسيقى الخلفية';
-  document.getElementById('trackName').innerText = type === 'vocal' ? 'المسار الصوتي' : 'المسار الموسيقي';
-  document.getElementById('trackFileName').innerText = currentFile ? currentFile.name : 'Unknown.mp3';
-
-  const artwork = document.getElementById('playerArtwork');
-  const icon = document.getElementById('playerArtworkIcon');
-  artwork.className = 'player-artwork';
-  if (type === 'vocal') {
-    artwork.classList.add('vocal-theme');
-    icon.className = 'fas fa-microphone-alt';
-  } else {
-    artwork.classList.add('inst-theme');
-    icon.className = 'fas fa-guitar';
+  // Pause the other track cleanly if switching via cards
+  const otherAudio = document.getElementById(type === 'vocal' ? 'instAudio' : 'vocalAudio');
+  if (otherAudio && !otherAudio.paused) {
+    if (otherAudio.fadeInterval) clearInterval(otherAudio.fadeInterval);
+    otherAudio.pause();
+    otherAudio.volume = 1;
   }
 
-  document.getElementById('modalSeek').value = activeAudio.currentTime ? (activeAudio.currentTime / activeAudio.duration) * 100 : 0;
+  activeType = type;
+  activeAudio = targetAudio;
+  applyPlayerTrackUI(type);
+
+  const dur = isFinite(activeAudio.duration) && activeAudio.duration > 0 ? activeAudio.duration : 0;
+  document.getElementById('modalSeek').value = dur ? (activeAudio.currentTime / dur) * 100 : 0;
   document.getElementById('modalCurrentTime').innerText = window.formatTime(activeAudio.currentTime || 0);
-  document.getElementById('modalTotalTime').innerText = window.formatTime(activeAudio.duration || 0);
+  document.getElementById('modalTotalTime').innerText = window.formatTime(dur);
 
   syncPlayPauseIcon();
 
   document.getElementById('playerModal').classList.add('open');
-  history.pushState({
-    modalOpen: true
-  }, '', '#player');
+  if (window.location.hash !== '#player') {
+    history.pushState({ modalOpen: true }, '', '#player');
+  }
 
   if (progressInterval) clearInterval(progressInterval);
-  progressInterval = setInterval(updateModalProgress, 100);
-}
+  progressInterval = setInterval(updateModalProgress, 120);
+};
+
+window.switchPlayerTrack = function(targetType) {
+  if (!targetType || targetType === activeType) return;
+
+  const targetId = targetType === 'vocal' ? 'vocalAudio' : 'instAudio';
+  const targetAudio = document.getElementById(targetId);
+  if (!hasValidSrc(targetAudio)) return;
+
+  const prevAudio = activeAudio;
+  const wasPlaying = prevAudio ? !prevAudio.paused : false;
+  const syncTime = prevAudio ? (prevAudio.currentTime || 0) : 0;
+
+  if (prevAudio) {
+    if (prevAudio.fadeInterval) clearInterval(prevAudio.fadeInterval);
+    prevAudio.pause();
+    prevAudio.volume = 1;
+  }
+
+  activeType = targetType;
+  activeAudio = targetAudio;
+  applyPlayerTrackUI(targetType);
+
+  const applySyncAndPlay = () => {
+    const dur = isFinite(targetAudio.duration) ? targetAudio.duration : 0;
+    if (dur > 0) {
+      targetAudio.currentTime = Math.min(syncTime, Math.max(0, dur - 0.1));
+    }
+    if (wasPlaying) {
+      targetAudio.volume = 1;
+      targetAudio.play().catch(() => {});
+    }
+    syncPlayPauseIcon();
+    updateMediaPositionState();
+  };
+
+  if (targetAudio.readyState >= 1) {
+    applySyncAndPlay();
+  } else {
+    targetAudio.addEventListener('loadedmetadata', applySyncAndPlay, { once: true });
+    targetAudio.load();
+  }
+};
 
 window.closePlayer = function() {
   if (window.location.hash === '#player') {
@@ -456,7 +751,7 @@ window.closePlayer = function() {
     document.getElementById('playerModal').classList.remove('open');
     if (progressInterval) clearInterval(progressInterval);
   }
-}
+};
 
 window.addEventListener('popstate', function() {
   const playerModal = document.getElementById('playerModal');
@@ -470,6 +765,26 @@ window.addEventListener('popstate', function() {
   }
 });
 
+// Keyboard shortcuts on Desktop when player is open
+window.addEventListener('keydown', function(e) {
+  const playerModal = document.getElementById('playerModal');
+  if (!playerModal || !playerModal.classList.contains('open')) return;
+  if (e.target && ['INPUT', 'TEXTAREA'].includes(e.target.tagName) && e.target.type !== 'range') return;
+
+  if (e.code === 'Space') {
+    e.preventDefault();
+    window.toggleModalPlay();
+  } else if (e.code === 'ArrowRight') {
+    e.preventDefault();
+    window.seekRelative(10);
+  } else if (e.code === 'ArrowLeft') {
+    e.preventDefault();
+    window.seekRelative(-10);
+  } else if (e.code === 'Escape') {
+    window.closePlayer();
+  }
+});
+
 window.toggleModalPlay = function() {
   if (!activeAudio) return;
 
@@ -478,102 +793,111 @@ window.toggleModalPlay = function() {
 
   if (activeAudio.paused) {
     if (otherAudio && !otherAudio.paused) {
-      clearInterval(otherAudio.fadeInterval);
-      let otherVol = otherAudio.volume;
-      otherAudio.fadeInterval = setInterval(() => {
-        otherVol -= 0.1;
-        if (otherVol > 0.05) otherAudio.volume = otherVol;
-        else {
-          clearInterval(otherAudio.fadeInterval);
-          otherAudio.pause();
-          otherAudio.volume = 1;
-        }
-      }, 40);
+      if (otherAudio.fadeInterval) clearInterval(otherAudio.fadeInterval);
+      otherAudio.pause();
+      otherAudio.volume = 1;
     }
 
-    clearInterval(activeAudio.fadeInterval);
-    activeAudio.volume = 0;
-    activeAudio.play();
-    let activeVol = 0;
-    activeAudio.fadeInterval = setInterval(() => {
-      activeVol += 0.1;
-      if (activeVol < 0.95) activeAudio.volume = activeVol;
-      else {
-        clearInterval(activeAudio.fadeInterval);
-        activeAudio.volume = 1;
-      }
-    }, 40);
+    if (activeAudio.fadeInterval) clearInterval(activeAudio.fadeInterval);
+    activeAudio.volume = 0.2;
+    activeAudio.play().then(() => {
+      let vol = 0.2;
+      activeAudio.fadeInterval = setInterval(() => {
+        vol += 0.15;
+        if (vol < 0.98) activeAudio.volume = vol;
+        else {
+          clearInterval(activeAudio.fadeInterval);
+          activeAudio.volume = 1;
+        }
+      }, 30);
+      syncPlayPauseIcon();
+      updateMediaSession();
+      updateMediaPositionState();
+    }).catch(() => {
+      activeAudio.volume = 1;
+      syncPlayPauseIcon();
+    });
   } else {
-    clearInterval(activeAudio.fadeInterval);
-    let currentVol = activeAudio.volume;
-    activeAudio.fadeInterval = setInterval(() => {
-      currentVol -= 0.1;
-      if (currentVol > 0.05) activeAudio.volume = currentVol;
-      else {
-        clearInterval(activeAudio.fadeInterval);
-        activeAudio.pause();
-        activeAudio.volume = 1;
-        syncPlayPauseIcon();
-      }
-    }, 40);
-
-    const icon = document.querySelector('#modalPlayBtn i');
-    const artwork = document.getElementById('playerArtwork');
-    icon.className = 'fas fa-play';
-    artwork.classList.remove('playing');
-    return;
+    if (activeAudio.fadeInterval) clearInterval(activeAudio.fadeInterval);
+    activeAudio.pause();
+    activeAudio.volume = 1;
+    syncPlayPauseIcon();
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = 'paused';
+    }
   }
-  syncPlayPauseIcon();
-}
+};
 
 function syncPlayPauseIcon() {
   if (!activeAudio) return;
   const icon = document.querySelector('#modalPlayBtn i');
   const artwork = document.getElementById('playerArtwork');
   if (activeAudio.paused) {
-    icon.className = 'fas fa-play';
-    artwork.classList.remove('playing');
+    if (icon) icon.className = 'ri-play-fill';
+    if (artwork) artwork.classList.remove('playing');
   } else {
-    icon.className = 'fas fa-pause';
-    artwork.classList.add('playing');
+    if (icon) icon.className = 'ri-pause-fill';
+    if (artwork) artwork.classList.add('playing');
   }
 }
 
 window.seekModalAudio = function(val) {
-  if (activeAudio && activeAudio.duration) {
+  if (activeAudio && isFinite(activeAudio.duration) && activeAudio.duration > 0) {
     activeAudio.currentTime = (val / 100) * activeAudio.duration;
     document.getElementById('modalCurrentTime').innerText = window.formatTime(activeAudio.currentTime);
+    updateMediaPositionState();
   }
-}
+};
 
 window.seekRelative = function(seconds) {
-  if (activeAudio && activeAudio.duration) {
+  if (activeAudio && isFinite(activeAudio.duration) && activeAudio.duration > 0) {
     let newTime = activeAudio.currentTime + seconds;
     if (newTime < 0) newTime = 0;
     if (newTime > activeAudio.duration) newTime = activeAudio.duration;
     activeAudio.currentTime = newTime;
+    updateMediaPositionState();
   }
-}
+};
 
 function updateModalProgress() {
-  if (activeAudio && activeAudio.duration) {
+  if (activeAudio && isFinite(activeAudio.duration) && activeAudio.duration > 0) {
     document.getElementById('modalSeek').value = (activeAudio.currentTime / activeAudio.duration) * 100;
     document.getElementById('modalCurrentTime').innerText = window.formatTime(activeAudio.currentTime);
     document.getElementById('modalTotalTime').innerText = window.formatTime(activeAudio.duration);
-    if (activeAudio.ended) syncPlayPauseIcon();
+    if (activeAudio.ended) {
+      syncPlayPauseIcon();
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+    }
   }
+}
+
+function buildDownloadName(type) {
+  const rawName = (currentFile && currentFile.name) ? currentFile.name : 'VoiceStudio';
+  const baseName = rawName
+    .replace(/\.[^/.]+$/, '')
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .trim() || 'VoiceStudio';
+  const suffix = type === 'vocal' ? 'Vocals' : 'Instrumental';
+  const ext = (currentOutputFormat || 'mp3').toLowerCase();
+  return `${baseName} - ${suffix}.${ext}`;
 }
 
 window.downloadCurrentAudio = function() {
   if (!activeType) return;
-  const fileName = activeType === 'vocal' ? 'Vocals.mp3' : 'Instrumental.mp3';
   const audioId = activeType === 'vocal' ? 'vocalAudio' : 'instAudio';
+  const fileName = buildDownloadName(activeType);
   window.downloadAudio(audioId, fileName);
-}
+};
 
 window.formatTime = function(sec) {
-  if (!sec || isNaN(sec)) return '0:00';
+  if (!sec || isNaN(sec) || !isFinite(sec)) return '0:00';
   return Math.floor(sec / 60) + ':' + Math.floor(sec % 60).toString().padStart(2, '0');
+};
+
+function formatElapsedTimer(totalSeconds) {
+  const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+  const s = (totalSeconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
 }
 
 window.downloadAudio = async function(id, name) {
@@ -586,7 +910,7 @@ window.downloadAudio = async function(id, name) {
   const originalIcon = btn ? btn.innerHTML : '';
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<span style="font-size:0.7rem;font-weight:800;">0%</span>';
+    btn.innerHTML = '<span style="font-family:JetBrains Mono,monospace;font-size:0.7rem;font-weight:700;">0%</span>';
   }
 
   showToast('جاري تنزيل الملف داخل الصفحة...', 'warning');
@@ -614,10 +938,10 @@ window.downloadAudio = async function(id, name) {
         if (btn) {
           if (contentLength > 0) {
             const percent = Math.min(99, Math.round((received / contentLength) * 100));
-            btn.innerHTML = `<span style="font-size:0.7rem;font-weight:800;">${percent}%</span>`;
+            btn.innerHTML = `<span style="font-family:JetBrains Mono,monospace;font-size:0.7rem;font-weight:700;">${percent}%</span>`;
           } else {
             const mb = (received / 1048576).toFixed(1);
-            btn.innerHTML = `<span style="font-size:0.62rem;font-weight:800;">${mb}M</span>`;
+            btn.innerHTML = `<span style="font-family:JetBrains Mono,monospace;font-size:0.62rem;font-weight:700;">${mb}M</span>`;
           }
         }
       }
@@ -637,28 +961,51 @@ window.downloadAudio = async function(id, name) {
     document.body.removeChild(a);
 
     setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
-    showToast('✅ تم تجهيز الملف وحفظه!', 'success');
+    showToast('تم تجهيز الملف وحفظه بنجاح', 'success');
   } catch (e) {
     console.error('Download error:', e);
-    showToast('❌ تعذّر التنزيل: ' + (e.message || 'خطأ بالاتصال'), 'error');
+    showToast('تعذّر التنزيل: ' + (e.message || 'خطأ بالاتصال'), 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
       btn.innerHTML = originalIcon;
     }
   }
-}
-
+};
 
 /* ==========================================
-   7. PROCESSING (GRADIO)
+   7. PROCESSING (GRADIO + LIVE TIMER)
 ========================================== */
-document.getElementById('cfg_agg').addEventListener('input', (e) => {
-  document.getElementById('aggValue').innerText = e.target.value;
-});
+function setStage(stageIndex, statusText) {
+  const statusEl = document.getElementById('progressStatus');
+  const fillEl = document.getElementById('progressFill');
+  if (statusEl && statusText) statusEl.innerText = statusText;
+
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('step' + i);
+    if (!el) continue;
+    el.classList.remove('active', 'done');
+    if (i < stageIndex) el.classList.add('done');
+    else if (i === stageIndex) el.classList.add(stageIndex === 4 ? 'done' : 'active');
+  }
+
+  if (fillEl) {
+    if (stageIndex === 4) {
+      fillEl.classList.remove('indeterminate');
+      fillEl.style.width = '100%';
+    } else if (stageIndex === 3) {
+      fillEl.classList.add('indeterminate');
+    } else {
+      fillEl.classList.remove('indeterminate');
+      fillEl.style.width = stageIndex === 1 ? '20%' : '45%';
+    }
+  }
+}
 
 window.startProcessing = async function() {
-  if (!currentFile) return showToast('اختر ملف صوتي أولاً', 'warning');
+  if (!currentFile || !(currentFile instanceof File)) {
+    return showToast('اختر ملفاً صوتياً من جهازك أولاً', 'warning');
+  }
 
   isProcessingActive = true;
 
@@ -666,84 +1013,89 @@ window.startProcessing = async function() {
   const rawToken = localStorage.getItem('hf_token');
   const savedToken = (isTokenActive && rawToken) ? rawToken : null;
 
+  const selectedModel = document.querySelector('input[name="model_choice"]:checked')?.value || 'karaoke';
+  const selectedFormat = document.querySelector('input[name="out_format"]:checked')?.value || 'mp3';
+  const selectedOverlap = Number(document.querySelector('input[name="overlap_mode"]:checked')?.value || 2);
+
+  currentOutputFormat = selectedFormat;
+
   const processBtn = document.getElementById('processBtn');
   processBtn.disabled = true;
-  processBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
+  processBtn.innerHTML = '<i class="ri-loader-4-line spin"></i><span>جاري المعالجة...</span>';
 
   if (savedToken) {
-    showToast('🚀 جاري المعالجة السريعة (سيرفر VIP)...', 'success');
+    showToast('بدأت المعالجة باستخدام التوكن النشط', 'success');
   } else {
-    showToast('⏳ الخطة المجانية — قد تستغرق وقتاً', 'warning');
+    showToast('بدأت المعالجة على السيرفر السريع', 'success');
   }
 
   document.getElementById('progressSection').classList.add('show');
   document.getElementById('resultsSection').classList.remove('show');
-  document.getElementById('progressStatus').innerText = 'جاري الاتصال السحابي المجاني أولاً...';
 
-  let p = 0;
-  let simInterval = setInterval(() => {
-    if (p < 30) {
-      p += 1.5;
-      document.getElementById('progressStatus').innerText = "جاري رفع البيانات...";
-    } else if (p < 85) {
-      p += 0.3;
-      document.getElementById('progressStatus').innerText = "جاري العزل بالذكاء الاصطناعي...";
-    }
-    updateProcessing(Math.floor(p));
-  }, 300);
+  // Real live elapsed timer
+  let elapsedSeconds = 0;
+  const timerEl = document.getElementById('progressTimer');
+  if (timerEl) timerEl.innerText = '00:00';
+
+  const elapsedInterval = setInterval(() => {
+    elapsedSeconds += 1;
+    if (timerEl) timerEl.innerText = formatElapsedTimer(elapsedSeconds);
+  }, 1000);
+
+  let aiStageTimeout = null;
+  setStage(1, 'جاري الاتصال بالسيرفر...');
 
   try {
-    // 1. تحديد النموذج والمسار الصحيح بناءً على اختيار المستخدم
-    const selectedModelRadio = document.querySelector('input[name="model_choice"]:checked');
-    const isKaraoke = selectedModelRadio && selectedModelRadio.id === 'model_karaoke';
+    const isKaraoke = selectedModel === 'karaoke';
+    const apiEndpoint = isKaraoke ? '/roformer_separator' : '/mdxc_separator';
 
-    let apiEndpoint = "";
-    let predictParams = {};
-
-    if (isKaraoke) {
-      apiEndpoint = "/roformer_separator";
-      predictParams = {
-        audio: currentFile,
-        model_key: "MelBand Roformer | Karaoke by Gabox",
-        out_format: "mp3",
-        segment_size: 256,
-        override_seg_size: false,
-        overlap: 2,
-        batch_size: 1,
-        norm_thresh: 0.9,
-        amp_thresh: 1.0,
-        single_stem: ""
-      };
-    } else {
-      apiEndpoint = "/mdxc_separator";
-      predictParams = {
-        audio: currentFile,
-        model: "MDX23C-8KFFT-InstVoc_HQ_2.ckpt",
-        out_format: "mp3",
-        segment_size: 256,
-        override_seg_size: false,
-        overlap: 2,
-        batch_size: 1,
-        norm_thresh: 0.9,
-        amp_thresh: 1.0,
-        single_stem: ""
-      };
-    }
+    const predictParams = isKaraoke
+      ? {
+          audio: currentFile,
+          model_key: 'MelBand Roformer | Karaoke by Gabox',
+          out_format: selectedFormat,
+          segment_size: 256,
+          override_seg_size: false,
+          overlap: selectedOverlap,
+          batch_size: 1,
+          norm_thresh: 0.9,
+          amp_thresh: 1.0,
+          single_stem: ''
+        }
+      : {
+          audio: currentFile,
+          model: 'MDX23C-8KFFT-InstVoc_HQ_2.ckpt',
+          out_format: selectedFormat,
+          segment_size: 256,
+          override_seg_size: false,
+          overlap: selectedOverlap,
+          batch_size: 1,
+          norm_thresh: 0.9,
+          amp_thresh: 1.0,
+          single_stem: ''
+        };
 
     const connectOptions = savedToken ? {
       token: savedToken,
       hf_token: savedToken
     } : {};
 
-    const client = await Client.connect("TheStinger/UVR5_UI", connectOptions);
+    const client = await Client.connect('TheStinger/UVR5_UI', connectOptions);
+
+    setStage(2, 'جاري رفع الملف إلى المحرك...');
+    aiStageTimeout = setTimeout(() => {
+      setStage(3, 'جاري العزل بالذكاء الاصطناعي...');
+    }, 3500);
+
     const result = await client.predict(apiEndpoint, predictParams);
 
-    clearInterval(simInterval);
+    clearTimeout(aiStageTimeout);
+    clearInterval(elapsedInterval);
 
-    const getUrl = (i) => {
-      const baseUrl = "https://thestinger-uvr5-ui.hf.space";
-      if (!i) return '';
-      return typeof i === 'string' ? i : (i?.url || (i?.path ? baseUrl + "/file=" + i.path : ''));
+    const getUrl = (item) => {
+      const baseUrl = 'https://thestinger-uvr5-ui.hf.space';
+      if (!item) return '';
+      return typeof item === 'string' ? item : (item.url || (item.path ? baseUrl + '/file=' + item.path : ''));
     };
 
     const rawInstUrl = getUrl(result.data[0]);
@@ -752,95 +1104,74 @@ window.startProcessing = async function() {
     const instAudio = document.getElementById('instAudio');
     const vocalAudio = document.getElementById('vocalAudio');
 
+    stopAllPlayback();
     instAudio.src = rawInstUrl;
     vocalAudio.src = rawVocalUrl;
     instAudio.load();
     if (rawVocalUrl) vocalAudio.load();
 
     const vocalCard = document.getElementById('vocalCard');
-    if (!rawVocalUrl) vocalCard.style.display = 'none';
-    else vocalCard.style.display = 'flex';
+    vocalCard.style.display = rawVocalUrl ? 'flex' : 'none';
 
-    updateProcessing(100);
-    document.getElementById('progressStatus').innerText = 'تمت المعالجة بنجاح!';
+    const metaBadge = document.getElementById('resultMetaBadge');
+    if (metaBadge) metaBadge.innerText = `${selectedFormat.toUpperCase()} · ${formatElapsedTimer(elapsedSeconds)}`;
 
-    saveToHistory(currentFile.name, rawInstUrl, rawVocalUrl);
+    setStage(4, `تم الفصل بنجاح خلال ${formatElapsedTimer(elapsedSeconds)}`);
+
+    saveToHistory(currentFile.name, rawInstUrl, rawVocalUrl, selectedFormat);
 
     setTimeout(() => {
       isProcessingActive = false;
       document.getElementById('progressSection').classList.remove('show');
       document.getElementById('resultsSection').classList.add('show');
       processBtn.disabled = false;
-      processBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> بدء المعالجة';
-      showToast('✨ تم الفصل بنجاح!', 'success');
-    }, 1000);
+      processBtn.innerHTML = '<i class="ri-magic-line"></i><span>بدء الفصل الآن</span>';
+      showToast(`تم الفصل خلال ${formatElapsedTimer(elapsedSeconds)} — جاهز للاستماع`, 'success');
+    }, 600);
 
   } catch (err) {
-    clearInterval(simInterval);
+    clearTimeout(aiStageTimeout);
+    clearInterval(elapsedInterval);
     console.error(err);
+
     const msg = err.message || '';
     const lowerMsg = msg.toLowerCase();
     if (lowerMsg.includes('quota') || lowerMsg.includes('exceeded') || lowerMsg.includes('limit')) {
       if (savedToken) {
-        showToast('🚫 انتهت حصة التوكن! شغّل VPN أو بدّل التوكن.', 'error');
+        showToast('انتهت حصة التوكن، شغّل VPN أو بدّل التوكن.', 'error');
       } else {
-        showToast('🚫 خلصت المحاولات المجانية! شغّل VPN أو أضف توكن بالإعدادات.', 'error');
+        showToast('خلصت المحاولات المجانية، شغّل VPN أو أضف توكن بالإعدادات.', 'error');
       }
-    } else if (msg.includes('queue')) {
-      showToast('⏳ طابور الانتظار ممتلئ، أعد المحاولة.', 'warning');
+    } else if (lowerMsg.includes('queue')) {
+      showToast('السيرفر مزدحم حالياً، أعد المحاولة بعد لحظات.', 'warning');
     } else {
-      showToast('⚠️ خطأ من السيرفر: ' + (msg.substring(0, 60) || 'تأكد من الاتصال'), 'error');
+      showToast('خطأ من السيرفر: ' + (msg.substring(0, 60) || 'تأكد من الاتصال'), 'error');
     }
+
     isProcessingActive = false;
     processBtn.disabled = false;
-    processBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> بدء المعالجة';
+    processBtn.innerHTML = '<i class="ri-magic-line"></i><span>بدء الفصل الآن</span>';
     document.getElementById('progressSection').classList.remove('show');
+  }
+};
+
+/* ==========================================
+   8. HISTORY (LIGHTWEIGHT STREAMING LINKS)
+========================================== */
+function formatHistoryDate(ts) {
+  try {
+    return new Intl.DateTimeFormat('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(new Date(ts));
+  } catch (e) {
+    return '';
   }
 }
 
-function updateProcessing(percent) {
-  document.getElementById('progressPercent').innerText = percent + '%';
-  document.getElementById('progressFill').style.width = percent + '%';
-
-  const steps = [{
-      id: 1,
-      min: 0,
-      max: 25
-    },
-    {
-      id: 2,
-      min: 25,
-      max: 50
-    },
-    {
-      id: 3,
-      min: 50,
-      max: 75
-    },
-    {
-      id: 4,
-      min: 75,
-      max: 100
-    }
-  ];
-
-  steps.forEach(s => {
-    const step = document.getElementById('step' + s.id);
-    if (percent >= s.max) {
-      step.classList.add('done');
-      step.classList.remove('active');
-    } else if (percent >= s.min) {
-      step.classList.add('active');
-      step.classList.remove('done');
-    }
-  });
-}
-
-
-/* ==========================================
-   8. HISTORY (IndexedDB)
-========================================== */
-window.saveToHistory = async function(name, instUrl, vocalUrl) {
+window.saveToHistory = function(name, instUrl, vocalUrl, format = 'mp3') {
   const id = Date.now().toString();
   const timestamp = Date.now();
 
@@ -850,177 +1181,119 @@ window.saveToHistory = async function(name, instUrl, vocalUrl) {
     name: name,
     instUrl: instUrl || '',
     vocalUrl: vocalUrl || '',
-    date: new Date().toLocaleString('ar-SA'),
+    format: format || 'mp3',
+    date: formatHistoryDate(timestamp),
     timestamp: timestamp
   });
 
-  localStorage.setItem('voiceHistory', JSON.stringify(history.slice(0, 15)));
-
+  localStorage.setItem('voiceHistory', JSON.stringify(history.slice(0, 20)));
   loadHistory();
+};
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 window.loadHistory = function() {
   const history = JSON.parse(localStorage.getItem('voiceHistory') || '[]');
   const list = document.getElementById('historyList');
+  if (!list) return;
 
   if (history.length === 0) {
     list.innerHTML = `
-          <div class="empty-state">
-            <i class="fas fa-inbox"></i>
-            <p>لا توجد معالجات سابقة</p>
-          </div>
-        `;
+      <div class="empty-state">
+        <i class="ri-disc-line"></i>
+        <p>لا توجد معالجات سابقة حتى الآن</p>
+      </div>
+    `;
     return;
   }
 
-  const warningBanner = `
-        <div class="banner-info">
-          <i class="fas fa-bolt"></i>
-          <span><strong>التشغيل الفوري:</strong> المقاطع تُحفظ داخل جهازك حصرياً لمدة 24 ساعة (بدون إنترنت).</span>
-        </div>
-      `;
-
-  const historyItems = history.map((h, index) => {
-    const hoursPassed = h.timestamp ? (Date.now() - h.timestamp) / (1000 * 60 * 60) : 0;
-    const isValid = hoursPassed <= 24;
-    const statusClass = isValid ? 'active' : 'expired';
-    const statusText = isValid ? 'متاح للتشغيل' : 'منتهي الصلاحية';
-    const btnClass = isValid ? 'active' : 'expired';
-    const btnIcon = isValid ? 'fa-play' : 'fa-times';
-    const onclick = isValid ? `restoreFromHistory(${index})` : `showToast('انتهت صلاحية الملف', 'error')`;
-
+  list.innerHTML = history.map((h, index) => {
+    const fmt = (h.format || 'mp3').toUpperCase();
+    const displayDate = h.timestamp ? formatHistoryDate(h.timestamp) : (h.date || '');
     return `
-          <div class="history-item ${isValid ? '' : 'disabled'}" onclick="${onclick}">
-            <div class="history-meta">
-              <strong>${h.name}</strong>
-              <small><i class="fas fa-calendar-alt"></i> ${h.date}</small>
-              <span class="history-status ${statusClass}">
-                <i class="fas fa-circle" style="font-size: 0.5rem;"></i> ${statusText}
-              </span>
-            </div>
-            <div class="history-play-btn ${btnClass}">
-              <i class="fas ${btnIcon}"></i>
-            </div>
+      <div class="history-item" onclick="restoreFromHistory(${index})">
+        <div class="history-meta">
+          <strong dir="ltr">${escapeHtml(h.name)}</strong>
+          <div class="history-sub">
+            <span dir="ltr">${escapeHtml(displayDate)}</span>
+            <span class="history-format-tag">${escapeHtml(fmt)}</span>
           </div>
-        `;
+        </div>
+        <div class="history-play-btn">
+          <i class="ri-play-fill"></i>
+        </div>
+      </div>
+    `;
   }).join('');
-
-  list.innerHTML = warningBanner + historyItems;
-}
+};
 
 window.clearHistory = function() {
-  document.getElementById('confirmModal').classList.add('open');
-  history.pushState({
-    confirmOpen: true
-  }, '', '#confirm');
-}
+  openConfirmDialog({
+    title: 'مسح السجل بالكامل',
+    message: 'هل أنت متأكد من حذف جميع سجلات المعالجات وتفريغ الذاكرة القديمة؟',
+    confirmText: 'نعم، امسح السجل',
+    iconClass: 'ri-delete-bin-line',
+    onConfirm: async () => {
+      localStorage.removeItem('voiceHistory');
+      loadHistory();
+      try {
+        const db = await dbPromise;
+        const tx = db.transaction('audioFiles', 'readwrite');
+        tx.objectStore('audioFiles').clear();
+      } catch (e) {}
+      showToast('تم مسح السجل وتفريغ الذاكرة بنجاح', 'success');
+    }
+  });
+};
 
-window.closeConfirmModal = function() {
-  if (window.location.hash === '#confirm') {
-    history.back();
-  } else {
-    document.getElementById('confirmModal').classList.remove('open');
-  }
-}
-
-window.confirmClearHistory = async function() {
-  localStorage.removeItem('voiceHistory');
-  loadHistory();
-  
-  try {
-    const db = await dbPromise;
-    const tx = db.transaction("audioFiles", "readwrite");
-    tx.objectStore("audioFiles").clear();
-  } catch (e) {
-    console.log("لم يتم تفريغ قاعدة البيانات:", e);
-  }
-  
-  showToast('تم مسح السجل وتفريغ الذاكرة بنجاح', 'success');
-  window.closeConfirmModal();
-}
-
-window.restoreFromHistory = async function(index) {
+window.restoreFromHistory = function(index) {
   const history = JSON.parse(localStorage.getItem('voiceHistory') || '[]');
   const item = history[index];
-  if (!item) return;
-
-  const hoursPassed = item.timestamp ? (Date.now() - item.timestamp) / (1000 * 60 * 60) : 0;
-  if (hoursPassed > 24) {
-    showToast('انتهت صلاحية الملف.', 'error');
+  if (!item || !item.instUrl) {
+    showToast('رابط المقطع غير متاح، يرجى إعادة المعالجة.', 'warning');
     return;
   }
 
-  try {
-    const db = await dbPromise;
-    const tx = db.transaction("audioFiles", "readonly");
-    const store = tx.objectStore("audioFiles");
-    const request = item.id ? store.get(item.id) : {
-      onsuccess: null
-    };
+  stopAllPlayback();
 
-    const handleFallback = async () => {
-      if (!item.instUrl) {
-        showToast('⚠️ مقطع قديم — أعد معالجته للحفظ بجهازك.', 'warning');
-        return;
-      }
-      const instAudio = document.getElementById('instAudio');
-      const vocalAudio = document.getElementById('vocalAudio');
+  const instAudio = document.getElementById('instAudio');
+  const vocalAudio = document.getElementById('vocalAudio');
 
-      instAudio.src = item.instUrl;
-      instAudio.load();
+  instAudio.src = item.instUrl;
+  instAudio.load();
 
-      if (item.vocalUrl) {
-        vocalAudio.src = item.vocalUrl;
-        vocalAudio.load();
-        document.getElementById('vocalCard').style.display = 'flex';
-      } else {
-        document.getElementById('vocalCard').style.display = 'none';
-      }
-
-      showPage('home');
-      document.getElementById('fileName').innerText = item.name;
-      document.getElementById('fileInfo').classList.add('show');
-      document.getElementById('resultsSection').classList.add('show');
-      currentFile = {
-        name: item.name
-      };
-      showToast('⚡ جاهز للتشغيل المباشر!', 'success');
-    };
-
-    if (!item.id) {
-      await handleFallback();
-      return;
-    }
-
-    request.onsuccess = async () => {
-      const data = request.result;
-      if (data && data.instBlob) {
-        showToast('⚡ تشغيل فوري من جهازك...', 'success');
-        document.getElementById('instAudio').src = URL.createObjectURL(data.instBlob);
-
-        if (data.vocalBlob) {
-          document.getElementById('vocalAudio').src = URL.createObjectURL(data.vocalBlob);
-          document.getElementById('vocalCard').style.display = 'flex';
-        } else {
-          document.getElementById('vocalCard').style.display = 'none';
-        }
-
-        showPage('home');
-        document.getElementById('fileName').innerText = item.name;
-        document.getElementById('fileInfo').classList.add('show');
-        document.getElementById('resultsSection').classList.add('show');
-        currentFile = {
-          name: item.name
-        };
-      } else {
-        await handleFallback();
-      }
-    };
-  } catch (e) {
-    showToast('حدث خطأ أثناء قراءة الملف.', 'error');
+  if (item.vocalUrl) {
+    vocalAudio.src = item.vocalUrl;
+    vocalAudio.load();
+    document.getElementById('vocalCard').style.display = 'flex';
+  } else {
+    vocalAudio.src = '';
+    document.getElementById('vocalCard').style.display = 'none';
   }
-}
 
+  currentFile = { name: item.name };
+  currentOutputFormat = item.format || 'mp3';
+
+  const metaBadge = document.getElementById('resultMetaBadge');
+  if (metaBadge) metaBadge.innerText = currentOutputFormat.toUpperCase();
+
+  navigateTo('home');
+  document.getElementById('fileName').innerText = item.name;
+  document.getElementById('fileSize').innerText = 'بث مباشر';
+  document.getElementById('fileDuration').innerText = '—';
+  document.getElementById('fileInfo').classList.add('show');
+  document.getElementById('waveformSection').classList.remove('show');
+  document.getElementById('resultsSection').classList.add('show');
+  document.getElementById('changeFileBtn').classList.remove('hidden');
+
+  showToast('تم تجهيز المسارات للبث المباشر', 'success');
+};
 
 /* ==========================================
    9. SETTINGS (HF TOKEN)
@@ -1030,106 +1303,101 @@ window.saveSettings = async function() {
 
   if (!token) {
     localStorage.removeItem('hf_token');
-    showToast('تم مسح التوكن — ستعمل بالخطة المجانية', 'success');
+    updateTokenLockUI(localStorage.getItem('hf_token_active') !== 'false');
+    showToast('تم مسح التوكن — سيعمل التطبيق بحصة الزائر المجانية', 'success');
     return;
   }
 
   if (!token.startsWith('hf_')) {
-    showToast('❌ التوكن يجب أن يبدأ بـ hf_', 'error');
+    showToast('التوكن يجب أن يبدأ بـ hf_', 'error');
     return;
   }
 
-  showToast('جاري التحقق من التوكن...', 'warning');
+  showToast('جاري التحقق من صلاحية التوكن...', 'warning');
 
   try {
     const res = await fetch('https://huggingface.co/api/whoami-v2', {
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
+      headers: { Authorization: `Bearer ${token}` }
     });
 
     if (res.ok) {
       localStorage.setItem('hf_token', token);
-      showToast('✅ التوكن صالح! تم الحفظ', 'success');
+      updateTokenLockUI(localStorage.getItem('hf_token_active') !== 'false');
+      showToast('التوكن صالح وتم حفظه بنجاح', 'success');
     } else {
-      showToast('❌ التوكن خاطئ أو منتهي', 'error');
+      showToast('التوكن غير صالح أو منتهي الصلاحية', 'error');
     }
   } catch (e) {
-    showToast('⚠️ خطأ في الاتصال', 'error');
+    showToast('تعذّر التحقق، تأكد من اتصالك بالإنترنت', 'error');
   }
-}
+};
 
 window.toggleTokenStatus = function() {
   const isCurrentActive = localStorage.getItem('hf_token_active') !== 'false';
   const newActiveState = !isCurrentActive;
   localStorage.setItem('hf_token_active', newActiveState ? 'true' : 'false');
   updateTokenLockUI(newActiveState);
-  if (newActiveState) showToast('🔓 التوكن نشط (السرعة القصوى)', 'success');
-  else showToast('🔒 التوكن مجمد — الوضع المجاني', 'warning');
-}
+
+  if (newActiveState) showToast('تم تفعيل التوكن (محاولات إضافية)', 'success');
+  else showToast('تم تجميد التوكن (حصة الزائر المجانية)', 'warning');
+};
 
 function updateTokenLockUI(isActive) {
   const btn = document.getElementById('tokenToggleBtn');
   const icon = document.getElementById('tokenLockIcon');
   const input = document.getElementById('hf_token_input');
   const statusText = document.getElementById('tokenStatusText');
+  const sideLabel = document.getElementById('sidebarTokenLabel');
+  const hasSavedToken = Boolean(localStorage.getItem('hf_token'));
 
   if (!btn || !icon) return;
 
-  if (isActive) {
-    icon.className = 'fas fa-lock-open';
+  if (isActive && hasSavedToken) {
+    icon.className = 'ri-lock-unlock-line';
     icon.style.color = 'var(--success)';
     btn.style.borderColor = 'var(--success)';
     btn.style.background = 'var(--success-soft)';
     if (input) input.style.opacity = '1';
     if (statusText) {
       statusText.style.color = 'var(--success)';
-      statusText.innerHTML = '⚡ التوكن نشط (السرعة القصوى)';
+      statusText.innerText = 'التوكن نشط — محاولات يومية إضافية على السيرفر السريع';
     }
-  } else {
-    icon.className = 'fas fa-lock';
+    if (sideLabel) sideLabel.innerText = 'التوكن نشط (محاولات إضافية)';
+  } else if (!isActive) {
+    icon.className = 'ri-lock-2-line';
     icon.style.color = 'var(--text-tertiary)';
     btn.style.borderColor = 'var(--border)';
     btn.style.background = 'var(--bg-input)';
     if (input) input.style.opacity = '0.6';
     if (statusText) {
       statusText.style.color = 'var(--text-secondary)';
-      statusText.innerHTML = '🔒 التوكن مجمد (الوضع المجاني)';
+      statusText.innerText = 'التوكن مجمد — يعمل بحصة الزائر المجانية';
     }
+    if (sideLabel) sideLabel.innerText = 'الوضع المجاني (حصة الزائر)';
+  } else {
+    icon.className = 'ri-lock-unlock-line';
+    icon.style.color = 'var(--text-secondary)';
+    btn.style.borderColor = 'var(--border)';
+    btn.style.background = 'var(--bg-input)';
+    if (input) input.style.opacity = '1';
+    if (statusText) {
+      statusText.style.color = 'var(--text-secondary)';
+      statusText.innerText = 'لا يوجد توكن محفوظ — يعمل بحصة الزائر المجانية';
+    }
+    if (sideLabel) sideLabel.innerText = 'الوضع المجاني (حصة الزائر)';
   }
 }
-
 
 /* ==========================================
-   10. INIT
+   10. INIT & SINGLE SERVICE WORKER REGISTER
 ========================================== */
-window.autoCleanOldBlobs = async function() {
-  try {
-    const history = JSON.parse(localStorage.getItem('voiceHistory') || '[]');
-    const db = await dbPromise;
-    const tx = db.transaction("audioFiles", "readwrite");
-    const store = tx.objectStore("audioFiles");
-
-    let hasCleaned = false;
-    history.forEach(h => {
-      const hoursPassed = h.timestamp ? (Date.now() - h.timestamp) / (1000 * 60 * 60) : 0;
-      if (hoursPassed > 24 && h.id) {
-        store.delete(h.id);
-        hasCleaned = true;
-      }
-    });
-    if (hasCleaned) console.log("تم تنظيف الملفات القديمة من الذاكرة بنجاح");
-  } catch (e) {
-    console.log("لم يتم التنظيف التلقائي:", e);
-  }
-}
-
 document.getElementById('hf_token_input').value = localStorage.getItem('hf_token') || '';
 updateTokenLockUI(localStorage.getItem('hf_token_active') !== 'false');
+restoreProcessingPrefs();
 loadHistory();
-autoCleanOldBlobs();
-setTimeout(() => showToast('👋 مرحباً بك في Voice Studio Pro', 'success'), 500);
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
 }

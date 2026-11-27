@@ -1,4 +1,4 @@
-const CACHE_NAME = 'app-cache-v61';
+const CACHE_NAME = 'app-cache-v62';
 const ASSETS = [
   '/',
   '/index.html',
@@ -11,9 +11,7 @@ const ASSETS = [
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS);
-    })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
   self.skipWaiting();
 });
@@ -29,14 +27,14 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   const url = event.request.url;
-  
+
   if (
-    event.request.method !== 'GET' || 
-    url.includes('firebase') || 
-    url.includes('hf.space') || 
-    url.endsWith('.wav') || 
-    url.endsWith('.flac') || 
-    url.endsWith('.mp3') || 
+    event.request.method !== 'GET' ||
+    url.includes('firebase') ||
+    url.includes('hf.space') ||
+    url.endsWith('.wav') ||
+    url.endsWith('.flac') ||
+    url.endsWith('.mp3') ||
     url.startsWith('blob:')
   ) {
     return;
@@ -49,10 +47,8 @@ self.addEventListener('fetch', event => {
       .then(response => {
         const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        return response; 
+        return response;
       })
-      .catch(() => {
-        return caches.match(event.request);
-      })
+      .catch(() => caches.match(event.request))
   );
 });

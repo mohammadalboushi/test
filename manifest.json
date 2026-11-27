@@ -1,12 +1,11 @@
 {
-  "name": "Voice Studio",
+  "name": "Voice Studio Pro",
   "short_name": "Voice Studio",
-  "description": "منصة فصل الصوت الذكية",
+  "description": "استوديو فصل الصوت الذكي بالذكاء الاصطناعي",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f5f7fb",
-  "theme_color": "#f5f7fb",
-  "orientation": "portrait",
+  "background_color": "#0b0d12",
+  "theme_color": "#0b0d12",
   "icons": [
     {
       "src": "icon-192.png",
@@ -22,6 +21,7 @@
     }
   ],
   "categories": [
+    "music",
     "utilities",
     "productivity"
   ]
